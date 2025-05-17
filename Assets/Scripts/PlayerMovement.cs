@@ -1,25 +1,28 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
+    PlayerInput playerInput;
+    InputAction moveAction;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [SerializeField] float moveSpeed = 5f;
+
+    private void Start()
     {
-        
+        playerInput = GetComponent<PlayerInput>();
+        moveAction = playerInput.actions.FindAction("Movement");
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        playerMovement();
+        MovePlayer();
     }
 
-    private void playerMovement()
+    void MovePlayer()
     {
-        if (Input.GetKeyDown(KeyCode.W))
-        {
-            // stuff here
-        }
+        Vector2 direction = moveAction.ReadValue<Vector2>();
+        transform.position += new Vector3(direction.x, 0, direction.y) * moveSpeed * Time.deltaTime;
     }
+
 }
