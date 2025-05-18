@@ -15,16 +15,11 @@ public class AnimationStateController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKey(KeyCode.W) && !playerMovement.isRotating)
+        if (Input.GetKey(KeyCode.W))
         {
             animator.SetBool("isWalking", true);
         }
-        else
-        {
-            animator.SetBool("isWalking", false);
-        }
-
-        if (Input.GetKey(KeyCode.A))
+        else if (Input.GetKey(KeyCode.A))
         {
             if (playerMovement.isRotating)
             {
@@ -35,11 +30,22 @@ public class AnimationStateController : MonoBehaviour
                 animator.SetBool("isWalking", true);
             }
         }
+        else if (Input.GetKey(KeyCode.D))
+        {
+            if (playerMovement.isRotating)
+            {
+                animator.SetBool("isTurningRight", true);
+            }
+            else
+            {
+                animator.SetBool("isWalking", true);
+            }
+        }
         else
         {
             animator.SetBool("isTurningLeft", false);
+            animator.SetBool("isTurningRight", false);
             animator.SetBool("isWalking", false);
         }
-
     }
 }

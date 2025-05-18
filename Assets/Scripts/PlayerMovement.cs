@@ -14,7 +14,8 @@ public class PlayerMovement : MonoBehaviour
     private float rotationDirection = 0f;
 
     private Transform cameraTransform;
-    private float prevHorizontalInput = 0f; // Track previous frame's horizontal input
+    private float prevHorizontalInput = 0f;
+    private float prevVerticalInput = 0f; // Track previous frame's vertical input
 
     private void Start()
     {
@@ -26,57 +27,61 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         Vector2 input = moveAction.ReadValue<Vector2>();
-
-        float cameraY = cameraTransform.eulerAngles.y;
         float playerY = transform.eulerAngles.y;
 
-        // Only trigger rotation on the initial press of A or D (rising edge)
-        if (!isRotating && Mathf.Abs(input.x) > 0.1f && Mathf.Abs(prevHorizontalInput) < 0.1f)
+        // Prioritize horizontal input (A/D) over vertical input (W)
+        if (Mathf.Abs(input.x) > 0.1f)
         {
-            isRotating = true;
-            rotationDirection = Mathf.Sign(input.x);
-            float nextTarget = Mathf.Round(playerY / 90f) * 90f + 90f * rotationDirection;
+            // Only trigger 90° snap rotation on the initial press of A or D (rising edge)
+            if (!isRotating && Mathf.Abs(prevHorizontalInput) < 0.1f)
+            {
+                isRotating = true;
+                rotationDirection = Mathf.Sign(input.x);
+                targetYRotation = Mathf.Round(playerY / 90f) * 90f + 90f * rotationDirection;
+            }
 
-            // Clamp the target rotation within ±90° of the camera's Y axis
-            float deltaToCamera = Mathf.DeltaAngle(cameraY, nextTarget);
-            deltaToCamera = Mathf.Clamp(deltaToCamera, -90f, 90f);
-            targetYRotation = cameraY + deltaToCamera;
+            if (isRotating)
+            {
+                // Nudge forward slightly when starting to rotate
+                Vector3 forward = transform.forward;
+                transform.position += forward * moveSpeed * Time.deltaTime * 0.5f;
 
-            // Nudge forward slightly when starting to rotate
-            Vector3 forward = transform.forward;
-            transform.position += forward * moveSpeed * Time.deltaTime * 0.5f; // 20% of normal move
+                // Rotate towards the target angle
+                float newY = Mathf.MoveTowardsAngle(playerY, targetYRotation, turnSpeed * Time.deltaTime);
+                transform.eulerAngles = new Vector3(0, newY, 0);
 
+                // Check if rotation is complete
+                if (Mathf.Approximately(Mathf.DeltaAngle(playerY, targetYRotation), 0f))
+                {
+                    isRotating = false;
+                }
+            }
+            else
+            {
+                // Move forward in the new direction while holding A or D
+                Vector3 forward = transform.forward;
+                transform.position += forward * moveSpeed * Time.deltaTime;
+            }
+
+            // Do not process W if A or D is held
         }
-
-        if (isRotating)
+        else if (input.y > 0.1f)
         {
-            // Rotate towards the target angle
-            float newY = Mathf.MoveTowardsAngle(playerY, targetYRotation, turnSpeed * Time.deltaTime);
+            // Actively rotate to camera's Y when holding W
+            float cameraY = cameraTransform.eulerAngles.y;
+            float newY = Mathf.MoveTowardsAngle(playerY, cameraY, turnSpeed * Time.deltaTime);
             transform.eulerAngles = new Vector3(0, newY, 0);
 
-            // Check if rotation is complete
-            if (Mathf.Approximately(Mathf.DeltaAngle(playerY, targetYRotation), 0f))
-            {
-                isRotating = false;
-            }
-        }
-        else
-        {
-            // If A or D is still held after rotation, move forward in the new direction
-            if (Mathf.Abs(input.x) > 0.1f)
-            {
-                Vector3 forward = transform.forward;
-                transform.position += forward * moveSpeed * Time.deltaTime;
-            }
-            // Or, if W is pressed, move forward as usual
-            else if (input.y > 0.1f)
-            {
-                Vector3 forward = transform.forward;
-                transform.position += forward * moveSpeed * Time.deltaTime;
-            }
+            // Move forward in the new direction
+            Vector3 forward = transform.forward;
+            transform.position += forward * moveSpeed * Time.deltaTime;
+
+            isRotating = false;
         }
 
-        // Store current horizontal input for next frame
+        // Store current input for next frame
         prevHorizontalInput = input.x;
+        prevVerticalInput = input.y;
     }
+
 }
