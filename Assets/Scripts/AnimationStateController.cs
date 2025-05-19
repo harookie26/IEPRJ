@@ -19,14 +19,20 @@ public class AnimationStateController : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.W))
         {
-            if (playerMovement.isRotatingWide)
+            if (playerMovement.isRotatingWideToLeft)
             {
-                animator.SetBool("isTurningWide", true);
+                animator.SetBool("isTurningWideToLeft", true);
+            }
+            else if (playerMovement.isRotatingWideToRight)
+            {
+                animator.SetBool("isTurningWideToRight", true);
             }
             else
             {
                 animator.SetBool("isWalking", true);
+                animator.SetBool("isWalkAfterTurn", true);
             }
+
         }
         else if (Input.GetKey(KeyCode.A))
         {
@@ -52,22 +58,38 @@ public class AnimationStateController : MonoBehaviour
         }
         else if (Input.GetKey(KeyCode.S))
         {
-            if (playerMovement.isRotatingWide)
+            if (playerMovement.isRotatingWideToLeft)
             {
-                animator.SetBool("isTurningWide", true);
+                animator.SetBool("isTurningWideToLeft", true);
+            }
+            else if (playerMovement.isRotatingWideToRight)
+            {
+                animator.SetBool("isTurningWideToRight", true);
             }
             else
             {
-                animator.SetBool("isWalking", true);
+                animator.SetBool("isWalkAfterTurn", true);
             }
 
         }
+        
         else
         {
             animator.SetBool("isTurningLeft", false);
             animator.SetBool("isTurningRight", false);
             animator.SetBool("isWalking", false);
-            animator.SetBool("isTurningWide", false);
+            animator.SetBool("isTurningWideToRight", false);
+            animator.SetBool("isTurningWideToLeft", false);
+            animator.SetBool("isWalkAfterTurn", false);
+        }
+
+        if (playerMovement.isFacingCamera)
+        {
+            animator.SetBool("isFacingCamera", true);
+        }
+        else
+        {
+            animator.SetBool("isFacingCamera", false);
         }
     }
 }

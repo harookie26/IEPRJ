@@ -6,26 +6,21 @@ public class PlayerMovement : MonoBehaviour
 {
     PlayerInput playerInput;
     InputAction moveAction;
-    AnimationStateController animationStateController;
 
     public float turnSpeed = 180f;
     [SerializeField] float moveSpeed = 5f;
 
     public bool isRotating = false;
-    private float targetYRotation;
-    private float rotationDirection = 0f;
-
     private Transform cameraTransform;
-    private float prevHorizontalInput = 0f;
-    private float prevVerticalInput = 0f; // Track previous frame's vertical input
-
-    public bool facingBack = false;
 
     [SerializeField] float snapThreshold = 45f; // Degrees
 
     // Flags for rotation angles
     public bool isRotating90OrLess = false;
-    public bool isRotatingWide = false;
+    public bool isRotatingWideToLeft = false;
+    public bool isRotatingWideToRight = false;
+
+    public bool isFacingCamera = false;
 
     private void Start()
     {
@@ -39,6 +34,11 @@ public class PlayerMovement : MonoBehaviour
         Vector2 input = moveAction.ReadValue<Vector2>();
         Vector3 inputDirection = new Vector3(input.x, 0, input.y);
 
+        // --- Facing camera logic ---
+        Vector3 toCamera = (cameraTransform.position - transform.position).normalized;
+        float facingAngle = Vector3.Angle(transform.forward, toCamera);
+        isFacingCamera = facingAngle < 90f; // Adjust threshold as needed
+
         if (inputDirection.sqrMagnitude > 0.01f)
         {
             float cameraY = cameraTransform.eulerAngles.y;
@@ -48,10 +48,12 @@ public class PlayerMovement : MonoBehaviour
 
             // Calculate angle between current forward and move direction
             float angle = Vector3.Angle(transform.forward, moveDirection);
+            float signedAngle = Vector3.SignedAngle(transform.forward, moveDirection, Vector3.up);
 
             // Set flags
             isRotating90OrLess = angle <= 90f;
-            isRotatingWide = angle > 90f && angle <= 180f;
+            isRotatingWideToLeft = angle > 90f && angle <= 180f && signedAngle < 0f;
+            isRotatingWideToRight = angle > 90f && angle <= 180f && signedAngle > 0f;
 
             // Rotate the player to face the movement direction (in place)
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
@@ -66,7 +68,8 @@ public class PlayerMovement : MonoBehaviour
         else
         {
             isRotating90OrLess = false;
-            isRotatingWide = false;
+            isRotatingWideToLeft = false;
+            isRotatingWideToRight = false;
         }
     }
 
