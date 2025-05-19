@@ -38,7 +38,7 @@ public class PlayerMovement : MonoBehaviour
         // --- Facing camera logic ---
         Vector3 toCamera = (cameraTransform.position - transform.position).normalized;
         float facingAngle = Vector3.Angle(transform.forward, toCamera);
-        isFacingCamera = facingAngle < 10f; // Adjust threshold as needed
+        isFacingCamera = facingAngle < 90f; // Adjust threshold as needed
 
         if (inputDirection.sqrMagnitude > 0.01f)
         {

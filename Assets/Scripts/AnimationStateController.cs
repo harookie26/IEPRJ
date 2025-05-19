@@ -17,6 +17,10 @@ public class AnimationStateController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Set a parameter that is true if either wide rotation flag is true
+        bool isRotatingWide = playerMovement.isRotatingWideToLeft || playerMovement.isRotatingWideToRight;
+        animator.SetBool("isRotatingWide", isRotatingWide);
+
         if (Input.GetKey(KeyCode.W))
         {
             if (playerMovement.isRotatingWideToLeft)

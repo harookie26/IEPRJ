@@ -690,9 +690,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   turnSpeed: 200
-  moveSpeed: 5
+  moveSpeed: 3
+  moveDelayDuration: 0.3
+  stepBackMultiplier: 0.3
   isRotating: 0
-  snapThreshold: 45
+  isRotatingWideToLeft: 0
+  isRotatingWideToRight: 0
+  isFacingCamera: 0
 --- !u!1 &1741401381
 GameObject:
   m_ObjectHideFlags: 0
