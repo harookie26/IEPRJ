@@ -6,6 +6,7 @@ public class PlayerMovement : MonoBehaviour
 {
     PlayerInput playerInput;
     InputAction moveAction;
+    AnimationStateController animationStateController;
 
     public float turnSpeed = 180f;
     [SerializeField] float moveSpeed = 5f;
@@ -18,7 +19,13 @@ public class PlayerMovement : MonoBehaviour
     private float prevHorizontalInput = 0f;
     private float prevVerticalInput = 0f; // Track previous frame's vertical input
 
+    public bool facingBack = false;
+
     [SerializeField] float snapThreshold = 45f; // Degrees
+
+    // Flags for rotation angles
+    public bool isRotating90OrLess = false;
+    public bool isRotatingWide = false;
 
     private void Start()
     {
@@ -30,72 +37,38 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         Vector2 input = moveAction.ReadValue<Vector2>();
-        float playerY = transform.eulerAngles.y;
-        float cameraY = cameraTransform.eulerAngles.y;
+        Vector3 inputDirection = new Vector3(input.x, 0, input.y);
 
-        // Prioritize horizontal input (A/D) over vertical input (W)
-        if (Mathf.Abs(input.x) > 0.1f)
+        if (inputDirection.sqrMagnitude > 0.01f)
         {
-            // Only trigger 90° snap rotation on the initial press of A or D (rising edge)
-            if (!isRotating && Mathf.Abs(prevHorizontalInput) < 0.1f)
+            float cameraY = cameraTransform.eulerAngles.y;
+            Quaternion cameraRotation = Quaternion.Euler(0, cameraY, 0);
+            Vector3 moveDirection = cameraRotation * inputDirection;
+            moveDirection.Normalize();
+
+            // Calculate angle between current forward and move direction
+            float angle = Vector3.Angle(transform.forward, moveDirection);
+
+            // Set flags
+            isRotating90OrLess = angle <= 90f;
+            isRotatingWide = angle > 90f && angle <= 180f;
+
+            // Rotate the player to face the movement direction (in place)
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+
+            // Only move if rotation is nearly complete (angle is small)
+            if (angle < 1f)
             {
-                isRotating = true;
-                rotationDirection = Mathf.Sign(input.x);
-                targetYRotation = Mathf.Round(playerY / 90f) * 90f + 90f * rotationDirection;
+                transform.position += transform.forward * moveSpeed * Time.deltaTime;
             }
-
-            if (isRotating)
-            {
-                // Nudge forward slightly when starting to rotate
-                Vector3 forward = transform.forward;
-                transform.position += forward * moveSpeed * Time.deltaTime * 0.5f;
-
-                // Rotate towards the target angle
-                float newY = Mathf.MoveTowardsAngle(playerY, targetYRotation, turnSpeed * Time.deltaTime);
-                transform.eulerAngles = new Vector3(0, newY, 0);
-
-                // Check if rotation is complete
-                if (Mathf.Approximately(Mathf.DeltaAngle(playerY, targetYRotation), 0f))
-                {
-                    isRotating = false;
-                }
-            }
-            else
-            {
-                // Move forward in the new direction while holding A or D
-                Vector3 forward = transform.forward;
-                transform.position += forward * moveSpeed * Time.deltaTime;
-            }
-
-            // Do not process W if A or D is held
         }
-        else if (input.y > 0.1f)
+        else
         {
-            // Calculate angle difference
-            float angleDiff = Mathf.DeltaAngle(playerY, cameraY);
-
-            // Snap if the gap is large
-            if (Mathf.Abs(angleDiff) > snapThreshold)
-            {
-                transform.eulerAngles = new Vector3(0, cameraY, 0);
-            }
-            else
-            {
-                // Smoothly rotate towards camera's Y
-                float newY = Mathf.MoveTowardsAngle(playerY, cameraY, turnSpeed * Time.deltaTime);
-                transform.eulerAngles = new Vector3(0, newY, 0);
-            }
-
-            // Move forward in the new direction
-            Vector3 forward = transform.forward;
-            transform.position += forward * moveSpeed * Time.deltaTime;
-
-            isRotating = false;
+            isRotating90OrLess = false;
+            isRotatingWide = false;
         }
-
-        // Store current input for next frame
-        prevHorizontalInput = input.x;
-        prevVerticalInput = input.y;
     }
+
 
 }

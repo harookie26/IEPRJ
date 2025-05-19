@@ -454,6 +454,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62bb85ed034b2094a970652636f2cda4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  isTurningWide: 0
 --- !u!4 &1189131481 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6304830325697634879, guid: 81bb9eea30387e442899949a80011e55, type: 3}
@@ -691,6 +692,7 @@ MonoBehaviour:
   turnSpeed: 200
   moveSpeed: 5
   isRotating: 0
+  snapThreshold: 45
 --- !u!1 &1741401381
 GameObject:
   m_ObjectHideFlags: 0
