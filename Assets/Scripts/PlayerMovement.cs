@@ -10,13 +10,14 @@ public class PlayerMovement : MonoBehaviour
     public float turnSpeed = 180f;
     [SerializeField] float moveSpeed = 5f;
 
-    public bool isRotating = false;
+    private float moveDelayTimer = 0f;
+    [SerializeField] private float moveDelayDuration = 0.3f; // Adjust as needed
+    [SerializeField] private float stepBackMultiplier = 0.3f; // Adjust as needed
+
     private Transform cameraTransform;
 
-    [SerializeField] float snapThreshold = 45f; // Degrees
-
     // Flags for rotation angles
-    public bool isRotating90OrLess = false;
+    public bool isRotating = false;
     public bool isRotatingWideToLeft = false;
     public bool isRotatingWideToRight = false;
 
@@ -37,7 +38,7 @@ public class PlayerMovement : MonoBehaviour
         // --- Facing camera logic ---
         Vector3 toCamera = (cameraTransform.position - transform.position).normalized;
         float facingAngle = Vector3.Angle(transform.forward, toCamera);
-        isFacingCamera = facingAngle < 90f; // Adjust threshold as needed
+        isFacingCamera = facingAngle < 10f; // Adjust threshold as needed
 
         if (inputDirection.sqrMagnitude > 0.01f)
         {
@@ -51,23 +52,47 @@ public class PlayerMovement : MonoBehaviour
             float signedAngle = Vector3.SignedAngle(transform.forward, moveDirection, Vector3.up);
 
             // Set flags
-            isRotating90OrLess = angle <= 90f;
+            bool wasRotatingWide = isRotatingWideToLeft || isRotatingWideToRight;
+            isRotating = angle <= 120f;
             isRotatingWideToLeft = angle > 90f && angle <= 180f && signedAngle < 0f;
             isRotatingWideToRight = angle > 90f && angle <= 180f && signedAngle > 0f;
+            bool isRotatingWide = isRotatingWideToLeft || isRotatingWideToRight;
 
-            // Rotate the player to face the movement direction (in place)
+            // If just started rotating wide, reset the delay timer
+            if (isRotatingWide && !wasRotatingWide)
+            {
+                moveDelayTimer = moveDelayDuration;
+            }
+
+            // Rotate the player to face the movement direction
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
 
-            // Only move if rotation is nearly complete (angle is small)
-            if (angle < 1f)
+            if (isRotatingWide)
             {
-                transform.position += transform.forward * moveSpeed * Time.deltaTime;
+                // Step back a bit while rotating wide
+                float stepBackSpeed = moveSpeed * stepBackMultiplier; // Adjust multiplier for desired effect
+                transform.position -= transform.forward * stepBackSpeed * Time.deltaTime;
+                // Keep the delay timer at its duration
+                moveDelayTimer = moveDelayDuration;
             }
+            else
+            {
+                // Only move forward if delay timer has expired
+                if (moveDelayTimer > 0f)
+                {
+                    moveDelayTimer -= Time.deltaTime;
+                }
+                else
+                {
+                    transform.position += transform.forward * moveSpeed * Time.deltaTime;
+                }
+            }
+
         }
         else
         {
-            isRotating90OrLess = false;
+            isRotating = false;
             isRotatingWideToLeft = false;
             isRotatingWideToRight = false;
         }

@@ -36,7 +36,7 @@ public class AnimationStateController : MonoBehaviour
         }
         else if (Input.GetKey(KeyCode.A))
         {
-            if (playerMovement.isRotating90OrLess)
+            if (playerMovement.isRotating)
             {
                 animator.SetBool("isTurningLeft", true);
             }
@@ -47,7 +47,7 @@ public class AnimationStateController : MonoBehaviour
         }
         else if (Input.GetKey(KeyCode.D))
         {
-            if (playerMovement.isRotating90OrLess)
+            if (playerMovement.isRotating)
             {
                 animator.SetBool("isTurningRight", true);
             }
