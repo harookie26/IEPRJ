@@ -1,3 +1,4 @@
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,6 +18,8 @@ public class PlayerMovement : MonoBehaviour
     private float prevHorizontalInput = 0f;
     private float prevVerticalInput = 0f; // Track previous frame's vertical input
 
+    [SerializeField] float snapThreshold = 45f; // Degrees
+
     private void Start()
     {
         playerInput = GetComponent<PlayerInput>();
@@ -28,6 +31,7 @@ public class PlayerMovement : MonoBehaviour
     {
         Vector2 input = moveAction.ReadValue<Vector2>();
         float playerY = transform.eulerAngles.y;
+        float cameraY = cameraTransform.eulerAngles.y;
 
         // Prioritize horizontal input (A/D) over vertical input (W)
         if (Mathf.Abs(input.x) > 0.1f)
@@ -67,10 +71,20 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (input.y > 0.1f)
         {
-            // Actively rotate to camera's Y when holding W
-            float cameraY = cameraTransform.eulerAngles.y;
-            float newY = Mathf.MoveTowardsAngle(playerY, cameraY, turnSpeed * Time.deltaTime);
-            transform.eulerAngles = new Vector3(0, newY, 0);
+            // Calculate angle difference
+            float angleDiff = Mathf.DeltaAngle(playerY, cameraY);
+
+            // Snap if the gap is large
+            if (Mathf.Abs(angleDiff) > snapThreshold)
+            {
+                transform.eulerAngles = new Vector3(0, cameraY, 0);
+            }
+            else
+            {
+                // Smoothly rotate towards camera's Y
+                float newY = Mathf.MoveTowardsAngle(playerY, cameraY, turnSpeed * Time.deltaTime);
+                transform.eulerAngles = new Vector3(0, newY, 0);
+            }
 
             // Move forward in the new direction
             Vector3 forward = transform.forward;
