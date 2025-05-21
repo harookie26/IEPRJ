@@ -38,6 +38,9 @@ public class PlayerMovement : MonoBehaviour
         // --- Facing camera logic ---
         Vector3 toCamera = (cameraTransform.position - transform.position).normalized;
         float facingAngle = Vector3.Angle(transform.forward, toCamera);
+        float signedFacingAngle = Vector3.SignedAngle(transform.forward, toCamera, Vector3.up);
+        Debug.Log($"Signed Facing Angle: {signedFacingAngle}");
+
         isFacingCamera = facingAngle < 90f; // Adjust threshold as needed
 
         if (inputDirection.sqrMagnitude > 0.01f)
