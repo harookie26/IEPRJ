@@ -1,31 +1,73 @@
 using UnityEngine;
 
-public class ThirdPersonCamera : MonoBehaviour
+public class SimpleCameraFollow : MonoBehaviour
 {
-    public Transform player; // Reference to the player
-    public Vector3 offset = new Vector3(0, 0, -2); // Camera position relative to player
-    public float mouseSensitivity = 3.0f; // Sensitivity for mouse movement
+    [SerializeField] private Transform target;
+    [SerializeField] private Vector3 offset = new Vector3(0, 2, -5);
+    [SerializeField] private float smoothSpeed = 10f;
+    [SerializeField] private float mouseSensitivity = 100f;
+    [SerializeField] private bool invertY = false;
+    [SerializeField] private float minVerticalAngle = -80f;
+    [SerializeField] private float maxVerticalAngle = 80f;
 
-    private float currentYaw = 0f;
+    private float rotationX = 0f;
+    private float rotationY = 0f;
 
-    void Start()
+    private void Start()
     {
-        // Ensure the camera starts at the fixed center rotation
-        currentYaw = 0f;
+        if (target == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                target = player.transform;
+            }
+            else
+            {
+                Debug.LogError("No target assigned and no GameObject with 'Player' tag found!");
+                enabled = false;
+                return;
+            }
+        }
+
+        // Hide and lock cursor
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
-        // Get horizontal mouse movement
-        float mouseX = Input.GetAxis("Mouse X");
-        currentYaw += mouseX * mouseSensitivity;
+        if (target == null)
+            return;
 
-        // Rotate the offset around the Y axis
-        Quaternion rotation = Quaternion.Euler(0, currentYaw, 0);
-        Vector3 rotatedOffset = rotation * offset;
+        // Get mouse input
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-        // Set camera position and look at the player
-        transform.position = player.position + rotatedOffset;
-        transform.LookAt(player);
+        // Apply mouse Y to vertical rotation with optional inversion
+        rotationY += invertY ? mouseY : -mouseY;
+        rotationY = Mathf.Clamp(rotationY, minVerticalAngle, maxVerticalAngle);
+
+        // Apply mouse X to horizontal rotation
+        rotationX += mouseX;
+
+        // Calculate rotation
+        Quaternion rotation = Quaternion.Euler(rotationY, rotationX, 0);
+
+        // Calculate position
+        Vector3 desiredPosition = target.position + rotation * offset;
+        Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
+
+        // Apply position and rotation
+        transform.position = smoothedPosition;
+        transform.rotation = rotation;
+
+        // Toggle cursor lock with Escape key
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            bool isLocked = Cursor.lockState == CursorLockMode.Locked;
+            Cursor.lockState = isLocked ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = isLocked;
+        }
     }
 }
