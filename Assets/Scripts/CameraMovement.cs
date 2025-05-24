@@ -70,4 +70,41 @@ public class SimpleCameraFollow : MonoBehaviour
             Cursor.visible = isLocked;
         }
     }
+
+    // Y-axis only for FPV
+    //private void LateUpdate()
+    //{
+    //    if (target == null)
+    //        return;
+
+    //    // Get mouse input
+    //    float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+    //    // float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime; // Not needed
+
+    //    // Lock vertical rotation
+    //    rotationY = 0f;
+
+    //    // Apply mouse X to horizontal rotation
+    //    rotationX += mouseX;
+
+    //    // Calculate rotation (only around Y axis)
+    //    Quaternion rotation = Quaternion.Euler(rotationY, rotationX, 0);
+
+    //    // Calculate position
+    //    Vector3 desiredPosition = target.position + rotation * offset;
+    //    Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
+
+    //    // Apply position and rotation
+    //    transform.position = smoothedPosition;
+    //    transform.rotation = rotation;
+
+    //    // Toggle cursor lock with Escape key
+    //    if (Input.GetKeyDown(KeyCode.Escape))
+    //    {
+    //        bool isLocked = Cursor.lockState == CursorLockMode.Locked;
+    //        Cursor.lockState = isLocked ? CursorLockMode.None : CursorLockMode.Locked;
+    //        Cursor.visible = isLocked;
+    //    }
+    //}
+
 }
