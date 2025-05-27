@@ -20,11 +20,29 @@ public class AnimationStateController2D : MonoBehaviour
         {
             transform.rotation = Quaternion.Euler(0, 0, 0);
             animator.SetBool("isWalking", true);
+
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                animator.SetBool("isRunning", true);
+            }
+            else
+            {
+                animator.SetBool("isRunning", false);
+            }
         }
         else if (Input.GetKey(KeyCode.A))
         {
             transform.rotation = Quaternion.Euler(0, 180, 0);
             animator.SetBool("isWalking", true);
+
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                animator.SetBool("isRunning", true);
+            }
+            else
+            {
+                animator.SetBool("isRunning", false);
+            }
         }
         else
         {

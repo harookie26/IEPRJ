@@ -6,7 +6,9 @@ public class PlayerMovement2D : MonoBehaviour
     private InputSystem_Actions inputActions;
     private Vector2 moveInput;
     public float moveSpeed = 5f;
+    public float sprintSpeed = 9f; // Add a sprint speed
     private Rigidbody2D rb;
+    private bool isSprinting = false; // Track sprint state
 
     private void Awake()
     {
@@ -19,12 +21,16 @@ public class PlayerMovement2D : MonoBehaviour
         inputActions.Player.Enable();
         inputActions.Player.Move.performed += Move;
         inputActions.Player.Move.canceled += Move;
+        inputActions.Player.Sprint.performed += OnSprintPerformed;
+        inputActions.Player.Sprint.canceled += OnSprintCanceled;
     }
 
     private void OnDisable()
     {
         inputActions.Player.Move.performed -= Move;
         inputActions.Player.Move.canceled -= Move;
+        inputActions.Player.Sprint.performed -= OnSprintPerformed;
+        inputActions.Player.Sprint.canceled -= OnSprintCanceled;
         inputActions.Player.Disable();
     }
 
@@ -33,8 +39,19 @@ public class PlayerMovement2D : MonoBehaviour
         moveInput = context.ReadValue<Vector2>();
     }
 
+    private void OnSprintPerformed(InputAction.CallbackContext context)
+    {
+        isSprinting = true;
+    }
+
+    private void OnSprintCanceled(InputAction.CallbackContext context)
+    {
+        isSprinting = false;
+    }
+
     private void FixedUpdate()
     {
-        rb.MovePosition(rb.position + moveInput * moveSpeed * Time.fixedDeltaTime);
+        float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
+        rb.MovePosition(rb.position + moveInput * currentSpeed * Time.fixedDeltaTime);
     }
 }
