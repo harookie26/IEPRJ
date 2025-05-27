@@ -1448,6 +1448,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         void OnNext(InputAction.CallbackContext context);
         void OnSprint(InputAction.CallbackContext context);
     }
+
     public interface IUIActions
     {
         void OnNavigate(InputAction.CallbackContext context);
@@ -1456,9 +1457,11 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         void OnPoint(InputAction.CallbackContext context);
         void OnClick(InputAction.CallbackContext context);
         void OnRightClick(InputAction.CallbackContext context);
-        void OnMiddleClick(InputAction.CallbackContext context);
+        void OnMiddleClick(InputAction.CallbackContext context); // Only once!
         void OnScrollWheel(InputAction.CallbackContext context);
         void OnTrackedDevicePosition(InputAction.CallbackContext context);
         void OnTrackedDeviceOrientation(InputAction.CallbackContext context);
     }
+
+
 }
