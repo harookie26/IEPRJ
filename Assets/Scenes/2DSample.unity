@@ -5170,6 +5170,56 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3564026850829729314, guid: 70e4f80265d902443a6249697d613d81, type: 3}
   m_PrefabInstance: {fileID: 367367203}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &371824762
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 371824764}
+  - component: {fileID: 371824763}
+  m_Layer: 0
+  m_Name: Mechanics
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &371824763
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 371824762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 684fbc9f78256f644855777363ee4601, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 1193440820}
+  graceDistance: 0.6
+  hidingSpotPrefabs:
+  - {fileID: 1416915783}
+  hidingSpotPositions:
+  - {x: -76.50001, y: 0.97, z: 0.073}
+--- !u!4 &371824764
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 371824762}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -67.41943, y: 4.327032, z: -1.0014546}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &382485603
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -20022,7 +20072,7 @@ GameObject:
   - component: {fileID: 1193440828}
   - component: {fileID: 1193440826}
   m_Layer: 0
-  m_Name: CharacterSheet_0
+  m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -20141,6 +20191,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
+  sprintSpeed: 9
 --- !u!50 &1193440825
 Rigidbody2D:
   serializedVersion: 5
@@ -23073,6 +23124,11 @@ PrefabInstance:
 --- !u!4 &1416915782 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6930122694965717509, guid: f98d0f39fcc67a34f844abd8a50f2c03, type: 3}
+  m_PrefabInstance: {fileID: 1416915781}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1416915783 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6930122694965717508, guid: f98d0f39fcc67a34f844abd8a50f2c03, type: 3}
   m_PrefabInstance: {fileID: 1416915781}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1417322749
@@ -32624,3 +32680,4 @@ SceneRoots:
   - {fileID: 87754438}
   - {fileID: 1462983351}
   - {fileID: 1193440822}
+  - {fileID: 371824764}
