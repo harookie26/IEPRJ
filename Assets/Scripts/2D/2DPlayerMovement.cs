@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement2D : MonoBehaviour
 {
-    private InputSystem_Actions inputActions;
+    private InputSystem2D inputActions;
     private Vector2 moveInput;
     public float moveSpeed = 5f;
     public float sprintSpeed = 9f; // Add a sprint speed
@@ -12,7 +12,7 @@ public class PlayerMovement2D : MonoBehaviour
 
     private void Awake()
     {
-        inputActions = new InputSystem_Actions();
+        inputActions = new InputSystem2D();
         rb = GetComponent<Rigidbody2D>();
     }
 
