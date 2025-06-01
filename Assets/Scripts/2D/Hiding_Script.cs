@@ -10,11 +10,18 @@ public class Hiding_Script : MonoBehaviour
     [SerializeField] private List<GameObject> hidingSpotPrefabs; // Assign different prefabs in Inspector
     [SerializeField] private List<Vector3> hidingSpotPositions;  // Assign positions in Inspector
 
+    [SerializeField] private float hidingDuration; /// Time for how long the player can hide inside of the object.
+    private float timer = 0f;
+    private GameObject targetObject;  /// Object the player is currently hiding in
+    private int targetIndex = -1;
+
+
     private SpriteRenderer playerSpriteRenderer;
     private List<GameObject> hidingSpots = new List<GameObject>();
 
     private bool canHide = false;
     private bool isHiding = false;
+
 
     private void Start()
     {
@@ -32,16 +39,22 @@ public class Hiding_Script : MonoBehaviour
 
     private void CheckHidingSpot()
     {
+        int tempval = -1;
         canHide = false;
         foreach (GameObject spot in hidingSpots)
         {
+            tempval++;
+
             if (Mathf.Abs(spot.transform.position.x - player.transform.position.x) <= graceDistance)
             {
+                targetObject = spot;
+                targetIndex = tempval;
                 canHide = true;
                 break;
             }
         }
     }
+
 
     private void Update()
     {
@@ -57,6 +70,8 @@ public class Hiding_Script : MonoBehaviour
             else if (isHiding)
             {
                 isHiding = false;
+                timer = 0f;
+                targetObject = null;
                 Debug.Log("Player stopped hiding");
             }
             else
@@ -78,6 +93,30 @@ public class Hiding_Script : MonoBehaviour
             if (playerSpriteRenderer != null)
                 playerSpriteRenderer.enabled = true;
         }
+
+        if (targetObject != null && isHiding)
+        {
+            timer += Time.deltaTime;
+
+            Debug.Log(timer);
+
+
+            if (timer >= hidingDuration)
+            {
+                isHiding = false;
+                targetObject = null;
+
+                Debug.Log(hidingSpotPositions.Count + " , " + hidingSpotPrefabs.Count);
+
+                hidingSpotPositions.RemoveAt(targetIndex);
+                hidingSpotPrefabs.RemoveAt(targetIndex);
+
+                targetIndex = -1;
+                timer = 0f;
+
+            }
+        }
+
     }
 
 
