@@ -18,7 +18,8 @@ public class FirstPersonCam : MonoBehaviour
         Vector3 euler = cameraTarget.localEulerAngles;
         yaw = euler.y;
         pitch = euler.x;
-    }
+
+    }   
 
     void Update()
     {
@@ -27,6 +28,6 @@ public class FirstPersonCam : MonoBehaviour
         pitch -= mouseDelta.y * sensitivity;
         pitch = Mathf.Clamp(pitch, -verticalClamp, verticalClamp);
 
-        cameraTarget.localRotation = Quaternion.Euler(pitch, yaw, 0f);
+        this.gameObject.transform.localRotation = Quaternion.Euler(pitch, yaw, 0f);
     }
 }
