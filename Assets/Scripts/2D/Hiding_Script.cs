@@ -103,7 +103,7 @@ public class Hiding_Script : MonoBehaviour
 
             if (timer >= hidingDuration)
             {
-                isHiding = false;
+                //isHiding = false;
                 targetObject = null;
 
                 Debug.Log(hidingSpotPositions.Count + " , " + hidingSpotPrefabs.Count);
