@@ -52,6 +52,19 @@ public class PlayerMovement2D : MonoBehaviour
     private void FixedUpdate()
     {
         float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
-        rb.MovePosition(rb.position + moveInput * currentSpeed * Time.fixedDeltaTime);
+        if (moveInput != Vector2.zero)
+        {
+            rb.MovePosition(rb.position + moveInput * currentSpeed * Time.fixedDeltaTime);
+        }
+        else
+        {
+            rb.linearVelocity = Vector2.zero; // This stops all sliding when no input is present
+        }
     }
+
+    public void ResetInput()
+    {
+        moveInput = Vector2.zero;
+    }
+
 }
