@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class PlayerHeatMap : MonoBehaviour
 {
-    public Sprite heatMapSprite; // Assign your radial gradient sprite in the Inspector
-    [SerializeField] private Color heatMapColor = new Color(1f, 0.5f, 0f, 0.5f); // Orange with 50% alpha
+    public Sprite heatMapSprite;
+    [SerializeField] private Color heatMapColor = new Color(1f, 0.5f, 0f, 0.5f);
     private float heatMapRadius = 2f;
 
     private GameObject heatMapObject;
@@ -11,7 +11,7 @@ public class PlayerHeatMap : MonoBehaviour
 
     [SerializeField] private float minRadius = 2f;
     [SerializeField] private float maxRadius = 10f;
-    [SerializeField] private float growSpeed = 0.25f; // units per second
+    [SerializeField] private float growSpeed = 0.25f;
 
     private float currentRadius;
     private bool isGrowing = false;
