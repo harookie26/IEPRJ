@@ -20619,11 +20619,12 @@ GameObject:
   - component: {fileID: 1193440822}
   - component: {fileID: 1193440821}
   - component: {fileID: 1193440825}
+  - component: {fileID: 1193440826}
   - component: {fileID: 1193440824}
   - component: {fileID: 1193440823}
   - component: {fileID: 1193440827}
   - component: {fileID: 1193440828}
-  - component: {fileID: 1193440826}
+  - component: {fileID: 1193440829}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -20852,6 +20853,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0cc9573dc059634f883b4aba1e2dcf3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1193440829
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1193440820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08d67fd511ecc23498000b030b151738, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  heatMapSprite: {fileID: 571242397, guid: 9939b0d45c3156c42a8b596b5eb1a308, type: 3}
+  heatMapColor: {r: 1, g: 0.5, b: 0, a: 0.5}
+  minRadius: 2
+  maxRadius: 10
+  growSpeed: 0.1
 --- !u!1001 &1219983917
 PrefabInstance:
   m_ObjectHideFlags: 0

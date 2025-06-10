@@ -18,6 +18,8 @@ public class Hiding_Script : MonoBehaviour
     private bool canHide;
     public bool isHiding { get; private set; }
 
+    private PlayerHeatMap playerHeatMap;
+
     private void Start()
     {
         int count = Mathf.Min(hidingSpotPrefabs.Count, hidingSpotPositions.Count);
@@ -28,6 +30,7 @@ public class Hiding_Script : MonoBehaviour
         }
 
         playerSpriteRenderer = player.GetComponent<SpriteRenderer>();
+        playerHeatMap = player.GetComponentInChildren<PlayerHeatMap>();
         canHide = false;
         isHiding = false;
     }
@@ -110,7 +113,13 @@ public class Hiding_Script : MonoBehaviour
         if (playerSpriteRenderer != null)
             playerSpriteRenderer.enabled = false;
 
+        if (playerHeatMap != null)
+        { 
+            playerHeatMap.SetHeatMapVisible(true);
+            playerHeatMap.StartGrowing();
+        }
     }
+
 
     private void RevealPlayer()
     {
@@ -126,6 +135,13 @@ public class Hiding_Script : MonoBehaviour
 
         if (playerSpriteRenderer != null)
             playerSpriteRenderer.enabled = true;
+
+        if (playerHeatMap != null)
+        {
+            playerHeatMap.SetHeatMapVisible(false);
+            playerHeatMap.StopGrowingAndReset();
+        }
+
     }
 
 
