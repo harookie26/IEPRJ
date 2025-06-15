@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static EventNames;
 using UnityEngine.EventSystems;
 
 public class EnemyAI : MonoBehaviour
@@ -7,12 +8,12 @@ public class EnemyAI : MonoBehaviour
     private enum EnemyState { Patrolling, Chasing, Searching }
 
     [SerializeField] private float distance = 5f;
-    [SerializeField] private float speed = 7f; // Movement speed
-    [SerializeField] private float edgeCheckDistance = 0.1f; // How far ahead to check for ground
-    [SerializeField] private LayerMask groundLayer; // Assign this to "Ground" in the Inspector
-    [SerializeField] private float patrolPauseTime = 0.2f; // Time to pause after turning
+    [SerializeField] private float speed = 7f;
+    [SerializeField] private float edgeCheckDistance = 0.1f;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private float patrolPauseTime = 0.2f;
     [SerializeField] private List<Transform> patrolPoints;
-    [SerializeField] private float searchFlipInterval = 0.5f; // Time between left/right looks
+    [SerializeField] private float searchFlipInterval = 0.5f;
 
     private int currentPatrolIndex = 0;
 
@@ -23,9 +24,10 @@ public class EnemyAI : MonoBehaviour
 
     private EnemyState currentState = EnemyState.Patrolling;
 
-    [SerializeField] private float searchDuration = 1.5f; // How long to look left/right
+    [SerializeField] private float searchDuration = 1.5f;
     private float searchTimer = 0f;
     private bool lastSawPlayer = false;
+    private bool wasPlayerInSight = false;
 
     void Start()
     {
@@ -41,6 +43,17 @@ public class EnemyAI : MonoBehaviour
     {
         bool playerNowInSight = CheckPlayer();
 
+        if (playerNowInSight && !wasPlayerInSight)
+        {
+            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SPOTTED_PLAYER);
+        }
+        else if (!playerNowInSight && wasPlayerInSight)
+        {
+            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_LOST_PLAYER);
+        }
+
+        wasPlayerInSight = playerNowInSight;
+
         if (playerNowInSight)
         {
             currentState = EnemyState.Chasing;
@@ -51,10 +64,10 @@ public class EnemyAI : MonoBehaviour
         {
             if (currentState == EnemyState.Chasing && lastSawPlayer)
             {
-                // Just lost sight of player, start searching
                 currentState = EnemyState.Searching;
                 searchTimer = searchDuration;
                 lastSawPlayer = false;
+                EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
             }
 
             if (currentState == EnemyState.Searching)
@@ -67,12 +80,12 @@ public class EnemyAI : MonoBehaviour
             }
             else
             {
-                currentState = EnemyState.Patrolling;
-                Patrol();
+                // Only patrol if not searching
+                if (currentState == EnemyState.Patrolling)
+                    Patrol();
             }
         }
     }
-
 
     public bool CheckPlayer()
     {
@@ -100,6 +113,8 @@ public class EnemyAI : MonoBehaviour
 
     public void ChasePlayer()
     {
+        EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_CHASING);
+
         if (playerTransform == null) return;
 
         // Flip the enemy to face the player
@@ -120,6 +135,8 @@ public class EnemyAI : MonoBehaviour
     }
     void Patrol()
     {
+        EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_PATROLLING);
+
         if (patrolPoints == null || patrolPoints.Count == 0)
             return;
 
@@ -142,11 +159,17 @@ public class EnemyAI : MonoBehaviour
         if (Mathf.Abs(transform.position.x - targetPoint.position.x) < 0.05f)
         {
             currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Count;
-            patrolPauseTimer = patrolPauseTime; // Optional: pause at each point
+            // Start searching instead of pausing
+            currentState = EnemyState.Searching;
+            searchTimer = searchDuration;
+            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
         }
     }
+
     void Search()
     {
+        EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
+
         int flipCount = Mathf.FloorToInt((searchDuration - searchTimer) / searchFlipInterval);
 
         if (flipCount % 2 == 0)
