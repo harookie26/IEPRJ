@@ -1,14 +1,15 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static EventNames;
 
 public class PlayerMovement2D : MonoBehaviour
 {
     private InputSystem2D inputActions;
     private Vector2 moveInput;
     public float moveSpeed = 5f;
-    public float sprintSpeed = 9f; // Add a sprint speed
+    public float sprintSpeed = 9f;
     private Rigidbody2D rb;
-    private bool isSprinting = false; // Track sprint state
+    private bool isSprinting = false;
 
     private void Awake()
     {
@@ -42,16 +43,31 @@ public class PlayerMovement2D : MonoBehaviour
     private void OnSprintPerformed(InputAction.CallbackContext context)
     {
         isSprinting = true;
+        EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_STARTED_SPRINT);
     }
 
     private void OnSprintCanceled(InputAction.CallbackContext context)
     {
         isSprinting = false;
+        EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_STOPPED_SPRINT);
     }
 
     private void FixedUpdate()
     {
         float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
-        rb.MovePosition(rb.position + moveInput * currentSpeed * Time.fixedDeltaTime);
+        if (moveInput != Vector2.zero)
+        {
+            rb.MovePosition(rb.position + moveInput * currentSpeed * Time.fixedDeltaTime);
+        }
+        else
+        {
+            rb.linearVelocity = Vector2.zero;
+        }
     }
+
+    public void ResetInput()
+    {
+        moveInput = Vector2.zero;
+    }
+
 }

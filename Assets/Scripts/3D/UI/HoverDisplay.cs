@@ -5,14 +5,17 @@ public class DisplayHover : MonoBehaviour
 {
     [SerializeField] private Transform player;
     [SerializeField] private Camera mainCamera;
-    [SerializeField] private Canvas uiCanvas; // UI to enable when conditions are met
-    [SerializeField] private float viewAngleThreshold = 30f; // degrees
+    [SerializeField] private Canvas uiCanvas;
+    [SerializeField] private float viewAngleThreshold = 30f;
     [SerializeField] private float triggerDistance = 5f;
+
+    private bool wasUIVisible = false;
 
     void Start()
     {
         if (uiCanvas != null)
             uiCanvas.enabled = false;
+        wasUIVisible = false;
     }
 
     void Update()
@@ -22,13 +25,19 @@ public class DisplayHover : MonoBehaviour
 
         float distance = Vector3.Distance(player.position, transform.position);
 
-        if (angle < viewAngleThreshold && distance < triggerDistance)
+        bool shouldShowUI = angle < viewAngleThreshold && distance < triggerDistance;
+
+        if (shouldShowUI && !wasUIVisible)
         {
             uiCanvas.enabled = true;
+            wasUIVisible = true;
+            EventBroadcaster.Instance.PostEvent(EventNames.UIEvents.HOVER_UI_SHOWN);
         }
-        else
+        else if (!shouldShowUI && wasUIVisible)
         {
             uiCanvas.enabled = false;
+            wasUIVisible = false;
+            EventBroadcaster.Instance.PostEvent(EventNames.UIEvents.HOVER_UI_HIDDEN);
         }
     }
 }
