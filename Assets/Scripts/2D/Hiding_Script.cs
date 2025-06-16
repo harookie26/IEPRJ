@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using static EventNames;
 using System.Collections;
 
 public class Hiding_Script : MonoBehaviour
@@ -16,9 +17,9 @@ public class Hiding_Script : MonoBehaviour
     private SpriteRenderer playerSpriteRenderer;
     private readonly List<GameObject> hidingSpots = new();
     private bool canHide;
-    public bool isHiding { get; private set; }
-
     private PlayerHeatMap playerHeatMap;
+
+    public bool isHiding { get; private set; }
 
     private void Start()
     {
@@ -86,6 +87,7 @@ public class Hiding_Script : MonoBehaviour
         if (canHide && !isHiding)
         {
             isHiding = true;
+            EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_HID);
         }
         else if (isHiding)
         {
@@ -93,6 +95,7 @@ public class Hiding_Script : MonoBehaviour
             timer = 0f;
             targetObject = null;
             player.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
+            EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_REVEALED);
         }
         else
         {
@@ -120,7 +123,6 @@ public class Hiding_Script : MonoBehaviour
         }
     }
 
-
     private void RevealPlayer()
     {
         var movement = player.GetComponent<PlayerMovement2D>();
@@ -143,8 +145,6 @@ public class Hiding_Script : MonoBehaviour
         }
 
     }
-
-
     private void RemoveHidingSpot()
     {
         if (targetIndex >= 0 && targetIndex < hidingSpotPositions.Count && targetIndex < hidingSpotPrefabs.Count)

@@ -19,25 +19,21 @@ public class PlayerHeatMap : MonoBehaviour
 
     void Start()
     {
-        // Create a child GameObject for the heat map
         heatMapObject = new GameObject("HeatMapVisual");
         heatMapObject.transform.SetParent(transform);
         heatMapObject.transform.localPosition = Vector3.zero;
 
-        // Add SpriteRenderer and configure it
         heatMapRenderer = heatMapObject.AddComponent<SpriteRenderer>();
         heatMapRenderer.sprite = heatMapSprite;
         heatMapRenderer.color = heatMapColor;
         heatMapRenderer.sortingOrder = 1;
 
-        // Set the scale based on the desired radius
         float spriteDiameter = heatMapRenderer.sprite.bounds.size.x;
         float scale = (heatMapRadius * 2) / spriteDiameter;
         heatMapObject.transform.localScale = new Vector3(scale, scale, 1f);
 
         currentRadius = minRadius;
         SetRadius(currentRadius);
-        // Start hidden
         heatMapObject.SetActive(false);
     }
 
@@ -49,7 +45,6 @@ public class PlayerHeatMap : MonoBehaviour
         }
     }
 
-    // Call this to show or hide the heat map
     public void SetHeatMapVisible(bool visible)
     {
         Debug.Log("SetHeatMapVisible called with: " + visible);
@@ -78,6 +73,4 @@ public class PlayerHeatMap : MonoBehaviour
         isGrowing = false;
         SetRadius(minRadius);
     }
-
-
 }
