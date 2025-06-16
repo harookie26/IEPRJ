@@ -5532,6 +5532,7 @@ GameObject:
   m_Component:
   - component: {fileID: 371824764}
   - component: {fileID: 371824763}
+  - component: {fileID: 371824765}
   m_Layer: 0
   m_Name: Mechanics
   m_TagString: Untagged
@@ -5579,6 +5580,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &371824765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 371824762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08e9624d61fa04740aaf05aba4b2dd40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObjectivePrefabs:
+  - {fileID: 1187670379}
+  ObjectivePositions:
+  - {x: -59, y: 1, z: 0}
+  TimeTick: 10
+  player: {fileID: 1193440820}
+  ChargeTime: 2
 --- !u!1001 &382485603
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -20628,6 +20648,11 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 3564026850829729314, guid: 70e4f80265d902443a6249697d613d81, type: 3}
   m_PrefabInstance: {fileID: 1183723424}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1187670379 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3008790804299420976, guid: 3c7326a3b793fca45875e5e7474d498c, type: 3}
+  m_PrefabInstance: {fileID: 1635169500}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1193029797
 PrefabInstance:
