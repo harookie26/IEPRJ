@@ -47,7 +47,6 @@ public class PlayerHeatMap : MonoBehaviour
 
     public void SetHeatMapVisible(bool visible)
     {
-        Debug.Log("SetHeatMapVisible called with: " + visible);
         if (heatMapObject != null)
             heatMapObject.SetActive(visible);
     }

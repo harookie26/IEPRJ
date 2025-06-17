@@ -19,6 +19,8 @@ public class Hiding_Script : MonoBehaviour
     private bool canHide;
     private PlayerHeatMap playerHeatMap;
 
+    public Transform hidingPosition;
+
     public bool isHiding { get; private set; }
 
     private void Start()
@@ -28,6 +30,12 @@ public class Hiding_Script : MonoBehaviour
         {
             GameObject spot = Instantiate(hidingSpotPrefabs[i], hidingSpotPositions[i], Quaternion.identity);
             hidingSpots.Add(spot);
+
+            if (hidingSpotPrefabs[i] != null && hidingSpotPrefabs[i].scene.IsValid())
+            {
+                Destroy(hidingSpotPrefabs[i]);
+            }
+
         }
 
         playerSpriteRenderer = player.GetComponent<SpriteRenderer>();
@@ -121,10 +129,20 @@ public class Hiding_Script : MonoBehaviour
             playerHeatMap.SetHeatMapVisible(true);
             playerHeatMap.StartGrowing();
         }
+
+        if (targetObject != null)
+        {
+            hidingPosition = targetObject.transform;
+        }
+        else
+        {
+            Debug.LogWarning("Target object is null, cannot hide player.");
+        }
     }
 
     private void RevealPlayer()
     {
+
         var movement = player.GetComponent<PlayerMovement2D>();
         if (movement != null)
         {
@@ -144,6 +162,7 @@ public class Hiding_Script : MonoBehaviour
             playerHeatMap.StopGrowingAndReset();
         }
 
+        hidingPosition = null;
     }
     private void RemoveHidingSpot()
     {

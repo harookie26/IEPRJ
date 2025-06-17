@@ -9,7 +9,6 @@ public class EnemyAI : MonoBehaviour
 
     [SerializeField] private float distance = 5f;
     [SerializeField] private float speed = 7f;
-    [SerializeField] private float edgeCheckDistance = 0.1f;
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private float patrolPauseTime = 0.2f;
     [SerializeField] private List<Transform> patrolPoints;
@@ -185,5 +184,12 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        Debug.Log($"Trigger entered by: {other.name}, Tag: {other.tag}, Layer: {other.gameObject.layer}");
+        if (other.CompareTag("Player"))
+        {
+            EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_LEVEL_FAILED);
+        }
+    }
 }
