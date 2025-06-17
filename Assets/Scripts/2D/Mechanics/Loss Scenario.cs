@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using static EventNames;
 
 public class LossScenario : MonoBehaviour
@@ -12,6 +14,9 @@ public class LossScenario : MonoBehaviour
     [SerializeField] private float hiddenHauntingDistance = 2f;
     [SerializeField] private float hauntingTick = 1f;
     [SerializeField] private float maxSanity = 10f;
+
+    [SerializeField] private Volume volume; // URP Volume
+    private Vignette vignette;
 
     private float currentSanity;
     private float tickTimer;
@@ -53,6 +58,11 @@ public class LossScenario : MonoBehaviour
         {
             Debug.LogError("Hiding_Script component not found on the same GameObject as LossScenario.");
         }
+
+        if (volume != null && volume.profile != null)
+        {
+            volume.profile.TryGet(out vignette);
+        }
     }
 
     void Update()
@@ -80,6 +90,8 @@ public class LossScenario : MonoBehaviour
         {
             HandleDefeat();
         }
+
+        UpdateVignetteEffect();
     }
 
     private bool IsHidingPlayerHaunted()
@@ -117,5 +129,14 @@ public class LossScenario : MonoBehaviour
     private void HandleDefeat()
     {
         isLost = true;
+    }
+
+    private void UpdateVignetteEffect()
+    {
+        if (vignette != null)
+        {
+            float t = Mathf.Clamp01(currentSanity / maxSanity);
+            vignette.intensity.value = Mathf.Lerp(0f, 0.75f, t);
+        }
     }
 }

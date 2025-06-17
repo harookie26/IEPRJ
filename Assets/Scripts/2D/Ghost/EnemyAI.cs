@@ -13,6 +13,8 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private float patrolPauseTime = 0.2f;
     [SerializeField] private List<Transform> patrolPoints;
     [SerializeField] private float searchFlipInterval = 0.5f;
+    [SerializeField] private Collider2D playerDetectorCollider;
+    [SerializeField] private float catchDistance = 0.5f;
 
     private int currentPatrolIndex = 0;
 
@@ -27,6 +29,30 @@ public class EnemyAI : MonoBehaviour
     private float searchTimer = 0f;
     private bool lastSawPlayer = false;
     private bool wasPlayerInSight = false;
+    private bool isHidden = false;
+
+    private void OnEnable()
+    {
+        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_HID, OnPlayerHiding);
+        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_REVEALED, OnPlayerRevealed);
+    }
+
+    private void OnDisable()
+    {
+        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_HID, OnPlayerHiding);
+        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_REVEALED, OnPlayerRevealed);
+    }
+
+    private void OnPlayerHiding()
+    {
+        isHidden = true;
+    }
+
+    private void OnPlayerRevealed()
+    {
+        isHidden = false;
+    }
+
 
     void Start()
     {
@@ -82,6 +108,16 @@ public class EnemyAI : MonoBehaviour
                 // Only patrol if not searching
                 if (currentState == EnemyState.Patrolling)
                     Patrol();
+            }
+        }
+
+        // --- Position-based player catch check ---
+        if (!isHidden && playerTransform != null)
+        {
+            float dist = Vector2.Distance(transform.position, playerTransform.position);
+            if (dist < catchDistance)
+            {
+                EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_LEVEL_FAILED);
             }
         }
     }
@@ -181,15 +217,6 @@ public class EnemyAI : MonoBehaviour
         {
             currentState = EnemyState.Patrolling;
             patrolPauseTimer = patrolPauseTime; // Optional: pause before resuming patrol
-        }
-    }
-
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        Debug.Log($"Trigger entered by: {other.name}, Tag: {other.tag}, Layer: {other.gameObject.layer}");
-        if (other.CompareTag("Player"))
-        {
-            EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_LEVEL_FAILED);
         }
     }
 }
