@@ -74,6 +74,11 @@ public class EventNames {
         public const string HOVER_UI_SHOWN = "HOVER_UI_SHOWN";
         public const string HOVER_UI_HIDDEN = "HOVER_UI_HIDDEN";
     }
+
+	public static class ObjectEvents
+	{
+		public const string OBJECT_HIDING_COOLDOWN = "OBJECT_HIDING_COOLDOWN";
+    }
 }
 
 

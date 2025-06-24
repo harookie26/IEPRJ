@@ -10,6 +10,7 @@ public class Hiding_Script : MonoBehaviour
     [SerializeField] private List<GameObject> hidingSpotPrefabs;
     [SerializeField] private List<Vector3> hidingSpotPositions;
     [SerializeField] private float hidingDuration;
+    [SerializeField] private float hidingSpotCooldown = 3f; // Cooldown in seconds
 
     private float timer;
     private GameObject targetObject;
@@ -23,6 +24,9 @@ public class Hiding_Script : MonoBehaviour
 
     public bool isHiding { get; private set; }
 
+    // Cooldown tracker for each hiding spot
+    private Dictionary<GameObject, float> hidingSpotCooldowns = new();
+
     private void Start()
     {
         int count = Mathf.Min(hidingSpotPrefabs.Count, hidingSpotPositions.Count);
@@ -30,12 +34,12 @@ public class Hiding_Script : MonoBehaviour
         {
             GameObject spot = Instantiate(hidingSpotPrefabs[i], hidingSpotPositions[i], Quaternion.identity);
             hidingSpots.Add(spot);
+            hidingSpotCooldowns[spot] = 0f; // Initialize cooldown
 
             if (hidingSpotPrefabs[i] != null && hidingSpotPrefabs[i].scene.IsValid())
             {
                 Destroy(hidingSpotPrefabs[i]);
             }
-
         }
 
         playerSpriteRenderer = player.GetComponent<SpriteRenderer>();
@@ -46,6 +50,7 @@ public class Hiding_Script : MonoBehaviour
 
     private void Update()
     {
+        UpdateCooldowns();
         CheckHidingSpot();
 
         if (Input.GetKeyDown(KeyCode.W))
@@ -72,6 +77,17 @@ public class Hiding_Script : MonoBehaviour
         }
     }
 
+    // Decrement cooldown timers
+    private void UpdateCooldowns()
+    {
+        var keys = new List<GameObject>(hidingSpotCooldowns.Keys);
+        foreach (var spot in keys)
+        {
+            if (hidingSpotCooldowns[spot] > 0f)
+                hidingSpotCooldowns[spot] -= Time.deltaTime;
+        }
+    }
+
     private void CheckHidingSpot()
     {
         canHide = false;
@@ -82,9 +98,13 @@ public class Hiding_Script : MonoBehaviour
         {
             if (Mathf.Abs(hidingSpots[i].transform.position.x - player.transform.position.x) <= graceDistance)
             {
-                targetObject = hidingSpots[i];
-                targetIndex = i;
-                canHide = true;
+                // Only allow hiding if cooldown is finished
+                if (hidingSpotCooldowns[hidingSpots[i]] <= 0f)
+                {
+                    targetObject = hidingSpots[i];
+                    targetIndex = i;
+                    canHide = true;
+                }
                 break;
             }
         }
@@ -101,8 +121,12 @@ public class Hiding_Script : MonoBehaviour
         {
             isHiding = false;
             timer = 0f;
+            // Start cooldown for the spot just exited
+            if (targetObject != null)
+                hidingSpotCooldowns[targetObject] = hidingSpotCooldown;
             targetObject = null;
             player.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
+            EventBroadcaster.Instance.PostEvent(ObjectEvents.OBJECT_HIDING_COOLDOWN);
             EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_REVEALED);
         }
         else
