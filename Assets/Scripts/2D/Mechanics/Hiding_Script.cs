@@ -84,7 +84,28 @@ public class Hiding_Script : MonoBehaviour
         foreach (var spot in keys)
         {
             if (hidingSpotCooldowns[spot] > 0f)
+            {
                 hidingSpotCooldowns[spot] -= Time.deltaTime;
+                // Lower visibility while on cooldown
+                var sr = spot.GetComponentInChildren<SpriteRenderer>();
+                if (sr != null)
+                {
+                    var color = sr.color;
+                    color.a = 0.4f; // Set to 40% visible
+                    sr.color = color;
+                }
+            }
+            else
+            {
+                // Restore full visibility when not on cooldown
+                var sr = spot.GetComponentInChildren<SpriteRenderer>();
+                if (sr != null)
+                {
+                    var color = sr.color;
+                    color.a = 1.0f;
+                    sr.color = color;
+                }
+            }
         }
     }
 
