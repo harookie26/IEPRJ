@@ -16,6 +16,10 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private Collider2D playerDetectorCollider;
     [SerializeField] private float catchDistance = 0.5f;
 
+    [Header("Teleportation")]
+    [SerializeField] private List<Transform> teleportPoints;
+    [SerializeField, Range(0f, 1f)] private float teleportChance = 0.5f; // 0.5 = 50% chance to teleport
+
     private int currentPatrolIndex = 0;
 
     private float patrolPauseTimer = 0f;
@@ -53,7 +57,6 @@ public class EnemyAI : MonoBehaviour
         isHidden = false;
     }
 
-
     void Start()
     {
         isPlayerInSight = false;
@@ -62,10 +65,21 @@ public class EnemyAI : MonoBehaviour
         {
             playerTransform = player.transform;
         }
+        Debug.Log($"[EnemyAI] patrolPoints count: {patrolPoints?.Count ?? 0}");
+        if (patrolPoints != null)
+        {
+            for (int i = 0; i < patrolPoints.Count; i++)
+            {
+                Debug.Log($"[EnemyAI] patrolPoint[{i}]: {patrolPoints[i].position}");
+            }
+        }
+        Debug.Log($"[EnemyAI] Starting position: {transform.position}");
     }
 
     void Update()
     {
+        Debug.Log($"[EnemyAI] Current State: {currentState}");
+
         bool playerNowInSight = CheckPlayer();
 
         if (playerNowInSight && !wasPlayerInSight)
@@ -102,10 +116,13 @@ public class EnemyAI : MonoBehaviour
             else if (patrolPauseTimer > 0f)
             {
                 patrolPauseTimer -= Time.deltaTime;
+                if (patrolPauseTimer <= 0f)
+                {
+                    currentState = EnemyState.Patrolling;
+                }
             }
             else
             {
-                // Only patrol if not searching
                 if (currentState == EnemyState.Patrolling)
                     Patrol();
             }
@@ -173,12 +190,48 @@ public class EnemyAI : MonoBehaviour
         EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_PATROLLING);
 
         if (patrolPoints == null || patrolPoints.Count == 0)
+        {
+            Debug.LogWarning("[EnemyAI] No patrol points assigned!");
             return;
+        }
+
+        Debug.Log("[EnemyAI] About to check for edge...");
+
+        // Edge detection: stop or flip if near edge
+        if (IsNearEdge())
+        {
+            Debug.Log("[EnemyAI] Near edge detected, aborting patrol movement.");
+            currentState = EnemyState.Searching;
+            searchTimer = searchDuration;
+            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
+            return;
+        }
 
         Transform targetPoint = patrolPoints[currentPatrolIndex];
         Vector2 targetPosition = new Vector2(targetPoint.position.x, transform.position.y);
 
         // Move towards the current patrol point
+        Debug.Log($"[EnemyAI] Moving from {transform.position} to {targetPosition}");
+
+        // Check if reached the patrol point
+        if (Mathf.Abs(transform.position.x - targetPoint.position.x) < 0.05f)
+        {
+            // Randomly decide to teleport or move to next patrol point
+            if (teleportPoints != null && teleportPoints.Count > 0 && Random.value < teleportChance)
+            {
+                TeleportToRandomPoint();
+            }
+            else
+            {
+                currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Count;
+            }
+
+            // Start searching instead of pausing
+            currentState = EnemyState.Searching;
+            searchTimer = searchDuration;
+            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
+        }
+
         transform.position = Vector2.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
 
         // Flip sprite to face direction
@@ -189,15 +242,16 @@ public class EnemyAI : MonoBehaviour
             scale.x = Mathf.Abs(scale.x) * Mathf.Sign(direction);
             transform.localScale = scale;
         }
+    }
 
-        // Check if reached the patrol point
-        if (Mathf.Abs(transform.position.x - targetPoint.position.x) < 0.05f)
+    private void TeleportToRandomPoint()
+    {
+        int index = Random.Range(0, teleportPoints.Count);
+        Transform target = teleportPoints[index];
+        if (target != null)
         {
-            currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Count;
-            // Start searching instead of pausing
-            currentState = EnemyState.Searching;
-            searchTimer = searchDuration;
-            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
+            transform.position = target.position;
+            //EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_TELEPORTED);
         }
     }
 
@@ -217,6 +271,27 @@ public class EnemyAI : MonoBehaviour
         {
             currentState = EnemyState.Patrolling;
             patrolPauseTimer = patrolPauseTime; // Optional: pause before resuming patrol
+        }
+    }
+
+    private bool IsNearEdge()
+    {
+        float direction = -Mathf.Sign(transform.localScale.x);
+        Vector2 origin = (Vector2)transform.position + -2.0f * direction * Vector2.right;
+        float rayLength = 2.5f;
+        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, rayLength, groundLayer);
+
+        Debug.DrawRay(origin, Vector2.down * rayLength, Color.blue);
+
+        if (hit.collider == null)
+        {
+            Debug.LogWarning($"[EnemyAI] Edge detected! No ground hit. Origin: {origin}, RayLength: {rayLength}, LayerMask: {groundLayer.value}");
+            return true;
+        }
+        else
+        {
+            Debug.Log($"[EnemyAI] Ground detected: {hit.collider.gameObject.name} at {hit.point}");
+            return false;
         }
     }
 }
