@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static EventNames;
 
 public class Win_Scenario : MonoBehaviour
 {
@@ -7,6 +8,7 @@ public class Win_Scenario : MonoBehaviour
     [SerializeField] private List<GameObject> ObjectivePrefabs;
     [SerializeField] private List<Vector3> ObjectivePositions;
 
+    [SerializeField] private float raiseSpeed = 0.5f;
     [SerializeField] private float TimeTick;
     [SerializeField] private float TotalTime;
 
@@ -29,8 +31,6 @@ public class Win_Scenario : MonoBehaviour
         timer = 0;
         ObjectiveCompleted = false;
 
-        Debug.Log("I AM HERE");
-
         int count = Mathf.Min(ObjectivePrefabs.Count, ObjectivePositions.Count);
             
         for(int i = 0; i < count; i++)
@@ -38,6 +38,11 @@ public class Win_Scenario : MonoBehaviour
             GameObject spot = Instantiate(ObjectivePrefabs[i], ObjectivePositions[i], Quaternion.identity);
             Objectives.Add(spot);
             objectivePercentages.Add(0f);
+
+            if (ObjectivePrefabs[i] != null && ObjectivePrefabs[i].scene.IsValid())
+            {
+                Destroy(ObjectivePrefabs[i]);
+            }
         }
     }
 
@@ -52,13 +57,13 @@ public class Win_Scenario : MonoBehaviour
         }
         else
         {
-            Debug.Log("QUEST IS COMPLETE");
+            EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_LEVEL_COMPLETE);
+
         }
 
     }
 
 
-    /// Check if there is a nearby objective Object nearby.
     void ObserveObjectives()
     {
         canChannel = false;
@@ -93,37 +98,18 @@ public class Win_Scenario : MonoBehaviour
             }
             else if (!isChanneling && canChannel)
             {
+                EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_CHANNELING);
+
                 isChanneling = true;
-                PlayerChanneling();
                 Debug.Log("Channeling an Object");
             }
         }
         else if (isChanneling && Input.anyKey && !Input.GetKey(KeyCode.Q)) 
         {
+            EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_DECHANNELING);
+
             isChanneling = false;
-            PlayerDechanneling();
             Debug.Log("Player Stopped Channeling");
-        }
-    }
-
-    private void PlayerChanneling()
-    {
-        var movement = player.GetComponent<PlayerMovement2D>();
-        if (movement != null)
-        {
-            movement.enabled = false;
-        }
-
-        var rb = player.GetComponent<Rigidbody2D>();
-        if (rb != null) rb.linearVelocity = Vector2.zero;
-    }
-
-    private void PlayerDechanneling()
-    {
-        var movement = player.GetComponent<PlayerMovement2D>();
-        if (movement != null)
-        {
-            movement.enabled = true;
         }
     }
 
@@ -132,28 +118,46 @@ public class Win_Scenario : MonoBehaviour
         timer += Time.deltaTime;
         if (isChanneling == true)
         {
+            // Slowly raise the objective while channeling
+            if (objectiveIndex >= 0 && objectiveIndex < Objectives.Count)
+            {
+                var obj = Objectives[objectiveIndex];
+                var rb = obj.GetComponent<Rigidbody2D>();
+                if (rb != null)
+                {
+                    Vector2 targetPosition = rb.position + Vector2.up * raiseSpeed * Time.deltaTime;
+                    rb.MovePosition(targetPosition);
+                }
+                else
+                {
+                    // Fallback if no Rigidbody2D (should not happen in your case)
+                    obj.transform.position += Vector3.up * raiseSpeed * Time.deltaTime;
+                }
+            }
+
             if (timer >= TimeTick && objectivePercentages[objectiveIndex] < TotalTime)
             {
                 objectivePercentages[objectiveIndex] += 1f;
                 timer = 0;
                 Debug.Log("Current Progress: " + objectivePercentages[objectiveIndex] + " / " + TotalTime);
 
-                if (objectivePercentages[objectiveIndex] == TotalTime)
+                if (objectivePercentages[objectiveIndex] >= TotalTime)
                 {
                     Debug.Log("Current Object is finished.");
+                    EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_DECHANNELING);
+                    isChanneling = false;
+
+                    Destroy(Objectives[objectiveIndex]);
                 }
             }
-
         }
         else if (isChanneling == false)
         {
-
             if (timer >= TimeTick * 2)
             {
                 Debug.Log("Current Progression is Deteriorating");
                 for(int i = 0; i < objectivePercentages.Count; i++)
                 {
-                    
                     if (objectivePercentages[i] > 0 && objectivePercentages[i] < TotalTime)
                     {
                         objectivePercentages[i] -= 1;
@@ -166,8 +170,14 @@ public class Win_Scenario : MonoBehaviour
 
     private void ProgressCheck()
     {
+        if (objectivePercentages.Count == 0)
+        {
+            ObjectiveCompleted = false;
+            return;
+        }
+
         ObjectiveCompleted = true;
-        for(int i = 0; i < objectivePercentages.Count; i++)
+        for (int i = 0; i < objectivePercentages.Count; i++)
         {
             if (objectivePercentages[i] < TotalTime)
             {
