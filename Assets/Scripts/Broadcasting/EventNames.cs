@@ -32,6 +32,17 @@ public class EventNames {
 		public const string ON_DELETE_ALL = "ON_DELETE_ALL";
 	}
 
+	public class GameStateEvents
+	{
+		public const string ON_GAME_START = "ON_GAME_START";
+		public const string ON_GAME_END = "ON_GAME_END";
+		public const string ON_GAME_PAUSE = "ON_GAME_PAUSE";
+		public const string ON_GAME_RESUME = "ON_GAME_RESUME";
+		public const string ON_GAME_RESTART = "ON_GAME_RESTART";
+		public const string ON_LEVEL_COMPLETE = "ON_LEVEL_COMPLETE";
+		public const string ON_LEVEL_FAILED = "ON_LEVEL_FAILED";
+    }
+
 	public class SceneEvents
 	{
 		public const string ON_SCENE_LOAD = "ON_SCENE_LOAD";
@@ -45,6 +56,8 @@ public class EventNames {
         public const string PLAYER_STOPPED_SPRINT = "PLAYER_STOPPED_SPRINT";
         public const string PLAYER_HID = "PLAYER_HID";
         public const string PLAYER_REVEALED = "PLAYER_REVEALED";
+		public const string PLAYER_CHANNELING = "PLAYER_CHANNELING";
+		public const string PLAYER_DECHANNELING = "PLAYER_DECHANNELING";
     }
 
     public class EnemyEvents
@@ -60,6 +73,11 @@ public class EventNames {
     {
         public const string HOVER_UI_SHOWN = "HOVER_UI_SHOWN";
         public const string HOVER_UI_HIDDEN = "HOVER_UI_HIDDEN";
+    }
+
+	public static class ObjectEvents
+	{
+		public const string OBJECT_HIDING_COOLDOWN = "OBJECT_HIDING_COOLDOWN";
     }
 }
 

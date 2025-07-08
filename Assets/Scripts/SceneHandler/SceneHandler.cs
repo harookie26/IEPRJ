@@ -55,7 +55,7 @@ public class SceneHandler : MonoBehaviour
             if (sceneLoader != null)
             {
                 // Broadcast event before switching scene
-                EventBroadcaster.Instance.PostEvent(EventNames.SceneEvents.ON_SCENE_SWITCH);
+                EventBroadcaster.Instance.PostEvent(SceneEvents.ON_SCENE_SWITCH);
 
                 sceneLoader.LoadSceneByName(SceneNames.GameScene);
             }
