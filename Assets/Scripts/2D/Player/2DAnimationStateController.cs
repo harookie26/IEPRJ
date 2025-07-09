@@ -3,50 +3,38 @@ using UnityEngine;
 public class AnimationStateController2D : MonoBehaviour
 {
     Animator animator;
-    private PlayerMovement playerMovement;
+    private PlayerMovement2D playerMovement;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         animator = GetComponent<Animator>();
-        playerMovement = GetComponentInParent<PlayerMovement>();
-
+        playerMovement = GetComponentInParent<PlayerMovement2D>();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (Input.GetKey(KeyCode.D))
+        bool isMovingRight = Input.GetKey(KeyCode.D);
+        bool isMovingLeft = Input.GetKey(KeyCode.A);
+        bool isMoving = isMovingRight || isMovingLeft;
+
+        animator.SetBool("isWalking", isMoving);
+
+        if (isMovingRight)
         {
             transform.rotation = Quaternion.Euler(0, 0, 0);
-            animator.SetBool("isWalking", true);
-
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                animator.SetBool("isRunning", true);
-            }
-            else
-            {
-                animator.SetBool("isRunning", false);
-            }
         }
-        else if (Input.GetKey(KeyCode.A))
+        else if (isMovingLeft)
         {
             transform.rotation = Quaternion.Euler(0, 180, 0);
-            animator.SetBool("isWalking", true);
+        }
 
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                animator.SetBool("isRunning", true);
-            }
-            else
-            {
-                animator.SetBool("isRunning", false);
-            }
-        }
-        else
+        // Use public properties instead of reflection
+        bool canRun = false;
+        if (playerMovement != null)
         {
-            animator.SetBool("isWalking", false);
+            canRun = playerMovement.IsSprinting && !playerMovement.OutOfStamina && !playerMovement.StaminaLocked;
         }
+
+        animator.SetBool("isRunning", canRun);
     }
 }
