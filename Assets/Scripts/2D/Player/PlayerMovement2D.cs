@@ -179,4 +179,9 @@ public class PlayerMovement2D : MonoBehaviour
             movement.enabled = false;
         }
     }
+
+    public float GetCurrentStamina()
+    {
+        return currentStamina;
+    }
 }
