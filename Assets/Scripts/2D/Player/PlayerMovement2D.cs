@@ -16,7 +16,10 @@ public class PlayerMovement2D : MonoBehaviour
     [Header("Stamina Settings")]
     public float maxStamina = 5f; // Maximum stamina in seconds
     public float staminaRegenRate = 1f; // Stamina regenerated per second when not sprinting
+    public float staminaRegenDelay = 1f; // Delay before regeneration starts
+    public float staminaLockThreshold = 2f; // Stamina level below which sprinting is locked
     private float currentStamina;
+    private float staminaRegenTimer;
     private bool outOfStamina;
     private bool staminaLocked; // Prevents sprinting until full
 
@@ -92,6 +95,11 @@ public class PlayerMovement2D : MonoBehaviour
     private void OnSprintCanceled(InputAction.CallbackContext context)
     {
         isSprinting = false;
+        // Check if stamina is low enough to lock sprinting
+        if (currentStamina <= staminaLockThreshold)
+        {
+            staminaLocked = true;
+        }
         EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_STOPPED_SPRINT);
     }
 
@@ -102,41 +110,43 @@ public class PlayerMovement2D : MonoBehaviour
 
     private void HandleStamina()
     {
-        if (isSprinting && moveInput != Vector2.zero && !isChanneling)
+        bool isUsingStamina = isSprinting && moveInput != Vector2.zero && !isChanneling;
+
+        if (isUsingStamina)
         {
             if (currentStamina > 0f)
             {
                 currentStamina -= Time.deltaTime;
+                staminaRegenTimer = 0f; // Reset regen timer while using stamina
                 if (currentStamina <= 0f)
                 {
                     currentStamina = 0f;
                     outOfStamina = true;
                     isSprinting = false; // Force stop sprinting
+                    staminaLocked = true; // Lock when completely out of stamina
                     EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_STOPPED_SPRINT);
                 }
             }
         }
         else
         {
-            if (currentStamina < maxStamina)
+            staminaRegenTimer += Time.deltaTime;
+            if (staminaRegenTimer >= staminaRegenDelay && currentStamina < maxStamina)
             {
                 currentStamina += staminaRegenRate * Time.deltaTime;
                 if (currentStamina > maxStamina)
                     currentStamina = maxStamina;
             }
-            if (currentStamina > 0.1f)
+
+            // Condition to reset outOfStamina should be independent of regeneration
+            if (outOfStamina && currentStamina > 0.1f)
             {
                 outOfStamina = false;
             }
         }
 
-        // Lock sprinting if stamina is 2 or below, unlock only when full
-        if (currentStamina <= 2f)
-        {
-            staminaLocked = true;
-            isSprinting = false;
-        }
-        else if (currentStamina >= maxStamina)
+        // Unlock sprinting only when stamina is full
+        if (staminaLocked && currentStamina >= maxStamina)
         {
             staminaLocked = false;
         }
@@ -178,5 +188,10 @@ public class PlayerMovement2D : MonoBehaviour
         {
             movement.enabled = false;
         }
+    }
+
+    public float GetCurrentStamina()
+    {
+        return currentStamina;
     }
 }
