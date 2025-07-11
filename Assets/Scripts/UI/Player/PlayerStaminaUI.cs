@@ -19,12 +19,17 @@ public class PlayerStaminaUI : MonoBehaviour
         float currentStamina = playerMovement.GetCurrentStamina();
         int totalBars = staminaBars.Count;
 
-        float staminaPercent = Mathf.Clamp01(currentStamina / maxStamina);
+        float staminaRatio = Mathf.Clamp01(currentStamina / maxStamina);
+        int activeBars = Mathf.FloorToInt(staminaRatio * totalBars);
+
 
         for (int i = 0; i < totalBars; i++)
         {
-            float barThreshold = (i + 1) / (float)totalBars;
-            staminaBars[i].enabled = staminaPercent >= barThreshold && staminaPercent > 0f;
+            staminaBars[i].enabled = i < activeBars;
         }
+
+        Debug.Log($"Stamina: {currentStamina} / {maxStamina} => Bars: {activeBars}");
+
     }
+
 }

@@ -21203,6 +21203,8 @@ MonoBehaviour:
   sprintSpeed: 9
   maxStamina: 5
   staminaRegenRate: 1
+  staminaRegenDelay: 0.5
+  staminaLockThreshold: 2
 --- !u!50 &1193440825
 Rigidbody2D:
   serializedVersion: 5
