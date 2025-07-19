@@ -111,7 +111,7 @@ public class LossScenario : MonoBehaviour
         if (currentSanity < maxSanity && tickTimer >= hauntingTick)
         {
             currentSanity = Mathf.Clamp(currentSanity + 1, 0, maxSanity);
-            Debug.Log($"Current Haunted Points: {currentSanity}/{maxSanity}");
+            //Debug.Log($"Current Haunted Points: {currentSanity}/{maxSanity}");
             tickTimer = 0f;
         }
     }
