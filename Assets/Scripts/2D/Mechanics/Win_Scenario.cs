@@ -81,7 +81,7 @@ public class Win_Scenario : MonoBehaviour
         if(canChannel == false)
         {
             objectiveIndex = -1;
-            Debug.Log("No Objectives.");
+            //Debug.Log("No Objectives.");
         }
         
     }
@@ -155,7 +155,7 @@ public class Win_Scenario : MonoBehaviour
         {
             if (timer >= TimeTick * 2)
             {
-                Debug.Log("Current Progression is Deteriorating");
+                //Debug.Log("Current Progression is Deteriorating");
                 for(int i = 0; i < objectivePercentages.Count; i++)
                 {
                     if (objectivePercentages[i] > 0 && objectivePercentages[i] < TotalTime)

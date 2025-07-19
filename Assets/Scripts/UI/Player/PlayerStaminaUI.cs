@@ -27,9 +27,6 @@ public class PlayerStaminaUI : MonoBehaviour
         {
             staminaBars[i].enabled = i < activeBars;
         }
-
-        Debug.Log($"Stamina: {currentStamina} / {maxStamina} => Bars: {activeBars}");
-
     }
 
 }
