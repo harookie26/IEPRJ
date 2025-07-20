@@ -11,6 +11,7 @@ public class PlayerMovement2D : MonoBehaviour
     private Rigidbody2D rb;
     private bool isSprinting;
     private bool isChanneling;
+    private bool movementDisabled;
 
     // Stamina variables
     [Header("Stamina Settings")]
@@ -44,6 +45,8 @@ public class PlayerMovement2D : MonoBehaviour
 
         EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_CHANNELING, PlayerChanneling);
         EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_DECHANNELING, PlayerDechanneling);
+        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, CutsceneDisableMovement);
+        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, CutsceneEnableMovement);
     }
 
     private void OnDisable()
@@ -56,6 +59,29 @@ public class PlayerMovement2D : MonoBehaviour
 
         EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_CHANNELING, PlayerChanneling);
         EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_DECHANNELING, PlayerDechanneling);
+        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_START, CutsceneDisableMovement);
+        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_END, CutsceneEnableMovement);
+    }
+
+    private void CutsceneDisableMovement()
+    {
+        movementDisabled = true;
+        isSprinting = false;
+        isChanneling = false;
+        rb.linearVelocity = Vector2.zero; // Stop movement during cutscenes
+        rb.isKinematic = true; // Disable physics interactions
+    }
+
+    private void CutsceneEnableMovement()
+    {
+        movementDisabled = false;
+        rb.isKinematic = false; // Re-enable physics interactions
+        // Reset stamina and sprinting state if needed
+        currentStamina = maxStamina;
+        outOfStamina = false;
+        staminaLocked = false;
+        isSprinting = false;
+        isChanneling = false;
     }
 
     private void PlayerChanneling()
@@ -154,6 +180,12 @@ public class PlayerMovement2D : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (movementDisabled)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
         float currentSpeed = moveSpeed;
 
         // Only allow sprinting if not out of stamina and not locked
