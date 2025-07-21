@@ -1,55 +1,133 @@
 using UnityEngine;
 using static EventNames;
+using System.Collections.Generic;
+using System;
+using System.Collections;
 
 public class CutsceneManager : MonoBehaviour
 {
+    [SerializeField] private Animator cinematicBarsAnimator;
+    [SerializeField] private Animator cameraAnimator;
+
+    public static CutsceneManager Instance { get; private set; }
+
+    [Serializable]
+    public struct NamedCutsceneSequence
+    {
+        public string cutsceneId;
+        public CutsceneSequence sequence;
+    }
+
+    public List<NamedCutsceneSequence> cutsceneSequences;
+    private Dictionary<string, CutsceneSequence> cutsceneDictionary;
+
     private bool isCutsceneActive = false;
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (isCutsceneActive)
-        {
-            if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
-            {
-                OnCutsceneEnd();
-            }
-        }
-    }
+    private Queue<CutsceneAction> actionQueue;
+    private CutsceneAction currentAction;
+    private string activeCutsceneId;
 
     private void Awake()
     {
-        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, OnCutsceneStart);
-        // Assuming you have a CUTSCENE_END event
-        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, OnCutsceneEnd);
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
+        // Populate the dictionary for fast lookups
+        cutsceneDictionary = new Dictionary<string, CutsceneSequence>();
+        foreach (var namedSequence in cutsceneSequences)
+        {
+            if (!string.IsNullOrEmpty(namedSequence.cutsceneId) && namedSequence.sequence != null)
+            {
+                cutsceneDictionary[namedSequence.cutsceneId] = namedSequence.sequence;
+            }
+        }
+
+        // Note: The event system may need to be updated to handle parameterized events.
+        // For now, we will expose a public method to play cutscenes.
     }
 
-    private void OnDestroy()
+    public void PlayCutscene(string cutsceneId)
     {
-        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_START, OnCutsceneStart);
-        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_END, OnCutsceneEnd);
+        if (isCutsceneActive)
+        {
+            Debug.LogWarning($"Cannot start cutscene '{cutsceneId}'. Another cutscene ('{activeCutsceneId}') is already active.");
+            return;
+        }
+
+        if (cutsceneDictionary.TryGetValue(cutsceneId, out CutsceneSequence sequenceToPlay))
+        {
+            activeCutsceneId = cutsceneId;
+            OnCutsceneStart(sequenceToPlay);
+        }
+        else
+        {
+            Debug.LogError($"Cutscene with ID '{cutsceneId}' not found.");
+        }
     }
 
-    private void OnCutsceneStart()
+    private void OnCutsceneStart(CutsceneSequence sequence)
     {
-        // Logic to handle the start of a cutscene
-        Debug.Log("Cutscene started.");
+        Debug.Log($"Cutscene '{activeCutsceneId}' started.");
         isCutsceneActive = true;
         GameState.IsCutsceneActive = true;
 
-        // You can add more functionality here, such as playing animations, changing camera angles, etc.
+        actionQueue = new Queue<CutsceneAction>(sequence.actions);
+        EventBroadcaster.Instance.PostEvent(CutsceneEvents.CUTSCENE_START);
+        ProcessNextAction();
+    }
+
+    private void ProcessNextAction()
+    {
+        // Check if the last action was a dialogue action, which requires input.
+        bool wasDialogue = currentAction is DialogueAction;
+
+        if (actionQueue.Count > 0)
+        {
+            currentAction = actionQueue.Dequeue();
+            if (wasDialogue)
+            {
+                // If the last action was dialogue, wait a frame before the next action.
+                StartCoroutine(ProcessNextActionAfterDelay());
+            }
+            else
+            {
+                currentAction.Execute(ProcessNextAction);
+            }
+        }
+        else
+        {
+            OnCutsceneEnd();
+        }
+    }
+
+    private IEnumerator ProcessNextActionAfterDelay()
+    {
+        yield return null; // Wait for the next frame.
+        currentAction.Execute(ProcessNextAction);
     }
 
     private void OnCutsceneEnd()
     {
-        Debug.Log("Cutscene ended.");
+        if (!isCutsceneActive) return;
+
+        Debug.Log($"Cutscene '{activeCutsceneId}' ended.");
         isCutsceneActive = false;
         GameState.IsCutsceneActive = false;
-        // Add any cleanup logic here
+        actionQueue?.Clear();
+        currentAction = null;
+        activeCutsceneId = null;
+        DialogueManager.Instance.dialoguePanel.SetActive(false);
+        
+        cameraAnimator.SetTrigger("cutsceneEnd");
+
+        if (cinematicBarsAnimator != null)
+        {
+            cinematicBarsAnimator.SetTrigger("hide");
+        }
+
+        EventBroadcaster.Instance.PostEvent(CutsceneEvents.CUTSCENE_END);
     }
 }

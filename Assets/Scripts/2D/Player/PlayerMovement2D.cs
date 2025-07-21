@@ -9,6 +9,7 @@ public class PlayerMovement2D : MonoBehaviour
     public float moveSpeed = 5f;
     public float sprintSpeed = 9f;
     private Rigidbody2D rb;
+    private RigidbodyConstraints2D originalConstraints;
     private bool isSprinting;
     private bool isChanneling;
     private bool movementDisabled;
@@ -70,12 +71,15 @@ public class PlayerMovement2D : MonoBehaviour
         isChanneling = false;
         rb.linearVelocity = Vector2.zero; // Stop movement during cutscenes
         rb.isKinematic = true; // Disable physics interactions
+        originalConstraints = rb.constraints;
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
     }
 
     private void CutsceneEnableMovement()
     {
         movementDisabled = false;
         rb.isKinematic = false; // Re-enable physics interactions
+        rb.constraints = originalConstraints;
         // Reset stamina and sprinting state if needed
         currentStamina = maxStamina;
         outOfStamina = false;
