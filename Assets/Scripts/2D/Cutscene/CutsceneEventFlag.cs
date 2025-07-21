@@ -9,6 +9,7 @@ public class CutsceneEventFlag : MonoBehaviour
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             EventBroadcaster.Instance.PostEvent(CutsceneEvents.CUTSCENE_START);
+            CutsceneManager.Instance.PlayCutscene("Intro");
         }
     }
 
