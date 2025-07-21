@@ -31,6 +31,7 @@ public class CameraAnimationController : MonoBehaviour
     private void OnCutsceneStart()
     {
         cameraAnimator.SetTrigger("cutsceneStart");
+
         if (cinematicBarsAnimator != null)
         {
             cinematicBarsAnimator.SetTrigger("show");

@@ -67,7 +67,18 @@ public class EventNames {
 		public const string CUTSCENE_RESUME = "CUTSCENE_RESUME";
 		public const string CUTSCENE_RESTART = "CUTSCENE_RESTART";
     }
+
+    public static class CameraEvents
+    {
+        public const string CAMERA_SHAKE = "CAMERA_SHAKE";
+    }
 }
+
+
+
+
+
+
 
 
 
