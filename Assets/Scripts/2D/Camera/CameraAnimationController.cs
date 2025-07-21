@@ -30,20 +30,21 @@ public class CameraAnimationController : MonoBehaviour
 
     private void OnCutsceneStart()
     {
-        cameraAnimator.SetTrigger("cutsceneStart");
+        //cameraAnimator.SetTrigger("cutsceneStart");
+
         if (cinematicBarsAnimator != null)
         {
-            cinematicBarsAnimator.SetTrigger("show");
+            //cinematicBarsAnimator.SetTrigger("show");
         }
     }
 
     private void OnCutsceneEnd()
     {
-        cameraAnimator.SetTrigger("cutsceneEnd");
+        //cameraAnimator.SetTrigger("cutsceneEnd");
 
         if (cinematicBarsAnimator != null)
         {
-            cinematicBarsAnimator.SetTrigger("hide");
+            //cinematicBarsAnimator.SetTrigger("hide");
         }
     }
 }
