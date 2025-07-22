@@ -2,6 +2,7 @@ using UnityEngine;
 using static EventNames;
 using System.Collections.Generic;
 using System;
+using Unity.Cinemachine;
 using System.Collections;
 
 public class CutsceneManager : MonoBehaviour
@@ -10,6 +11,9 @@ public class CutsceneManager : MonoBehaviour
     [SerializeField] private Animator cameraAnimator;
 
     public static CutsceneManager Instance { get; private set; }
+
+    // 1. Expose a field for the Cinemachine Brain in the Inspector
+    public CinemachineBrain cinemachineBrain;
 
     [Serializable]
     public struct NamedCutsceneSequence
@@ -35,6 +39,9 @@ public class CutsceneManager : MonoBehaviour
         }
         Instance = this;
 
+        // 2. Remove the automatic search for the brain
+        // The reference will be set from the Unity Inspector instead.
+
         // Populate the dictionary for fast lookups
         cutsceneDictionary = new Dictionary<string, CutsceneSequence>();
         foreach (var namedSequence in cutsceneSequences)
@@ -44,9 +51,6 @@ public class CutsceneManager : MonoBehaviour
                 cutsceneDictionary[namedSequence.cutsceneId] = namedSequence.sequence;
             }
         }
-
-        // Note: The event system may need to be updated to handle parameterized events.
-        // For now, we will expose a public method to play cutscenes.
     }
 
     public void PlayCutscene(string cutsceneId)
@@ -106,6 +110,7 @@ public class CutsceneManager : MonoBehaviour
     private IEnumerator ProcessNextActionAfterDelay()
     {
         yield return null; // Wait for the next frame.
+
         currentAction.Execute(ProcessNextAction);
     }
 
@@ -119,8 +124,12 @@ public class CutsceneManager : MonoBehaviour
         actionQueue?.Clear();
         currentAction = null;
         activeCutsceneId = null;
-        DialogueManager.Instance.dialoguePanel.SetActive(false);
-        
+
+        if (cinemachineBrain != null)
+        {
+            cinemachineBrain.enabled = true;
+        }
+
         cameraAnimator.SetTrigger("cutsceneEnd");
 
         if (cinematicBarsAnimator != null)
