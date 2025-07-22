@@ -2,8 +2,8 @@ using UnityEngine;
 using static EventNames;
 using System.Collections.Generic;
 using System;
-using Unity.Cinemachine;
 using System.Collections;
+using Unity.Cinemachine;
 
 public class CutsceneManager : MonoBehaviour
 {
@@ -11,9 +11,6 @@ public class CutsceneManager : MonoBehaviour
     [SerializeField] private Animator cameraAnimator;
 
     public static CutsceneManager Instance { get; private set; }
-
-    // 1. Expose a field for the Cinemachine Brain in the Inspector
-    public CinemachineBrain cinemachineBrain;
 
     [Serializable]
     public struct NamedCutsceneSequence
@@ -30,6 +27,8 @@ public class CutsceneManager : MonoBehaviour
     private CutsceneAction currentAction;
     private string activeCutsceneId;
 
+    public CinemachineFollow cinemachineFollow;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -39,8 +38,7 @@ public class CutsceneManager : MonoBehaviour
         }
         Instance = this;
 
-        // 2. Remove the automatic search for the brain
-        // The reference will be set from the Unity Inspector instead.
+        cinemachineFollow = FindAnyObjectByType<CinemachineFollow>();
 
         // Populate the dictionary for fast lookups
         cutsceneDictionary = new Dictionary<string, CutsceneSequence>();
@@ -116,6 +114,8 @@ public class CutsceneManager : MonoBehaviour
 
     private void OnCutsceneEnd()
     {
+        cinemachineFollow.enabled = true; // Re-enable camera follow after cutscene ends
+
         if (!isCutsceneActive) return;
 
         Debug.Log($"Cutscene '{activeCutsceneId}' ended.");
@@ -124,11 +124,6 @@ public class CutsceneManager : MonoBehaviour
         actionQueue?.Clear();
         currentAction = null;
         activeCutsceneId = null;
-
-        if (cinemachineBrain != null)
-        {
-            cinemachineBrain.enabled = true;
-        }
 
         cameraAnimator.SetTrigger("cutsceneEnd");
 

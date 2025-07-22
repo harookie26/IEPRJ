@@ -9,8 +9,20 @@ public class CameraFocusAction : CutsceneAction
     public float duration = 1.0f; // Duration of the camera movement
     public float cameraZ = -10f; // Default Z position for a 2D camera
 
+    private void Awake()
+    {
+        // Ensure the targetId is not null or empty
+        if (string.IsNullOrEmpty(targetId))
+        {
+            Debug.LogWarning("CameraFocusAction: Target ID is not set.");
+        }
+
+    }
+
     public override void Execute(Action onComplete)
     {
+        CutsceneManager.Instance.cinemachineFollow.enabled = false;
+
         Camera mainCamera = Camera.main;
         if (mainCamera == null)
         {
