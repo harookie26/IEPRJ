@@ -257,7 +257,6 @@ GameObject:
   - component: {fileID: 87754440}
   - component: {fileID: 87754436}
   - component: {fileID: 87754443}
-  - component: {fileID: 87754442}
   - component: {fileID: 87754444}
   m_Layer: 0
   m_Name: MainCamera
@@ -438,19 +437,6 @@ MonoBehaviour:
       BarrelClipping: 0.25
       Anamorphism: 0
   BlendHint: 0
---- !u!114 &87754442
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 87754435}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 43649ea9169e76042bf0dcb14d05a5e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cinematicBarsAnimator: {fileID: 1520233653}
 --- !u!95 &87754443
 Animator:
   serializedVersion: 7
@@ -4983,6 +4969,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cinematicBarsAnimator: {fileID: 1520233653}
   cameraAnimator: {fileID: 87754443}
+  cinemachineBrain: {fileID: 1850381671}
   cutsceneSequences:
   - cutsceneId: Intro
     sequence: {fileID: 11400000, guid: 27d00ea331377084e953004b32c7304f, type: 2}
@@ -6049,6 +6036,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 586570084}
     m_Modifications:
+    - target: {fileID: 982056747370159609, guid: d0bde9a42898be64ab7372c560194d8d, type: 3}
+      propertyPath: m_Name
+      value: HidingSpot1
+      objectReference: {fileID: 0}
     - target: {fileID: 982056747370159615, guid: d0bde9a42898be64ab7372c560194d8d, type: 3}
       propertyPath: m_RootOrder
       value: 37

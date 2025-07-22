@@ -32,6 +32,7 @@ public class WaitAction : CutsceneAction
         }
         
         // Input was detected, so call the onComplete callback to proceed.
+        CutsceneManager.Instance.cinemachineFollow.enabled = true; // Re-enable camera follow if it was disabled.
         onComplete();
     }
 }
