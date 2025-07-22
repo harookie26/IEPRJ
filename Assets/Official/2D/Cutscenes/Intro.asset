@@ -18,6 +18,7 @@ MonoBehaviour:
   - rid: 2111166156283314420
   - rid: 2111166156283314403
   - rid: 2111166156283314404
+  - rid: 2111166178654421071
   references:
     version: 2
     RefIds:
@@ -44,3 +45,9 @@ MonoBehaviour:
     - rid: 2111166156283314420
       type: {class: WaitAction, ns: , asm: Assembly-CSharp}
       data: 
+    - rid: 2111166178654421071
+      type: {class: CameraFocusAction, ns: , asm: Assembly-CSharp}
+      data:
+        targetId: HidingSpot1(Clone)
+        duration: 3
+        cameraZ: -10

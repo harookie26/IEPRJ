@@ -3,6 +3,7 @@ using static EventNames;
 using System.Collections.Generic;
 using System;
 using System.Collections;
+using Unity.Cinemachine;
 
 public class CutsceneManager : MonoBehaviour
 {
@@ -26,6 +27,8 @@ public class CutsceneManager : MonoBehaviour
     private CutsceneAction currentAction;
     private string activeCutsceneId;
 
+    public CinemachineFollow cinemachineFollow;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -34,6 +37,8 @@ public class CutsceneManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        cinemachineFollow = FindAnyObjectByType<CinemachineFollow>();
 
         // Populate the dictionary for fast lookups
         cutsceneDictionary = new Dictionary<string, CutsceneSequence>();
@@ -44,9 +49,6 @@ public class CutsceneManager : MonoBehaviour
                 cutsceneDictionary[namedSequence.cutsceneId] = namedSequence.sequence;
             }
         }
-
-        // Note: The event system may need to be updated to handle parameterized events.
-        // For now, we will expose a public method to play cutscenes.
     }
 
     public void PlayCutscene(string cutsceneId)
@@ -106,11 +108,14 @@ public class CutsceneManager : MonoBehaviour
     private IEnumerator ProcessNextActionAfterDelay()
     {
         yield return null; // Wait for the next frame.
+
         currentAction.Execute(ProcessNextAction);
     }
 
     private void OnCutsceneEnd()
     {
+        cinemachineFollow.enabled = true; // Re-enable camera follow after cutscene ends
+
         if (!isCutsceneActive) return;
 
         Debug.Log($"Cutscene '{activeCutsceneId}' ended.");
@@ -119,8 +124,7 @@ public class CutsceneManager : MonoBehaviour
         actionQueue?.Clear();
         currentAction = null;
         activeCutsceneId = null;
-        DialogueManager.Instance.dialoguePanel.SetActive(false);
-        
+
         cameraAnimator.SetTrigger("cutsceneEnd");
 
         if (cinematicBarsAnimator != null)

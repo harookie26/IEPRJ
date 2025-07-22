@@ -1,24 +1,68 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 [Serializable]
 public class CameraFocusAction : CutsceneAction
 {
-    public Transform target;
+    public string targetId;
+    public float duration = 1.0f; // Duration of the camera movement
     public float cameraZ = -10f; // Default Z position for a 2D camera
+
+    private void Awake()
+    {
+        // Ensure the targetId is not null or empty
+        if (string.IsNullOrEmpty(targetId))
+        {
+            Debug.LogWarning("CameraFocusAction: Target ID is not set.");
+        }
+
+    }
 
     public override void Execute(Action onComplete)
     {
+        CutsceneManager.Instance.cinemachineFollow.enabled = false;
+
         Camera mainCamera = Camera.main;
-        if (mainCamera != null && target != null)
+        if (mainCamera == null)
         {
-            mainCamera.transform.position = new Vector3(target.position.x, target.position.y, cameraZ);
+            Debug.LogWarning("CameraFocusAction: Main Camera not found.");
+            onComplete();
+            return;
+        }
+
+        if (string.IsNullOrEmpty(targetId))
+        {
+            Debug.LogWarning("CameraFocusAction: Target ID is not set.");
+            onComplete();
+            return;
+        }
+
+        GameObject targetObject = GameObject.Find(targetId);
+        if (targetObject != null)
+        {
+            MoveCamera(mainCamera, targetObject.transform.position, onComplete);
         }
         else
         {
-            Debug.LogWarning("Main Camera or Target is not set for CameraFocusAction.");
+            Debug.LogWarning($"CameraFocusAction: Target object with ID '{targetId}' not found in the scene. Ensure the object is active.");
+            onComplete();
         }
-        
-        onComplete(); // This action completes instantly
+    }
+
+    private void MoveCamera(Camera camera, Vector3 targetPosition, Action onComplete)
+    {
+        Vector3 finalTargetPosition = new Vector3(targetPosition.x, targetPosition.y, cameraZ);
+
+        // If duration is 0, just snap to the target position
+        if (duration <= 0f)
+        {
+            camera.transform.position = finalTargetPosition;
+            onComplete?.Invoke();
+            return;
+        }
+
+        // Use a MonoBehaviour to handle the animation over time
+        CameraAnimator.Animate(camera, finalTargetPosition, duration, onComplete);
     }
 }

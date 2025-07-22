@@ -15,6 +15,7 @@ public class AnimationAction : CutsceneAction
         if (targetObject != null)
         {
             Animator targetAnimator = targetObject.GetComponent<Animator>();
+            targetAnimator.enabled = true;
             if (targetAnimator != null && !string.IsNullOrEmpty(animationTrigger))
             {
                 targetAnimator.SetTrigger(animationTrigger);
