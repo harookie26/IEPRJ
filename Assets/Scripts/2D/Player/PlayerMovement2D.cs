@@ -38,6 +38,9 @@ public class PlayerMovement2D : MonoBehaviour
 
     private void OnEnable()
     {
+        if (inputActions == null)
+            inputActions = new InputSystem2D();
+
         inputActions.Player.Enable();
         inputActions.Player.Move.performed += Move;
         inputActions.Player.Move.canceled += Move;
@@ -69,18 +72,19 @@ public class PlayerMovement2D : MonoBehaviour
         movementDisabled = true;
         isSprinting = false;
         isChanneling = false;
-        rb.linearVelocity = Vector2.zero; // Stop movement during cutscenes
-        rb.isKinematic = true; // Disable physics interactions
+        rb.linearVelocity = Vector2.zero;
+        rb.bodyType = RigidbodyType2D.Kinematic;
         originalConstraints = rb.constraints;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
     }
 
     private void CutsceneEnableMovement()
     {
+        Debug.Log("Cutscene ended, enabling player movement.");
+
         movementDisabled = false;
-        rb.isKinematic = false; // Re-enable physics interactions
+        rb.bodyType = RigidbodyType2D.Dynamic;
         rb.constraints = originalConstraints;
-        // Reset stamina and sprinting state if needed
         currentStamina = maxStamina;
         outOfStamina = false;
         staminaLocked = false;
