@@ -1,0 +1,19 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+  - !animation
+    targetAnimatorId: MainCamera
+    animationTrigger: cutsceneStart
+  - !wait {}
+  - !dialogue
+    characterName: MC
+    dialogueLine: This is a sample dialogue.
+  - !dialogue
+    characterName: Shadow
+    dialogueLine: This is also a sample dialogue.
+  - !cameraFocus
+    targetId: HidingSpot1(Clone)
+    duration: 3
+    cameraZ: -10
+  - !wait {}

@@ -11,8 +11,6 @@ public class DialogueManager : MonoBehaviour
 
     [SerializeField] private TextMeshProUGUI characterNameText;
     [SerializeField] private TextMeshProUGUI dialogueLineText;
-    private Action onDialogueLineComplete;
-    private bool isDisplayingLine = false;
 
     private void Awake()
     {
@@ -31,44 +29,40 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        // If a dialogue line is being displayed, wait for input to advance.
-        if (isDisplayingLine && (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)))
-        {
-            // Mark the current line as complete, allowing the CutsceneManager to proceed.
-            isDisplayingLine = false;
-            onDialogueLineComplete?.Invoke();
-            onDialogueLineComplete = null;
-        }
-    }
-
     public void ShowDialogue(string characterName, string dialogueLine, Action onComplete)
     {
-        this.onDialogueLineComplete = onComplete;
+        Debug.Log("ShowDialogue called. Setting up dialogue line.");
 
-        // Show the panel if it's not already visible. This handles the start of a conversation.
         if (!dialoguePanel.activeSelf)
         {
             dialoguePanel.SetActive(true);
         }
 
-        // Update the text content.
         characterNameText.text = characterName;
         dialogueLineText.text = dialogueLine;
-        
-        // The manager is now waiting for input to complete this line.
-        isDisplayingLine = true;
+
+        // Use the InputManager to wait for input before proceeding.
+        if (InputManager.Instance != null)
+        {
+            InputManager.Instance.StartCoroutine(InputManager.Instance.WaitForInputCoroutine(() =>
+            {
+                Debug.Log("Input detected. Closing dialogue and completing action.");
+                CloseDialoguePanel();
+                onComplete?.Invoke();
+            }));
+        }
+        else
+        {
+            Debug.LogWarning("InputManager instance not found. Cannot wait for input. Completing immediately.");
+            onComplete?.Invoke();
+        }
     }
 
-    // This new method will be called by a dedicated action to hide the panel.
     public void CloseDialoguePanel()
     {
         if (dialoguePanel != null)
         {
             dialoguePanel.SetActive(false);
         }
-        isDisplayingLine = false;
-        onDialogueLineComplete = null; // Clean up any pending callbacks.
     }
 }
