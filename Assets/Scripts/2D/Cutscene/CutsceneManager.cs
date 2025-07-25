@@ -1,9 +1,10 @@
 using UnityEngine;
-using static EventNames;
 using System.Collections.Generic;
 using System;
-using System.Collections;
-using Unity.Cinemachine;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+using System.IO;
+using static EventNames.CutsceneEvents;
 
 public class CutsceneManager : MonoBehaviour
 {
@@ -12,22 +13,9 @@ public class CutsceneManager : MonoBehaviour
 
     public static CutsceneManager Instance { get; private set; }
 
-    [Serializable]
-    public struct NamedCutsceneSequence
-    {
-        public string cutsceneId;
-        public CutsceneSequence sequence;
-    }
-
-    public List<NamedCutsceneSequence> cutsceneSequences;
-    private Dictionary<string, CutsceneSequence> cutsceneDictionary;
-
     private bool isCutsceneActive = false;
     private Queue<CutsceneAction> actionQueue;
-    private CutsceneAction currentAction;
     private string activeCutsceneId;
-
-    public CinemachineFollow cinemachineFollow;
 
     private void Awake()
     {
@@ -37,67 +25,86 @@ public class CutsceneManager : MonoBehaviour
             return;
         }
         Instance = this;
-
-        cinemachineFollow = FindAnyObjectByType<CinemachineFollow>();
-
-        // Populate the dictionary for fast lookups
-        cutsceneDictionary = new Dictionary<string, CutsceneSequence>();
-        foreach (var namedSequence in cutsceneSequences)
-        {
-            if (!string.IsNullOrEmpty(namedSequence.cutsceneId) && namedSequence.sequence != null)
-            {
-                cutsceneDictionary[namedSequence.cutsceneId] = namedSequence.sequence;
-            }
-        }
+        actionQueue = new Queue<CutsceneAction>();
     }
 
-    public void PlayCutscene(string cutsceneId)
+    public void PlayCutscene(string cutsceneName)
     {
         if (isCutsceneActive)
         {
-            Debug.LogWarning($"Cannot start cutscene '{cutsceneId}'. Another cutscene ('{activeCutsceneId}') is already active.");
+            Debug.LogWarning($"Cannot start cutscene '{cutsceneName}'. Another cutscene ('{activeCutsceneId}') is already active.");
             return;
         }
 
-        if (cutsceneDictionary.TryGetValue(cutsceneId, out CutsceneSequence sequenceToPlay))
+        CutsceneSequence sequence = LoadCutsceneFromFile(cutsceneName);
+        if (sequence != null)
         {
-            activeCutsceneId = cutsceneId;
-            OnCutsceneStart(sequenceToPlay);
+            activeCutsceneId = cutsceneName;
+            OnCutsceneStart(sequence);
         }
         else
         {
-            Debug.LogError($"Cutscene with ID '{cutsceneId}' not found.");
+            Debug.LogError($"Failed to load cutscene with name '{cutsceneName}'.");
+        }
+    }
+
+    private CutsceneSequence LoadCutsceneFromFile(string cutsceneName)
+    {
+        var textAsset = Resources.Load<TextAsset>($"Cutscenes/{cutsceneName}");
+        if (textAsset == null)
+        {
+            Debug.LogError($"Cutscene file '{cutsceneName}.yml' not found in any Resources/Cutscenes folder.");
+            return null;
+        }
+
+        var deserializer = new DeserializerBuilder()
+            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .WithTagMapping("!dialogue", typeof(DialogueAction))
+            .WithTagMapping("!cameraFocus", typeof(CameraFocusAction))
+            .WithTagMapping("!animation", typeof(AnimationAction))
+            .WithTagMapping("!wait", typeof(WaitAction))
+            .Build();
+
+        try
+        {
+            return deserializer.Deserialize<CutsceneSequence>(textAsset.text);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error deserializing cutscene '{cutsceneName}': {e.Message}");
+            return null;
         }
     }
 
     private void OnCutsceneStart(CutsceneSequence sequence)
     {
+        EventBroadcaster.Instance.PostEvent(CUTSCENE_START);
+
         Debug.Log($"Cutscene '{activeCutsceneId}' started.");
         isCutsceneActive = true;
-        GameState.IsCutsceneActive = true;
+        // GameState.IsCutsceneActive = true; // Example state change
 
-        actionQueue = new Queue<CutsceneAction>(sequence.actions);
-        EventBroadcaster.Instance.PostEvent(CutsceneEvents.CUTSCENE_START);
+        foreach (var action in sequence.actions)
+        {
+            if (action == null)
+            {
+                Debug.LogError("A null action was found in the cutscene sequence. Check your YAML file for incorrect or unmapped tags.");
+                continue;
+            }
+            Debug.Log($"Enqueuing action: {action.GetType().Name}");
+            actionQueue.Enqueue(action);
+        }
+        
         ProcessNextAction();
     }
 
     private void ProcessNextAction()
     {
-        // Check if the last action was a dialogue action, which requires input.
-        bool wasDialogue = currentAction is DialogueAction;
-
         if (actionQueue.Count > 0)
         {
-            currentAction = actionQueue.Dequeue();
-            if (wasDialogue)
-            {
-                // If the last action was dialogue, wait a frame before the next action.
-                StartCoroutine(ProcessNextActionAfterDelay());
-            }
-            else
-            {
-                currentAction.Execute(ProcessNextAction);
-            }
+            CutsceneAction currentAction = actionQueue.Dequeue();
+            Debug.Log($"Executing action: {currentAction.GetType().Name}");
+            currentAction.Execute(ProcessNextAction);
         }
         else
         {
@@ -105,33 +112,24 @@ public class CutsceneManager : MonoBehaviour
         }
     }
 
-    private IEnumerator ProcessNextActionAfterDelay()
-    {
-        yield return null; // Wait for the next frame.
-
-        currentAction.Execute(ProcessNextAction);
-    }
-
     private void OnCutsceneEnd()
     {
-        cinemachineFollow.enabled = true; // Re-enable camera follow after cutscene ends
-
         if (!isCutsceneActive) return;
+
+        EventBroadcaster.Instance.PostEvent(CUTSCENE_END);
 
         Debug.Log($"Cutscene '{activeCutsceneId}' ended.");
         isCutsceneActive = false;
-        GameState.IsCutsceneActive = false;
-        actionQueue?.Clear();
-        currentAction = null;
         activeCutsceneId = null;
 
-        cameraAnimator.SetTrigger("cutsceneEnd");
+        if (cameraAnimator != null)
+        {
+            cameraAnimator.SetTrigger("cutsceneEnd");
+        }
 
         if (cinematicBarsAnimator != null)
         {
             cinematicBarsAnimator.SetTrigger("hide");
         }
-
-        EventBroadcaster.Instance.PostEvent(CutsceneEvents.CUTSCENE_END);
     }
 }
