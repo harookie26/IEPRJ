@@ -4,10 +4,9 @@ using static EventNames;
 
 public class ChannelObject : MonoBehaviour, IChannelable
 {
-    [SerializeField] private float raiseSpeed = 0.5f;
-    [SerializeField] private float progressMax = 10f;
-    [SerializeField] private float graceDistance = 0.4f;
-
+    private float raiseSpeed = 0.5f;
+    private float progressMax = 10f;
+    private float graceDistance = 0.4f;
     private float progress = 0f;
     private bool isChanneling = false;
     private bool isComplete = false;
@@ -22,7 +21,7 @@ public class ChannelObject : MonoBehaviour, IChannelable
     {
         if (isComplete) return false;
         if (player == null) return false;
-        return Mathf.Abs(transform.position.x - player.transform.position.x) <= graceDistance;
+        return Mathf.Abs(player.transform.position.x - transform.position.x) <= graceDistance;
     }
 
     public void StartChannel(GameObject player)
@@ -47,8 +46,7 @@ public class ChannelObject : MonoBehaviour, IChannelable
     {
         if (!isChanneling || isComplete) return;
 
-        var rb = GetComponent<Rigidbody2D>();
-        if (rb != null)
+        if (TryGetComponent<Rigidbody2D>(out var rb) && rb != null)
         {
             // Raise the object
             Vector2 targetPosition = rb.position + Vector2.up * raiseSpeed * deltaTime;

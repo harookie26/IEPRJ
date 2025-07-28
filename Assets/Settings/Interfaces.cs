@@ -22,4 +22,12 @@ namespace Game.ObjectTypes
         float ProgressMax { get; }
         bool IsComplete { get; }
     }
+
+    public interface ILinkable
+    {
+        string LinkID { get; }
+        string UniqueID { get; }
+    }
+
+
 }
