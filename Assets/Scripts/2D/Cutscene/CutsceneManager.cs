@@ -8,7 +8,7 @@ using static EventNames.CutsceneEvents;
 
 public class CutsceneManager : MonoBehaviour
 {
-    [SerializeField] private List<GameObject> UIlist; 
+    [SerializeField] private List<GameObject> UIList; 
     [SerializeField] private Animator cinematicBarsAnimator;
     [SerializeField] private Animator cameraAnimator;
 
@@ -86,7 +86,7 @@ public class CutsceneManager : MonoBehaviour
         // GameState.IsCutsceneActive = true; // Example state change
 
         ///Disable all UI visuals when cutscene is played.
-        foreach(GameObject label in UIlist)
+        foreach(GameObject label in UIList)
         {
             label.SetActive(false);
         }
@@ -130,7 +130,7 @@ public class CutsceneManager : MonoBehaviour
         activeCutsceneId = null;
 
         ///Restore UI after cutscene.
-        foreach (GameObject label in UIlist)
+        foreach (GameObject label in UIList)
         {
             label.SetActive(true); 
         }
