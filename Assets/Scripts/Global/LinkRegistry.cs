@@ -6,6 +6,8 @@ public static class LinkRegistry
 {
     private static Dictionary<string, List<ILinkable>> registry = new();
 
+    public static void Clear() => registry.Clear();
+
     public static void Register(ILinkable obj)
     {
         if (!registry.ContainsKey(obj.LinkID))
