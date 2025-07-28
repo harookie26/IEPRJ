@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using static EventNames;
 using UnityEngine.EventSystems;
+using static EventNames;
 
 public class EnemyAI : MonoBehaviour
 {
@@ -141,14 +142,16 @@ public class EnemyAI : MonoBehaviour
 
     public bool CheckPlayer()
     {
-        Hiding_Script hiding_Script = Object.FindFirstObjectByType<Hiding_Script>();
+        // Check if the player is hiding in any HidableObject
+        bool playerIsHiding = Object.FindObjectsByType<HidableObject>(FindObjectsSortMode.None)
+            .Any(h => h.IsPlayerHiding);
 
         Vector2 direction = transform.right * Mathf.Sign(transform.localScale.x);
 
         int playerLayer = LayerMask.GetMask("Player");
         RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, distance, playerLayer);
 
-        if (hit.collider != null && hit.collider.CompareTag("Player") && (hiding_Script.isHiding == false))
+        if (hit.collider != null && hit.collider.CompareTag("Player") && !playerIsHiding)
         {
             Debug.Log("Player is in front of the enemy!");
             isPlayerInSight = true;
