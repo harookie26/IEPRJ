@@ -1,3 +1,5 @@
+using System.Linq;
+using Game.ObjectTypes;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -15,15 +17,15 @@ public class LossScenario : MonoBehaviour
     [SerializeField] private float hauntingTick = 1f;
     [SerializeField] private float maxSanity = 10f;
 
-    [SerializeField] private Volume volume; // URP Volume
+    [SerializeField] private Volume volume;
     private Vignette vignette;
 
     private float currentSanity;
     private float tickTimer;
     private bool isHaunted;
     private bool isLost;
-    private bool isHidden;
-    private Hiding_Script hidingScript;
+
+    private IHidable currentHidingSpot;
 
     private void OnEnable()
     {
@@ -39,12 +41,12 @@ public class LossScenario : MonoBehaviour
 
     private void OnPlayerHiding()
     {
-        isHidden = true;
+        currentHidingSpot = FindCurrentHidingSpot();
     }
 
     private void OnPlayerRevealed()
     {
-        isHidden = false;
+        currentHidingSpot = null;
     }
 
     void Start()
@@ -52,12 +54,6 @@ public class LossScenario : MonoBehaviour
         currentSanity = 0f;
         isLost = false;
         tickTimer = 0f;
-
-        hidingScript = GetComponent<Hiding_Script>();
-        if (hidingScript == null)
-        {
-            Debug.LogError("Hiding_Script component not found on the same GameObject as LossScenario.");
-        }
 
         if (volume != null && volume.profile != null)
         {
@@ -69,6 +65,8 @@ public class LossScenario : MonoBehaviour
     {
         if (isLost)
             EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_LEVEL_FAILED);
+
+        bool isHidden = currentHidingSpot != null && currentHidingSpot.IsPlayerHiding;
 
         if (isHidden)
             isHaunted = IsHidingPlayerHaunted();
@@ -94,10 +92,25 @@ public class LossScenario : MonoBehaviour
         UpdateVignetteEffect();
     }
 
+    private IHidable FindCurrentHidingSpot()
+    {
+        var hideables = Object.FindObjectsByType<HidableObject>(FindObjectsSortMode.None);
+        foreach (var hideable in hideables)
+        {
+            if (hideable.IsPlayerHiding)
+                return hideable;
+        }
+        return null;
+    }
+
     private bool IsHidingPlayerHaunted()
     {
-        float distance = Mathf.Abs(hidingScript.hidingPosition.transform.position.x - ghost.transform.position.x);
-        return distance <= hiddenHauntingDistance;
+        if (currentHidingSpot is MonoBehaviour hidingMono)
+        {
+            float distance = Mathf.Abs(hidingMono.transform.position.x - ghost.transform.position.x);
+            return distance <= hiddenHauntingDistance;
+        }
+        return false;
     }
 
     private bool IsPlayerHaunted()
@@ -111,7 +124,6 @@ public class LossScenario : MonoBehaviour
         if (currentSanity < maxSanity && tickTimer >= hauntingTick)
         {
             currentSanity = Mathf.Clamp(currentSanity + 1, 0, maxSanity);
-            //Debug.Log($"Current Haunted Points: {currentSanity}/{maxSanity}");
             tickTimer = 0f;
         }
     }

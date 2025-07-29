@@ -9,26 +9,26 @@ public class PlayerMovement2D : MonoBehaviour
     public float moveSpeed = 5f;
     public float sprintSpeed = 9f;
     private Rigidbody2D rb;
-    private RigidbodyConstraints2D originalConstraints;
     private bool isSprinting;
     private bool isChanneling;
-    private bool movementDisabled;
 
     // Stamina variables
     [Header("Stamina Settings")]
-    public float maxStamina = 5f; // Maximum stamina in seconds
-    public float staminaRegenRate = 1f; // Stamina regenerated per second when not sprinting
-    public float staminaRegenDelay = 1f; // Delay before regeneration starts
-    public float staminaLockThreshold = 2f; // Stamina level below which sprinting is locked
+    public float maxStamina = 5f;
+    public float staminaRegenRate = 1f; 
+    public float staminaRegenDelay = 1f;
+    public float staminaLockThreshold = 2f;
     private float currentStamina;
     private float staminaRegenTimer;
     private bool outOfStamina;
-    private bool staminaLocked; // Prevents sprinting until full
+    private bool staminaLocked;
 
     // Public read-only properties for animation/controller access
     public bool IsSprinting => isSprinting;
     public bool OutOfStamina => outOfStamina;
     public bool StaminaLocked => staminaLocked;
+
+    private bool canMove;
 
     private void Awake()
     {
@@ -38,6 +38,8 @@ public class PlayerMovement2D : MonoBehaviour
 
     private void OnEnable()
     {
+        canMove = true;
+
         if (inputActions == null)
             inputActions = new InputSystem2D();
 
@@ -47,59 +49,22 @@ public class PlayerMovement2D : MonoBehaviour
         inputActions.Player.Sprint.performed += OnSprintPerformed;
         inputActions.Player.Sprint.canceled += OnSprintCanceled;
 
-        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_CHANNELING, PlayerChanneling);
-        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_DECHANNELING, PlayerDechanneling);
-        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, CutsceneDisableMovement);
-        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, CutsceneEnableMovement);
+        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERMOVEMENT_DISABLED, DisableMovement);
+        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERMOVEMENT_ENABLED, EnableMovement);
     }
 
     private void OnDisable()
     {
+        canMove = false;
+
         inputActions.Player.Move.performed -= Move;
         inputActions.Player.Move.canceled -= Move;
         inputActions.Player.Sprint.performed -= OnSprintPerformed;
         inputActions.Player.Sprint.canceled -= OnSprintCanceled;
         inputActions.Player.Disable();
 
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_CHANNELING, PlayerChanneling);
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_DECHANNELING, PlayerDechanneling);
-        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_START, CutsceneDisableMovement);
-        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_END, CutsceneEnableMovement);
-    }
-
-    private void CutsceneDisableMovement()
-    {
-        movementDisabled = true;
-        isSprinting = false;
-        isChanneling = false;
-        rb.linearVelocity = Vector2.zero;
-        rb.bodyType = RigidbodyType2D.Kinematic;
-        originalConstraints = rb.constraints;
-        rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-    }
-
-    private void CutsceneEnableMovement()
-    {
-        Debug.Log("Cutscene ended, enabling player movement.");
-
-        movementDisabled = false;
-        rb.bodyType = RigidbodyType2D.Dynamic;
-        rb.constraints = originalConstraints;
-        currentStamina = maxStamina;
-        outOfStamina = false;
-        staminaLocked = false;
-        isSprinting = false;
-        isChanneling = false;
-    }
-
-    private void PlayerChanneling()
-    {
-        isChanneling = true;
-    }
-
-    private void PlayerDechanneling()
-    {
-        isChanneling = false;
+        EventBroadcaster.Instance.RemoveActionAtObserver(ControlEvents2D.ON_2D_PLAYERMOVEMENT_DISABLED, DisableMovement);
+        EventBroadcaster.Instance.RemoveActionAtObserver(ControlEvents2D.ON_2D_PLAYERMOVEMENT_ENABLED, EnableMovement);
     }
 
     private void Start()
@@ -139,7 +104,8 @@ public class PlayerMovement2D : MonoBehaviour
 
     private void Update()
     {
-        HandleStamina();
+        if (canMove)
+            HandleStamina();
     }
 
     private void HandleStamina()
@@ -188,7 +154,7 @@ public class PlayerMovement2D : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (movementDisabled)
+        if (!canMove)
         {
             rb.linearVelocity = Vector2.zero;
             return;
@@ -196,7 +162,6 @@ public class PlayerMovement2D : MonoBehaviour
 
         float currentSpeed = moveSpeed;
 
-        // Only allow sprinting if not out of stamina and not locked
         if (isSprinting && !outOfStamina && !staminaLocked)
         {
             currentSpeed = sprintSpeed;
@@ -206,7 +171,7 @@ public class PlayerMovement2D : MonoBehaviour
         {
             if (isChanneling)
             {
-                currentSpeed = 0f; // Disable movement while channeling
+                currentSpeed = 0f;
             }
             rb.MovePosition(rb.position + moveInput * currentSpeed * Time.fixedDeltaTime);
         }
@@ -216,18 +181,14 @@ public class PlayerMovement2D : MonoBehaviour
         }
     }
 
-    public void ResetInput()
+    public void DisableMovement()
     {
-        moveInput = Vector2.zero;
+        canMove = false;
     }
 
-    public static void DisableMovement(GameObject player)
+    public void EnableMovement()
     {
-        var movement = player.GetComponent<PlayerMovement2D>();
-        if (movement != null)
-        {
-            movement.enabled = false;
-        }
+        canMove = true;
     }
 
     public float GetCurrentStamina()

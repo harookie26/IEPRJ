@@ -7,13 +7,43 @@ actions:
     animationTrigger: cutsceneStart
   - !wait {}
   - !dialogue
-    characterName: MC
-    dialogueLine: This is a sample dialogue.
+    characterName: Adam
+    dialogueLine: Where am I? Why is everything pixelated?
   - !dialogue
-    characterName: Shadow
-    dialogueLine: This is also a sample dialogue.
-  - !cameraFocus
-    targetId: HidingSpot1(Clone)
-    duration: 3
-    cameraZ: -10
+    characterName: Mysterious Voice
+    dialogueLine: Adam? Why are you here?
+  - !dialogue
+    characterName: Adam
+    dialogueLine: Who are you?
+  - !dialogue
+    characterName: Adam
+    dialogueLine: I just played the arcade because something is happening to it, I came to the house just to investigate it.
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: You’re like us now, stuck in this game, but you still have your body.
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: You should save us and let us out of this game through that door behind you where you came from.
+  - !dialogue
+    characterName: Adam
+    dialogueLine: US? HOW MANY are you out there?
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: There’s no time to explain, you only have limited time to save each one of us.
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: Find my body first, and get me out.
+
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: That’s the monster! Go! Your body will consciously control the machine outside.
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: Use A and D to move left and right.
+
+
+  #- !cameraFocus
+  #  targetId: HidingSpot1(Clone)
+  #  duration: 3
+  #  cameraZ: -10
   - !wait {}

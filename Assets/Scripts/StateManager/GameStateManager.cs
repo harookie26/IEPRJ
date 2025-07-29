@@ -37,6 +37,8 @@ public class GameStateManager : MonoBehaviour
         isGamePaused = false;
         isLevelFailed = false;
         isLevelComplete = false;
+
+        //LinkRegistry.Clear();
     }
 
     void Update()

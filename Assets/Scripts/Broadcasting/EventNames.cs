@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 
 public class EventNames {
@@ -71,6 +72,12 @@ public class EventNames {
     public static class CameraEvents
     {
         public const string CAMERA_SHAKE = "CAMERA_SHAKE";
+    }
+
+	public static class ControlEvents2D
+	{
+		public const string ON_2D_PLAYERMOVEMENT_DISABLED = "ON_2D_PLAYERMOVEMENT_DISABLED";
+		public const string ON_2D_PLAYERMOVEMENT_ENABLED = "ON_2D_PLAYERMOVEMENT_ENABLED";
     }
 }
 
