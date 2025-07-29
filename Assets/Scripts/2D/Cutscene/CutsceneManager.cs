@@ -9,6 +9,7 @@ using static EventNames.ControlEvents2D;
 
 public class CutsceneManager : MonoBehaviour
 {
+    [SerializeField] private List<GameObject> UIList; 
     [SerializeField] private Animator cinematicBarsAnimator;
     [SerializeField] private Animator cameraAnimator;
 
@@ -86,6 +87,12 @@ public class CutsceneManager : MonoBehaviour
         isCutsceneActive = true;
         // GameState.IsCutsceneActive = true; // Example state change
 
+        ///Disable all UI visuals when cutscene is played.
+        foreach(GameObject label in UIList)
+        {
+            label.SetActive(false);
+        }
+
         foreach (var action in sequence.actions)
         {
             if (action == null)
@@ -124,6 +131,12 @@ public class CutsceneManager : MonoBehaviour
         Debug.Log($"Cutscene '{activeCutsceneId}' ended.");
         isCutsceneActive = false;
         activeCutsceneId = null;
+
+        ///Restore UI after cutscene.
+        foreach (GameObject label in UIList)
+        {
+            label.SetActive(true); 
+        }
 
         if (cameraAnimator != null)
         {
