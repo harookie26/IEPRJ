@@ -10,25 +10,52 @@ public static class LinkRegistry
 
     public static void Register(ILinkable obj)
     {
+        if (obj == null || string.IsNullOrEmpty(obj.LinkID)) return;
+
         if (!registry.ContainsKey(obj.LinkID))
             registry[obj.LinkID] = new List<ILinkable>();
 
         if (!registry[obj.LinkID].Exists(o => o.UniqueID == obj.UniqueID))
+        {
             registry[obj.LinkID].Add(obj);
+
+#if UNITY_EDITOR
+            UnityEngine.Debug.Log($"[LinkRegistry] Registered: {((UnityEngine.Component)obj).name} | ID: {obj.LinkID} | UID: {obj.UniqueID} | Total for this link: {registry[obj.LinkID].Count}");
+#endif
+        }
     }
+
 
     public static void Unregister(ILinkable obj)
     {
+        if (obj == null || string.IsNullOrEmpty(obj.LinkID)) return;
+
         if (registry.TryGetValue(obj.LinkID, out var list))
         {
-            list.RemoveAll(o => o.UniqueID == obj.UniqueID);
+            list.RemoveAll(o =>
+                o == null || o.UniqueID == obj.UniqueID ||
+                (o is UnityEngine.Object uo && uo == null));
+
             if (list.Count == 0)
                 registry.Remove(obj.LinkID);
         }
     }
 
+
     public static List<ILinkable> GetLinkedObjects(string id)
     {
-        return registry.TryGetValue(id, out var list) ? list : new List<ILinkable>();
+        if (!registry.TryGetValue(id, out var list))
+            return new List<ILinkable>();
+
+        // Remove nulls or destroyed Unity objects
+        list.RemoveAll(obj =>
+        {
+            if (obj is UnityEngine.Object unityObj && unityObj == null)
+                return true;
+            return obj == null;
+        });
+
+        return list;
     }
+
 }
