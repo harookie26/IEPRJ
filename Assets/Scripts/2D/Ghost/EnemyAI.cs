@@ -1,300 +1,186 @@
 using System.Collections.Generic;
 using System.Linq;
+using Game.Level;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using static EventNames;
 
+[RequireComponent(typeof(Collider2D), typeof(Rigidbody2D))]
 public class EnemyAI : MonoBehaviour
 {
-    private enum EnemyState { Patrolling, Chasing, Searching }
+    public IRoom CurrentRoom { get; set; }
+    public IRoom TargetRoom { get; private set; }
 
-    [SerializeField] private float distance = 5f;
-    [SerializeField] private float speed = 7f;
-    [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private float patrolPauseTime = 0.2f;
-    [SerializeField] private List<Transform> patrolPoints;
-    [SerializeField] private float searchFlipInterval = 0.5f;
-    [SerializeField] private Collider2D playerDetectorCollider;
-    [SerializeField] private float catchDistance = 0.5f;
+    [SerializeField] private int targetRoomId;
+    [SerializeField] private float moveSpeed = 2f;
 
-    [Header("Teleportation")]
-    [SerializeField] private List<Transform> teleportPoints;
-    [SerializeField, Range(0f, 1f)] private float teleportChance = 0.5f; // 0.5 = 50% chance to teleport
+    private List<IRoom> roomPath;
+    private int roomPathIndex = 0;
+    private Doors currentDoorTarget;
 
-    private int currentPatrolIndex = 0;
+    private float teleportCooldown = 1f;
+    private float lastTeleportTime = -999f;
 
-    private float patrolPauseTimer = 0f;
+    public Doors LastUsedDoor { get; private set; }
 
-    private bool isPlayerInSight = false;
-    private Transform playerTransform;
-
-    private EnemyState currentState = EnemyState.Patrolling;
-
-    [SerializeField] private float searchDuration = 1.5f;
-    private float searchTimer = 0f;
-    private bool lastSawPlayer = false;
-    private bool wasPlayerInSight = false;
-    private bool isHidden = false;
-
-    private void OnEnable()
+    private void Start()
     {
-        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_HID, OnPlayerHiding);
-        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_REVEALED, OnPlayerRevealed);
-    }
+        if (!CompareTag("Enemy"))
+            Debug.LogWarning("[EnemyAI] This GameObject should be tagged as 'Enemy'");
 
-    private void OnDisable()
-    {
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_HID, OnPlayerHiding);
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_REVEALED, OnPlayerRevealed);
-    }
-
-    private void OnPlayerHiding()
-    {
-        isHidden = true;
-    }
-
-    private void OnPlayerRevealed()
-    {
-        isHidden = false;
-    }
-
-    void Start()
-    {
-        isPlayerInSight = false;
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        CurrentRoom = RoomUtils.GetRoomForPosition(transform.position);
+        if (CurrentRoom == null)
         {
-            playerTransform = player.transform;
+            Debug.LogError("[EnemyAI] Could not detect starting room.");
+            return;
         }
-        Debug.Log($"[EnemyAI] patrolPoints count: {patrolPoints?.Count ?? 0}");
-        if (patrolPoints != null)
+
+        if (targetRoomId != 0)
         {
-            for (int i = 0; i < patrolPoints.Count; i++)
+            var target = RoomRegistry.GetRoom(targetRoomId);
+            if (target != null)
+                SetTargetRoom(target);
+        }
+    }
+
+    private void Update()
+    {
+        if (roomPath == null || roomPathIndex >= roomPath.Count) return;
+
+        // If we're already in the next room, advance path
+        var nextRoom = roomPathIndex + 1 < roomPath.Count ? roomPath[roomPathIndex + 1] : null;
+        if (CurrentRoom == nextRoom)
+        {
+            roomPathIndex++;
+            nextRoom = roomPathIndex + 1 < roomPath.Count ? roomPath[roomPathIndex + 1] : null;
+        }
+
+        if (nextRoom == null) return;
+
+        currentDoorTarget = FindDoorTo(CurrentRoom, nextRoom);
+        if (currentDoorTarget == null)
+        {
+            Debug.LogWarning($"[EnemyAI] No door found from Room {CurrentRoom?.Id} to Room {nextRoom?.Id}");
+            return;
+        }
+
+        var doorPos = currentDoorTarget.GetEntryPointFor(CurrentRoom);
+        transform.position = Vector2.MoveTowards(transform.position, doorPos, Time.deltaTime * moveSpeed);
+        Debug.DrawLine(transform.position, doorPos, Color.red);
+    }
+
+
+    private Doors FindDoorTo(IRoom fromRoom, IRoom toRoom)
+    {
+        // Get all Doors in the scene
+        var allDoors = GameObject.FindObjectsOfType<Doors>();
+
+        foreach (var door in allDoors)
+        {
+            // Only consider doors *positionally* inside the current room
+            if (!RoomUtils.IsPositionInsideRoom(door.transform.position, fromRoom))
+                continue;
+
+            // Now check if this door is linked to another door that resides in the next room
+            var linkedDoors = LinkRegistry.GetLinkedObjects(door.LinkID);
+            foreach (var linkObj in linkedDoors)
             {
-                Debug.Log($"[EnemyAI] patrolPoint[{i}]: {patrolPoints[i].position}");
-            }
-        }
-        Debug.Log($"[EnemyAI] Starting position: {transform.position}");
-    }
+                if (linkObj is not Doors linked) continue;
+                if (linked == door) continue;
 
-    void Update()
-    {
-        Debug.Log($"[EnemyAI] Current State: {currentState}");
-
-        bool playerNowInSight = CheckPlayer();
-
-        if (playerNowInSight && !wasPlayerInSight)
-        {
-            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SPOTTED_PLAYER);
-        }
-        else if (!playerNowInSight && wasPlayerInSight)
-        {
-            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_LOST_PLAYER);
-        }
-
-        wasPlayerInSight = playerNowInSight;
-
-        if (playerNowInSight)
-        {
-            currentState = EnemyState.Chasing;
-            lastSawPlayer = true;
-            ChasePlayer();
-        }
-        else
-        {
-            if (currentState == EnemyState.Chasing && lastSawPlayer)
-            {
-                currentState = EnemyState.Searching;
-                searchTimer = searchDuration;
-                lastSawPlayer = false;
-                EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
-            }
-
-            if (currentState == EnemyState.Searching)
-            {
-                Search();
-            }
-            else if (patrolPauseTimer > 0f)
-            {
-                patrolPauseTimer -= Time.deltaTime;
-                if (patrolPauseTimer <= 0f)
+                // Check if the linked door is inside the next room
+                if (RoomUtils.IsPositionInsideRoom(linked.transform.position, toRoom))
                 {
-                    currentState = EnemyState.Patrolling;
+                    Debug.Log($"[FindDoorTo] Found door {door.name} in Room {fromRoom.Id} linked to {linked.name} in Room {toRoom.Id}");
+                    return door;
                 }
             }
-            else
-            {
-                if (currentState == EnemyState.Patrolling)
-                    Patrol();
-            }
         }
 
-        // --- Position-based player catch check ---
-        if (!isHidden && playerTransform != null)
-        {
-            float dist = Vector2.Distance(transform.position, playerTransform.position);
-            if (dist < catchDistance)
-            {
-                EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_LEVEL_FAILED);
-            }
-        }
+        Debug.LogWarning($"[FindDoorTo] No door inside Room {fromRoom.Id} links to Room {toRoom.Id}");
+        return null;
     }
 
-    public bool CheckPlayer()
+
+
+
+    public void SetTargetRoom(IRoom target)
     {
-        // Check if the player is hiding in any HidableObject
-        bool playerIsHiding = Object.FindObjectsByType<HidableObject>(FindObjectsSortMode.None)
-            .Any(h => h.IsPlayerHiding);
+        if (target == null) return;
 
-        Vector2 direction = transform.right * Mathf.Sign(transform.localScale.x);
+        TargetRoom = target;
+        roomPath = RoomPathfinder.FindRoomPath(CurrentRoom, TargetRoom);
+        roomPathIndex = 0;
 
-        int playerLayer = LayerMask.GetMask("Player");
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, direction, distance, playerLayer);
-
-        if (hit.collider != null && hit.collider.CompareTag("Player") && !playerIsHiding)
+        if (roomPath == null || roomPath.Count == 0)
         {
-            Debug.Log("Player is in front of the enemy!");
-            isPlayerInSight = true;
-        }
-        else
-        {
-            isPlayerInSight = false;
-        }
-
-        Debug.DrawRay(transform.position, direction * distance, Color.red);
-
-        return isPlayerInSight;
-    }
-
-    public void ChasePlayer()
-    {
-        EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_CHASING);
-
-        if (playerTransform == null) return;
-
-        // Flip the enemy to face the player
-        float direction = playerTransform.position.x - transform.position.x;
-        if (direction != 0)
-        {
-            Vector3 scale = transform.localScale;
-            scale.x = Mathf.Abs(scale.x) * Mathf.Sign(direction);
-            transform.localScale = scale;
-        }
-
-        // Move towards the player's position
-        transform.position = Vector2.MoveTowards(
-            transform.position,
-            playerTransform.position,
-            speed * Time.deltaTime
-        );
-    }
-    void Patrol()
-    {
-        EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_PATROLLING);
-
-        if (patrolPoints == null || patrolPoints.Count == 0)
-        {
-            Debug.LogWarning("[EnemyAI] No patrol points assigned!");
+            Debug.LogWarning($"[EnemyAI] No path found from Room {CurrentRoom.Id} to Room {TargetRoom.Id}");
             return;
         }
 
-        Debug.Log("[EnemyAI] About to check for edge...");
-
-        // Edge detection: stop or flip if near edge
-        if (IsNearEdge())
+        // Print full path as "Room 3 → Room 2 → Room 1 → Room 4 → ..."
+        string pathLog = "[EnemyAI] Full Room Path: ";
+        for (int i = 0; i < roomPath.Count; i++)
         {
-            Debug.Log("[EnemyAI] Near edge detected, aborting patrol movement.");
-            currentState = EnemyState.Searching;
-            searchTimer = searchDuration;
-            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
-            return;
+            pathLog += $"Room {roomPath[i].Id}";
+            if (i < roomPath.Count - 1)
+                pathLog += " → ";
         }
-
-        Transform targetPoint = patrolPoints[currentPatrolIndex];
-        Vector2 targetPosition = new Vector2(targetPoint.position.x, transform.position.y);
-
-        // Move towards the current patrol point
-        Debug.Log($"[EnemyAI] Moving from {transform.position} to {targetPosition}");
-
-        // Check if reached the patrol point
-        if (Mathf.Abs(transform.position.x - targetPoint.position.x) < 0.05f)
-        {
-            // Randomly decide to teleport or move to next patrol point
-            if (teleportPoints != null && teleportPoints.Count > 0 && Random.value < teleportChance)
-            {
-                TeleportToRandomPoint();
-            }
-            else
-            {
-                currentPatrolIndex = (currentPatrolIndex + 1) % patrolPoints.Count;
-            }
-
-            // Start searching instead of pausing
-            currentState = EnemyState.Searching;
-            searchTimer = searchDuration;
-            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
-        }
-
-        transform.position = Vector2.MoveTowards(transform.position, targetPosition, speed * Time.deltaTime);
-
-        // Flip sprite to face direction
-        float direction = targetPoint.position.x - transform.position.x;
-        if (direction != 0)
-        {
-            Vector3 scale = transform.localScale;
-            scale.x = Mathf.Abs(scale.x) * Mathf.Sign(direction);
-            transform.localScale = scale;
-        }
+        Debug.Log(pathLog);
     }
 
-    private void TeleportToRandomPoint()
+
+    public bool CanTeleportFrom(Doors door)
     {
-        int index = Random.Range(0, teleportPoints.Count);
-        Transform target = teleportPoints[index];
-        if (target != null)
-        {
-            transform.position = target.position;
-            //EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_TELEPORTED);
-        }
+        return door != LastUsedDoor || Time.time - lastTeleportTime >= teleportCooldown;
     }
 
-    void Search()
+    public void RegisterTeleport(Doors usedDoor, IRoom enteredRoom)
     {
-        EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_SEARCHING);
+        LastUsedDoor = usedDoor;
+        lastTeleportTime = Time.time;
+        CurrentRoom = enteredRoom;
 
-        int flipCount = Mathf.FloorToInt((searchDuration - searchTimer) / searchFlipInterval);
+        Debug.Log($"[EnemyAI] Entered Room {enteredRoom.Id} via {usedDoor.name}");
 
-        if (flipCount % 2 == 0)
-            transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
-        else
-            transform.localScale = new Vector3(-Mathf.Abs(transform.localScale.x), transform.localScale.y, transform.localScale.z);
-
-        searchTimer -= Time.deltaTime;
-        if (searchTimer <= 0f)
+        // 🔍 Debug all doors in the entered room
+        Debug.Log($"[EnemyAI] Room {enteredRoom.Id} has {enteredRoom.ConnectedDoors.Count()} doors:");
+        foreach (var door in enteredRoom.ConnectedDoors)
         {
-            currentState = EnemyState.Patrolling;
-            patrolPauseTimer = patrolPauseTime; // Optional: pause before resuming patrol
+            var doorName = ((MonoBehaviour)door).name;
+            var leadsTo = door.RoomA == enteredRoom ? door.RoomB : door.RoomA;
+            var leadsToId = leadsTo?.Id.ToString() ?? "null";
+
+            Debug.Log($"   → Door {doorName} leads to Room {leadsToId}");
         }
-    }
 
-    private bool IsNearEdge()
-    {
-        float direction = -Mathf.Sign(transform.localScale.x);
-        Vector2 origin = (Vector2)transform.position + -2.0f * direction * Vector2.right;
-        float rayLength = 2.5f;
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, rayLength, groundLayer);
-
-        Debug.DrawRay(origin, Vector2.down * rayLength, Color.blue);
-
-        if (hit.collider == null)
+        // 🧠 Advance only if next room matches
+        if (roomPathIndex + 1 < roomPath.Count && roomPath[roomPathIndex + 1] == enteredRoom)
         {
-            Debug.LogWarning($"[EnemyAI] Edge detected! No ground hit. Origin: {origin}, RayLength: {rayLength}, LayerMask: {groundLayer.value}");
-            return true;
+            roomPathIndex++;
+            Debug.Log($"[EnemyAI] Advanced to Room Path Index {roomPathIndex} (Room {enteredRoom.Id})");
         }
         else
         {
-            Debug.Log($"[EnemyAI] Ground detected: {hit.collider.gameObject.name} at {hit.point}");
-            return false;
+            Debug.LogWarning($"[EnemyAI] Entered unexpected room {enteredRoom.Id}. Expected: {roomPath[roomPathIndex + 1].Id}");
+        }
+    }
+
+
+    public Doors CurrentDoorTarget => currentDoorTarget;
+
+    private void OnDrawGizmos()
+    {
+        if (roomPath == null || roomPath.Count == 0) return;
+
+        Gizmos.color = Color.cyan;
+        for (int i = 0; i < roomPath.Count - 1; i++)
+        {
+            Gizmos.DrawLine(roomPath[i].Bounds.center, roomPath[i + 1].Bounds.center);
+        }
+
+        if (TargetRoom != null)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere((Vector3)TargetRoom.Center, 0.5f);
         }
     }
 }

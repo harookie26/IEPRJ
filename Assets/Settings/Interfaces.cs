@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Game.ObjectTypes
@@ -28,6 +29,25 @@ namespace Game.ObjectTypes
         string LinkID { get; }
         string UniqueID { get; }
     }
+}
 
+namespace Game.Level
+{
+    public interface IRoom
+    {
+        int Id { get; }
+        Vector2 Center { get; }
+        IEnumerable<IDoor> ConnectedDoors { get; }
+
+        Bounds Bounds { get; }
+    }
+
+    public interface IDoor
+    {
+        int Id { get; }
+        IRoom RoomA { get; }
+        IRoom RoomB { get; }
+        float Weight { get; }
+    }
 
 }

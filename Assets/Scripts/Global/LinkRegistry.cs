@@ -18,10 +18,6 @@ public static class LinkRegistry
         if (!registry[obj.LinkID].Exists(o => o.UniqueID == obj.UniqueID))
         {
             registry[obj.LinkID].Add(obj);
-
-#if UNITY_EDITOR
-            UnityEngine.Debug.Log($"[LinkRegistry] Registered: {((UnityEngine.Component)obj).name} | ID: {obj.LinkID} | UID: {obj.UniqueID} | Total for this link: {registry[obj.LinkID].Count}");
-#endif
         }
     }
 
