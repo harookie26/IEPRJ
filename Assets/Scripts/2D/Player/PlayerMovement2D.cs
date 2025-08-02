@@ -110,6 +110,7 @@ public class PlayerMovement2D : MonoBehaviour
 
     private void HandleStamina()
     {
+
         bool isUsingStamina = isSprinting && moveInput != Vector2.zero && !isChanneling;
 
         if (isUsingStamina)

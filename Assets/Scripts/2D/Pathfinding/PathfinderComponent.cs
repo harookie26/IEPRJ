@@ -9,7 +9,7 @@ public class PathfinderComponent : MonoBehaviour
     public IRoom CurrentRoom { get; set; }
     public IRoom TargetRoom { get; private set; }
 
-    [SerializeField] private int targetRoomId;
+    public int targetRoomId;
     [SerializeField] private float moveSpeed = 2f;
 
     private List<IRoom> roomPath;
@@ -23,9 +23,6 @@ public class PathfinderComponent : MonoBehaviour
 
     private void Start()
     {
-        if (!CompareTag("Pathfinding"))
-            Debug.LogWarning("[Pathfinding] This GameObject should be tagged as 'Pathfinding'");
-
         CurrentRoom = RoomUtils.GetRoomForPosition(transform.position);
         if (CurrentRoom == null)
         {
@@ -111,13 +108,13 @@ public class PathfinderComponent : MonoBehaviour
 
         }
 
-        if (roomPathIndex + 1 < roomPath.Count && roomPath[roomPathIndex + 1] == enteredRoom
+        if (roomPathIndex + 1 < roomPath.Count && roomPath[roomPathIndex + 1] == enteredRoom)
             roomPathIndex++;
         else
             Debug.LogWarning($"[EnemyAI] Entered unexpected room {enteredRoom.Id}. Expected: {roomPath[roomPathIndex + 1].Id}");
     }
 
-    private void Update()
+    public void FollowPath()
     {
         if (roomPath == null || roomPathIndex >= roomPath.Count) return;
 

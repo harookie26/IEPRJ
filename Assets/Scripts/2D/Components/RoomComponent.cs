@@ -6,6 +6,7 @@ public class RoomComponent : MonoBehaviour, IRoom
 {
     [SerializeField] private int id;
     [SerializeField] private Vector2 center;
+    [SerializeField] private float boundsOffset = 3.0f; // Added offset field
 
     private Collider2D roomCollider;
 
@@ -14,6 +15,17 @@ public class RoomComponent : MonoBehaviour, IRoom
     public Vector2 Center => center;
     public IEnumerable<IDoor> ConnectedDoors => connectedDoors;
     public Bounds Bounds => roomCollider.bounds;
+
+    public Bounds OffsetBounds
+    {
+        get
+        {
+            Bounds b = roomCollider.bounds;
+            b.Expand(-boundsOffset * 2f);
+            return b;
+        }
+    }
+
     private void Awake()
     {
         RoomRegistry.RegisterRoom(this);

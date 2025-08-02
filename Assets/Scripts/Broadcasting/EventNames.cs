@@ -38,6 +38,8 @@ public class EventNames {
         public const string PLAYER_REVEALED = "PLAYER_REVEALED";
 		public const string PLAYER_CHANNELING = "PLAYER_CHANNELING";
 		public const string PLAYER_DECHANNELING = "PLAYER_DECHANNELING";
+		public const string PLAYER_USING_DOOR = "PLAYER_USING_DOOR";
+		public const string PLAYER_STOPPED_USING_DOOR = "PLAYER_STOPPED_USING_DOOR";
     }
 
     public class EnemyEvents

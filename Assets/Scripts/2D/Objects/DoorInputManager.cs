@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Linq;
+using static EventNames;
 
 public class DoorInputManager : MonoBehaviour
 {
@@ -18,6 +19,7 @@ public class DoorInputManager : MonoBehaviour
 
             if (Doors.CurrentDoor?.IsReadyToUse() == true)
             {
+                EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_USING_DOOR);
                 Debug.Log($"[DoorInputManager] Teleporting via {Doors.CurrentDoor.name}");
                 Doors.CurrentDoor.MoveToLinkedDoor();
             }
