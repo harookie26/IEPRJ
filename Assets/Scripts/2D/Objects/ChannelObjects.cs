@@ -17,6 +17,37 @@ public class ChannelObject : MonoBehaviour, IChannelable
     public float ProgressMax => progressMax;
     public bool IsComplete => isComplete;
 
+    private void Update()
+    {
+        if (isComplete) return;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null) return;
+
+        bool playerNearby = CanChannel(player);
+
+        if (playerNearby && !isChanneling && InputManager.Instance.WasChannelPressed())
+        {
+            StartChannel(player);
+        }
+        else if (isChanneling)
+        {
+            if (InputManager.Instance.WasAnyKeyExceptChannelPressed())
+            {
+                StopChannel();
+            }
+            else
+            {
+                ChannelTick(Time.deltaTime);
+                if (isComplete)
+                {
+                    StopChannel();
+                    Destroy(gameObject);
+                }
+            }
+        }
+    }
+
     public bool CanChannel(GameObject player)
     {
         if (isComplete) return false;
@@ -48,7 +79,6 @@ public class ChannelObject : MonoBehaviour, IChannelable
 
         if (TryGetComponent<Rigidbody2D>(out var rb) && rb != null)
         {
-            // Raise the object
             Vector2 targetPosition = rb.position + Vector2.up * raiseSpeed * deltaTime;
             rb.MovePosition(targetPosition);
         }
@@ -62,8 +92,6 @@ public class ChannelObject : MonoBehaviour, IChannelable
         {
             progress = progressMax;
             isComplete = true;
-            StopChannel();
-            Destroy(gameObject);
         }
     }
 }

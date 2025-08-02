@@ -4,7 +4,7 @@ using static EventNames;
 public class AnimationStateController2D : MonoBehaviour
 {
     Animator animator;
-    private PlayerMovement2D playerMovement;
+    private PlayerStateMachine playerMovement;
     private bool isCutsceneActive = false;
 
     private void Awake()
@@ -12,7 +12,7 @@ public class AnimationStateController2D : MonoBehaviour
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, StartCutsceneState);
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, EndCutsceneState);
         animator = GetComponent<Animator>();
-        playerMovement = GetComponentInParent<PlayerMovement2D>();
+        playerMovement = GetComponentInParent<PlayerStateMachine>();
     }
 
     private void OnDestroy()

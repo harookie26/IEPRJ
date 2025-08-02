@@ -105,13 +105,16 @@ public class PathfinderComponent : MonoBehaviour
             var doorName = ((MonoBehaviour)door).name;
             var leadsTo = door.RoomA == enteredRoom ? door.RoomB : door.RoomA;
             var leadsToId = leadsTo?.Id.ToString() ?? "null";
-
         }
 
         if (roomPathIndex + 1 < roomPath.Count && roomPath[roomPathIndex + 1] == enteredRoom)
             roomPathIndex++;
         else
             Debug.LogWarning($"[EnemyAI] Entered unexpected room {enteredRoom.Id}. Expected: {roomPath[roomPathIndex + 1].Id}");
+
+        // Recalculate path from the new room to the target
+        if (TargetRoom != null)
+            SetTargetRoom(TargetRoom);
     }
 
     public void FollowPath()

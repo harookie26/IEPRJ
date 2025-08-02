@@ -1,10 +1,11 @@
 using Game.ObjectTypes;
 using UnityEngine;
+using static EventNames;
 
 public class HidableObject : MonoBehaviour, IHidable
 {
     [SerializeField] private float cooldown = 10f;
-    [SerializeField] private float graceDistance = 0.2f;
+    [SerializeField] private float graceDistance = 0.5f;
     [SerializeField] private float hidingDuration = 20;
 
     private float cooldownTimer = 0f;
@@ -42,19 +43,22 @@ public class HidableObject : MonoBehaviour, IHidable
             hidingTimer += Time.deltaTime;
             if (hidingTimer >= hidingDuration)
             {
+                EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_REVEALED);
                 ExitHiding();
             }
             // Allow exit with W
-            if (Input.GetKeyDown(KeyCode.W))
+            if (InputManager.Instance.WasInteractPressed())
             {
+                EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_REVEALED);
                 ExitHiding();
             }
         }
         else if (playerNearby && cooldownTimer <= 0f)
         {
             // Allow enter with W
-            if (Input.GetKeyDown(KeyCode.W))
+            if (InputManager.Instance.WasInteractPressed())
             {
+                EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_HID);
                 EnterHiding(player);
             }
         }
@@ -96,12 +100,10 @@ public class HidableObject : MonoBehaviour, IHidable
         var srPlayer = player.GetComponent<SpriteRenderer>();
         if (srPlayer != null) srPlayer.enabled = false;
 
-        var movement = player.GetComponent<PlayerMovement2D>();
-        if (movement != null) movement.enabled = false;
-
         var rb = player.GetComponent<Rigidbody2D>();
         if (rb != null) rb.linearVelocity = Vector2.zero;
-        // Optionally: broadcast events
+
+        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERMOVEMENT_DISABLED);
     }
 
     public void ExitHiding()
@@ -117,11 +119,9 @@ public class HidableObject : MonoBehaviour, IHidable
             var srPlayer = currentPlayer.GetComponent<SpriteRenderer>();
             if (srPlayer != null) srPlayer.enabled = true;
 
-            var movement = currentPlayer.GetComponent<PlayerMovement2D>();
-            if (movement != null) movement.enabled = true;
-
             currentPlayer = null;
         }
-        // Optionally: broadcast events
+
+        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERMOVEMENT_ENABLED);
     }
 }

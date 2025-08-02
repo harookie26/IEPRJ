@@ -13,13 +13,12 @@ public class DoorInputManager : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.W))
+        if (InputManager.Instance.WasInteractPressed())
         {
             Debug.Log("[DoorInputManager] W key pressed");
 
             if (Doors.CurrentDoor?.IsReadyToUse() == true)
             {
-                EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_USING_DOOR);
                 Debug.Log($"[DoorInputManager] Teleporting via {Doors.CurrentDoor.name}");
                 Doors.CurrentDoor.MoveToLinkedDoor();
             }

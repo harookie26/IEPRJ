@@ -8,7 +8,7 @@ public class PlayerStaminaUI : MonoBehaviour
     public List<Image> staminaBars;
 
     [Header("Reference to PlayerMovement2D")]
-    public PlayerMovement2D playerMovement;
+    public PlayerStateMachine playerMovement;
 
     private void Update()
     {

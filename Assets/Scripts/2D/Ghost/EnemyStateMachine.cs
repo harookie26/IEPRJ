@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using Game.Level;
 using UnityEngine;
-using static EventNames;
 
 public class EnemyStateMachine : MonoBehaviour
 {
@@ -12,7 +11,8 @@ public class EnemyStateMachine : MonoBehaviour
         ChasePlayer,
         ChaseObjective,
         FollowPath,
-        Dazed
+        Dazed,
+        ShoutDistracted
     }
 
     public State CurrentState { get; private set; } = State.Idle;
@@ -25,10 +25,13 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float patrolSpeed = 2f;
     [SerializeField] private int patrolCyclesPerRoom = 3;
     private int patrolCycleCount = 0;
-    private bool reachedTargetRoom = false;
+    private readonly bool reachedTargetRoom = false;
 
     [Header("Chase Settings")]
     [SerializeField] private float chaseSpeed = 3f;
+
+    [Header("Shout Distracted Settings")]
+    [SerializeField] private Vector2 shoutDistractedOffset = new(1.0f, 1.0f);
 
     private PathfinderComponent pathfinder;
     private EnemyDetection enemyDetection;
@@ -42,31 +45,7 @@ public class EnemyStateMachine : MonoBehaviour
     private IRoom currentRoom;
     private IRoom initialRoom;
 
-    private bool isPlayerUsingDoor = false;
-
-    [SerializeField] private float roomBoundsOffset = 1.0f;
-
-    private void Awake()
-    {
-        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_STOPPED_USING_DOOR, IsPlayerNotUsingDoor );
-        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_USING_DOOR, IsPlayerUsingDoor );
-    }
-
-    private void OnDestroy()
-    {
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STOPPED_USING_DOOR, IsPlayerNotUsingDoor );
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_USING_DOOR, IsPlayerUsingDoor );
-    }
-
-    private void IsPlayerUsingDoor()
-    {
-        isPlayerUsingDoor = true;
-    }
-
-    private void IsPlayerNotUsingDoor()
-    {
-        isPlayerUsingDoor = false;
-    }
+    private bool shoutDistractedHandled = false;
 
     private void Start()
     {
@@ -134,6 +113,14 @@ public class EnemyStateMachine : MonoBehaviour
             case State.Dazed:
                 HandleDazed();
                 break;
+
+            case State.ShoutDistracted:
+                if (!shoutDistractedHandled)
+                {
+                    HandleShoutDistracted();
+                    shoutDistractedHandled = true;
+                }
+                break;
         }
     }
 
@@ -146,6 +133,12 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         CurrentState = newState;
+
+        // Reset the flag when entering ShoutDistracted
+        if (CurrentState == State.ShoutDistracted)
+        {
+            shoutDistractedHandled = false;
+        }
 
         if (CurrentState == State.Idle)
         {
@@ -229,29 +222,12 @@ public class EnemyStateMachine : MonoBehaviour
     {
         if (playerTransform == null) return;
 
-        if (isPlayerUsingDoor)
-        {
-            Debug.Log("Player used a door.");
-            IRoom playerRoom = RoomUtils.GetRoomForPosition(playerTransform.position);
-            if (playerRoom != null && playerRoom != currentRoom)
-            {
-                if (pathfinder != null)
-                {
-                    Debug.Log($"[EnemyStateMachine] Player is using a door, changing target room to {playerRoom}");
-                    pathfinder.SetTargetRoom(playerRoom);
-                    ChangeState(State.FollowPath);
-                }
-            }
-        }
-        else
-        {
+        Vector2 current = new Vector2(transform.position.x, transform.position.y);
+        Vector2 direction = (target - current).normalized;
+        Vector2 next = current + direction * chaseSpeed * Time.deltaTime;
 
-            Vector2 current = new Vector2(transform.position.x, transform.position.y);
-            Vector2 direction = (target - current).normalized;
-            Vector2 next = current + direction * chaseSpeed * Time.deltaTime;
+        transform.position = new Vector3(next.x, next.y, transform.position.z);
 
-            transform.position = new Vector3(next.x, next.y, transform.position.z);
-        } 
     }
     void HandleFollowPath()
     {
@@ -273,6 +249,24 @@ public class EnemyStateMachine : MonoBehaviour
 
     void HandleDazed()
     {
+    }
+
+    public void HandleShoutDistracted()
+    {
+        if (playerTransform != null)
+        {
+            Vector2 targetPosition = (Vector2)playerTransform.position + shoutDistractedOffset;
+            transform.position = new Vector3(targetPosition.x, targetPosition.y, transform.position.z);
+
+            // Update the pathfinder's current room after moving
+            if (pathfinder != null)
+            {
+                pathfinder.CurrentRoom = RoomUtils.GetRoomForPosition(transform.position);
+                pathfinder.SetTargetRoom(initialRoom);
+            }
+        }
+
+        ChangeState(State.Idle);
     }
 
     public void OnPlayerLost()
