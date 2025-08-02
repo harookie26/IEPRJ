@@ -81,7 +81,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
 
         if (other.CompareTag("Enemy"))
         {
-            var ai = other.GetComponent<EnemyAI>();
+            var ai = other.GetComponent<PathfinderComponent>();
             if (ai == null) return;
 
             if (ai.CurrentDoorTarget == this && ai.CanTeleportFrom(this))
@@ -139,7 +139,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
         _lastEntryTime = Time.time;
     }
 
-    private void MoveToPathDoor(EnemyAI ai)
+    private void MoveToPathDoor(PathfinderComponent ai)
     {
         if (!ai.CanTeleportFrom(this))
         {

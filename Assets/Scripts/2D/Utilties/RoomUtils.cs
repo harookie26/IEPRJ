@@ -11,10 +11,6 @@ public static class RoomUtils
             .OrderBy(room => Vector2.Distance(room.Center, position))
             .FirstOrDefault(room => Vector2.Distance(room.Center, position) <= maxDistance);
     }
-    public static bool IsPositionInsideRoom(Vector2 position, IRoom room)
-    {
-        // Use the room's Bounds property for containment check
-        return room.Bounds.Contains(new Vector3(position.x, position.y, 0f));
-    }
+    public static bool IsPositionInsideRoom(Vector2 position, IRoom room) => room.Bounds.Contains(new Vector3(position.x, position.y, 0f));
 
 }
