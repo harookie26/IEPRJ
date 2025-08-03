@@ -32,6 +32,8 @@ public class EventNames {
     }
     public static class PlayerEvents
     {
+		public const string PLAYER_MOVED = "PLAYER_MOVED";
+		public const string PLAYER_STOPPED = "PLAYER_STOPPED";
         public const string PLAYER_STARTED_SPRINT = "PLAYER_STARTED_SPRINT";
         public const string PLAYER_STOPPED_SPRINT = "PLAYER_STOPPED_SPRINT";
         public const string PLAYER_HID = "PLAYER_HID";

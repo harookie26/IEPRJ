@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static EventNames;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -7,6 +8,8 @@ public class PlayerMovement : MonoBehaviour
     InputAction moveAction;
 
     [SerializeField] float moveSpeed = 5f;
+
+    private Vector2 previousInput = Vector2.zero;
 
     private void Awake()
     {
@@ -26,6 +29,17 @@ public class PlayerMovement : MonoBehaviour
         camRight.y = 0f;
         camForward.Normalize();
         camRight.Normalize();
+
+        if (input != Vector2.zero)
+        {
+            EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_MOVED);
+        }
+        else if (previousInput != Vector2.zero)
+        {
+            EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_STOPPED);
+        }
+
+        previousInput = input;
 
         // Calculate movement direction relative to camera
         Vector3 move = (camRight * input.x + camForward * input.y) * moveSpeed * Time.deltaTime;

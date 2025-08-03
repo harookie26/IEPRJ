@@ -1,4 +1,3 @@
-using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -20,8 +19,7 @@ public class FirstPersonCam : MonoBehaviour
         Vector3 euler = cameraTarget.localEulerAngles;
         yaw = euler.y;
         pitch = euler.x;
-
-    }   
+    }
 
     void Update()
     {
