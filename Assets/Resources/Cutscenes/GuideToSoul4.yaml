@@ -1,0 +1,41 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+  - !wait {}
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: Adam! Grab me and bring me to my body so that we can escape this place together.
+  - !dialogue
+    characterName:  Adam
+    dialogueLine: What the hell are you? A talking paintbrush? Am I going crazy?
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: Adam…
+  - !dialogue
+    characterName: Steve
+    dialogueLine: It's me, Steve! I was trapped in this place, and I need your help to get out.
+  - !dialogue
+    characterName: Adam
+    dialogueLine: Steve? Is that really you?
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Yes, but listen, we don't have much time. She's about to find us.
+  - !dialogue
+    characterName: Adam
+    dialogueLine: Who is she?
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Less talking, more doing! Grab me and let's get out of here before she catches us.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: But wait... It's not that simple.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: You can't just pick me up. You have to channel me first.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Walk up to me and hold Q to channel my spirit.
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide

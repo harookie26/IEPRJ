@@ -40,6 +40,7 @@ public class PlayerStateMachine : MonoBehaviour
     public bool IsSprinting => CurrentState == State.Sprint;
     public bool OutOfStamina => outOfStamina;
     public bool StaminaLocked => staminaLocked;
+    public bool IsHiding => isHiding;
 
     private EnemyStateMachine enemyStateMachine;
 

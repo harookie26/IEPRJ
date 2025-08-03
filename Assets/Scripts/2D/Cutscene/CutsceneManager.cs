@@ -64,6 +64,7 @@ public class CutsceneManager : MonoBehaviour
             .WithTagMapping("!cameraFocus", typeof(CameraFocusAction))
             .WithTagMapping("!animation", typeof(AnimationAction))
             .WithTagMapping("!wait", typeof(WaitAction))
+            .WithTagMapping("!cameraAnimation", typeof(CameraAnimationAction))
             .Build();
 
         try
@@ -81,6 +82,8 @@ public class CutsceneManager : MonoBehaviour
     {
         EventBroadcaster.Instance.PostEvent(CUTSCENE_START);
         EventBroadcaster.Instance.PostEvent(ON_2D_PLAYERMOVEMENT_DISABLED);
+
+        cameraAnimator.SetTrigger("cutsceneStart");
 
         Debug.Log($"Cutscene '{activeCutsceneId}' started.");
         isCutsceneActive = true;
@@ -125,14 +128,6 @@ public class CutsceneManager : MonoBehaviour
         isCutsceneActive = false;
         activeCutsceneId = null;
 
-        if (cameraAnimator != null)
-        {
-            cameraAnimator.SetTrigger("cutsceneEnd");
-        }
-
-        if (cinematicBarsAnimator != null)
-        {
-            cinematicBarsAnimator.SetTrigger("hide");
-        }
+        cameraAnimator.SetTrigger("cutsceneEnd");
     }
 }

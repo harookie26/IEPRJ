@@ -11,7 +11,7 @@ public static class CameraAnimator
 
         // Animate the camera's position using DOTween
         camera.transform.DOMove(targetPosition, duration)
-            .SetUpdate(true) // Use unscaled time
+            .SetUpdate(UpdateType.Late) // Ensures animation runs after LateUpdate
             .OnComplete(() => onComplete?.Invoke());
     }
 }

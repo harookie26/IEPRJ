@@ -1,0 +1,13 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+  - !wait {}
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: You're finally here, Adam. I can sense your presence in this room.
+
+  
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide

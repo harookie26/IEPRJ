@@ -1,0 +1,27 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+  - !wait {}
+  - !dialogue
+    characterName: Adam
+    dialogueLine: Uhhh, Steve? Who's that?
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Ah, shoot! That's her! We can't outrun her here, you have to hide!
+  - !dialogue
+    characterName: Steve
+    dialogueLine: See that object behind you? Run towards it by holding Shift while moving.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Once you're there, press W to hide.
+  - !dialogue
+    characterName: Adam
+    dialogueLine: Okay but who is she? What does she want?
+  - !dialogue
+    characterName: Steve
+    dialogueLine: No time to explain! Just keep moving and try to find my body before she catches you!
+
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide

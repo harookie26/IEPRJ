@@ -63,10 +63,29 @@ public class EnemyDetection : MonoBehaviour
         }
     }
 
+    private bool IsPlayerHiding()
+    {
+        // Example: Replace with your actual hiding check logic
+        var playerState = playerTransform?.GetComponent<PlayerStateMachine>();
+        return playerState != null && playerState.IsHiding;
+    }
+
     private void Update()
     {
         if (playerTransform == null || objectiveTransform == null || enemyStateMachine == null)
             return;
+
+        // Prevent detection if player is hiding
+        if (IsPlayerHiding())
+        {
+            isPlayerDetected = false;
+            if (wasPlayerDetectedLastFrame)
+            {
+                enemyStateMachine.OnPlayerLost();
+                wasPlayerDetectedLastFrame = false;
+            }
+            return;
+        }
 
         Vector2 directionToPlayer = (playerTransform.position - transform.position).normalized;
         float distanceToPlayer = Vector2.Distance(transform.position, playerTransform.position);

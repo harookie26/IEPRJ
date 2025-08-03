@@ -1,0 +1,23 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+
+  - !wait {}
+  - !dialogue
+    characterName: Steve
+    dialogueLine: She walked past us. We need to get out of here before she comes back.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Press W again while hiding to get up.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Then, run as fast as you can to the door.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Be mindful of your stamina, you can only sprint for a limited time.
+  
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide
+

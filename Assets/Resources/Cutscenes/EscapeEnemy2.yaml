@@ -1,0 +1,26 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+
+  - !wait {}
+  - !dialogue
+    characterName: Steve
+    dialogueLine: We're back at the start. We need to find my body before she does.
+  - !dialogue
+    characterName: Adam
+    dialogueLine: Mind telling me who she is?
+  - !dialogue
+    characterName: Steve
+    dialogueLine: We can talk about her once we're safe.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Let's check out the other rooms first.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: See if you can find a door past here.
+  
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide
+

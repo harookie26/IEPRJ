@@ -86,13 +86,24 @@ public class InputManager : MonoBehaviour
     /// </summary>
     public System.Collections.IEnumerator WaitForInputCoroutine(Action onComplete)
     {
-        yield return new WaitForEndOfFrame();
-
+        // Wait until all keys and mouse buttons are released
         while (
-            (Keyboard.current == null || !Keyboard.current.anyKey.wasPressedThisFrame) &&
-            (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame && !Mouse.current.rightButton.wasPressedThisFrame)
+            (Keyboard.current != null && Keyboard.current.anyKey.isPressed) ||
+            (Mouse.current != null && (Mouse.current.leftButton.isPressed || Mouse.current.rightButton.isPressed))
         )
         {
+            yield return null;
+        }
+
+        // Now wait for a new press
+        bool pressed = false;
+        while (!pressed)
+        {
+            if ((Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) ||
+                (Mouse.current != null && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame)))
+            {
+                pressed = true;
+            }
             yield return null;
         }
 

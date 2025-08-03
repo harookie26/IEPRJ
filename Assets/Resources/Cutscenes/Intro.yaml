@@ -2,9 +2,7 @@ actions:
   - !animation
     targetAnimatorId: CinematicBarsAnimator
     animationTrigger: show
-  - !animation
-    targetAnimatorId: MainCamera
-    animationTrigger: cutsceneStart
+
   - !wait {}
   - !dialogue
     characterName: Adam
@@ -20,30 +18,26 @@ actions:
     dialogueLine: I just played the arcade because something is happening to it, I came to the house just to investigate it.
   - !dialogue
     characterName: Mysterious Voice
-    dialogueLine: You’re like us now, stuck in this game, but you still have your body.
+    dialogueLine: You’re like US now, stuck in this game, but you still have your body.
   - !dialogue
     characterName: Mysterious Voice
-    dialogueLine: You should save us and let us out of this game through that door behind you where you came from.
+    dialogueLine: You should save me and let me out of this game through that door behind you where you came from.
   - !dialogue
     characterName: Adam
     dialogueLine: US? HOW MANY are you out there?
   - !dialogue
     characterName: Mysterious Voice
-    dialogueLine: There’s no time to explain, you only have limited time to save each one of us.
+    dialogueLine: There’s no time to explain, come find me and get me out of here.
   - !dialogue
     characterName: Mysterious Voice
-    dialogueLine: Find my body first, and get me out.
-
-  - !dialogue
-    characterName: Mysterious Voice
-    dialogueLine: That’s the monster! Go! Your body will consciously control the machine outside.
-  - !dialogue
-    characterName: Mysterious Voice
-    dialogueLine: Use A and D to move left and right.
+    dialogueLine: Navigate this wretched place by holding A to move left or D to move right.
+  
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide
 
 
   #- !cameraFocus
   #  targetId: HidingSpot1(Clone)
   #  duration: 3
   #  cameraZ: -10
-  - !wait {}

@@ -1,0 +1,23 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+
+  - !wait {}
+  - !dialogue
+    characterName: Steve
+    dialogueLine: This is bad! I can feel her coming towards my body!
+  - !dialogue
+    characterName: Steve
+    dialogueLine: We need to distract her!
+  - !dialogue
+    characterName: Adam
+    dialogueLine: Do you want me to make some noise?
+  - !dialogue
+    characterName: Steve
+    dialogueLine: That's a good idea, but be sure to hide first!
+  
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide
+

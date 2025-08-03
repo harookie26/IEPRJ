@@ -1,0 +1,17 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+
+  - !wait {}
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: Over here, Adam! I can feel you getting closer!
+  - !dialogue
+    characterName: Mysterious Voice
+    dialogueLine: Enter the door behind you by pressing W.
+  
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide
+

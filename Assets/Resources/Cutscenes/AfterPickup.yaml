@@ -1,0 +1,25 @@
+actions:
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: show
+  - !wait {}
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Oh, wow! This feels amazing!
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Now, let's find my body so we can escape this place together.
+  - !dialogue
+    characterName: Adam
+    dialogueLine: So, where is it? Can't you sense it just like how you're able to sense me?
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Unfortunately, I can't. I can only sense you because you have your soul with you.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: Best plan of action is to retrace your steps and find the first room you came through.
+
+  
+  - !animation
+    targetAnimatorId: CinematicBarsAnimator
+    animationTrigger: hide
