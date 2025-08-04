@@ -1,7 +1,4 @@
 actions:
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: show
   - !wait {}
   - !dialogue
     characterName: Mysterious Voice
@@ -36,6 +33,3 @@ actions:
   - !dialogue
     characterName: Steve
     dialogueLine: Walk up to me and hold Q to channel my spirit.
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: hide

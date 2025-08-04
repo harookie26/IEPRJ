@@ -1,5 +1,6 @@
 using UnityEngine;
 using static EventNames;
+using UnityEngine.SceneManagement;
 
 public class GameStateManager : MonoBehaviour
 {
@@ -43,9 +44,16 @@ public class GameStateManager : MonoBehaviour
 
     void Update()
     {
-        if (isLevelFailed || isLevelComplete)
+        if (isLevelComplete)
         {
-            Time.timeScale = 0f;
+            SceneLoader sceneLoader = FindFirstObjectByType<SceneLoader>();
+            sceneLoader?.LoadSceneByName(SceneNames.HubScene);
+        }
+
+        if (isLevelFailed)
+        {
+            SceneLoader sceneLoader = FindFirstObjectByType<SceneLoader>();
+            sceneLoader?.LoadSceneByName(SceneNames.LoseQuestion);
         }
     }
 
@@ -59,5 +67,11 @@ public class GameStateManager : MonoBehaviour
     {
         EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESUME);
         Time.timeScale = 1f;
+    }
+
+    private void OnApplicationQuit()
+    {
+        PlayerPrefs.DeleteKey("Hub");
+        PlayerPrefs.Save();
     }
 }

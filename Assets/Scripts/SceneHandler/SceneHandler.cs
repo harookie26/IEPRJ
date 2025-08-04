@@ -6,6 +6,8 @@ public class SceneHandler : MonoBehaviour
     [SerializeField] private Canvas uiCanvas;
     private SceneLoader sceneLoader;
 
+    private Transform playerTransform;
+
     private bool canSwitchScene = false;
 
     void OnEnable()
@@ -32,15 +34,15 @@ public class SceneHandler : MonoBehaviour
 
     void Start()
     {
-        // Optionally, auto-assign SceneLoader if not set in Inspector
         if (sceneLoader == null)
         {
             sceneLoader = FindFirstObjectByType<SceneLoader>();
             if (sceneLoader == null)
-            {
                 Debug.LogError("SceneLoader not found in the scene. Please add one and assign it.");
-            }
+            
         }
+
+        playerTransform = GameObject.FindWithTag("Player")?.transform;
     }
 
     void Update()
@@ -50,14 +52,28 @@ public class SceneHandler : MonoBehaviour
 
     void SwitchTo2DScene()
     {
+        if (playerTransform == null)
+        {
+            Debug.LogError("Player Transform not found. Make sure a GameObject with the 'Player' tag exists in the scene.");
+            return;
+        }
+
+        SceneStateData sceneStateData = new SceneStateData
+        {
+            playerPosition = playerTransform.position,
+            playerRotation = transform.rotation
+        };
+
+        PlayerPrefs.SetString("Hub", JsonUtility.ToJson(sceneStateData));
+        PlayerPrefs.Save();
+
         if (canSwitchScene && Input.GetKeyDown(KeyCode.E))
         {
             if (sceneLoader != null)
             {
-                // Broadcast event before switching scene
                 EventBroadcaster.Instance.PostEvent(SceneEvents.ON_SCENE_SWITCH);
 
-                sceneLoader.LoadSceneByName(SceneNames.GameScene);
+                sceneLoader.LoadSceneByName(SceneNames.ArcadeStart);
             }
             else
             {

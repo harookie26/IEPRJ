@@ -1,8 +1,4 @@
 actions:
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: show
-
   - !wait {}
   - !dialogue
     characterName: Adam
@@ -31,11 +27,6 @@ actions:
   - !dialogue
     characterName: Mysterious Voice
     dialogueLine: Navigate this wretched place by holding A to move left or D to move right.
-  
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: hide
-
 
   #- !cameraFocus
   #  targetId: HidingSpot1(Clone)

@@ -1,8 +1,5 @@
 actions:
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: show
-
+  
   - !wait {}
   - !dialogue
     characterName: Mysterious Voice
@@ -10,8 +7,3 @@ actions:
   - !dialogue
     characterName: Mysterious Voice
     dialogueLine: Enter the door behind you by pressing W.
-  
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: hide
-

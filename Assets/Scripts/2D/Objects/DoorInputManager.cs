@@ -4,7 +4,20 @@ using static EventNames;
 
 public class DoorInputManager : MonoBehaviour
 {
+    private bool _isCutsceneActive = false;
     private GameObject _player;
+
+    private void Awake()
+    {
+        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
+        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
+    }
+
+    private void OnEnable()
+    {
+        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERCONTROLS_DISABLED, () => enabled = false);
+        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERCONTROLS_ENABLED, () => enabled = true);
+    }
 
     private void Start()
     {
@@ -13,6 +26,9 @@ public class DoorInputManager : MonoBehaviour
 
     private void Update()
     {
+        if (_isCutsceneActive || _player == null)
+            return;
+        
         if (InputManager.Instance.WasInteractPressed())
         {
             Debug.Log("[DoorInputManager] W key pressed");

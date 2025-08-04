@@ -1,12 +1,11 @@
 actions:
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: show
-
   - !wait {}
   - !dialogue
     characterName: Steve
     dialogueLine: She walked past us. We need to get out of here before she comes back.
+  - !dialogue
+    characterName: Steve
+    dialogueLine: You might notice your view is getting darker, that's because she's nearby.
   - !dialogue
     characterName: Steve
     dialogueLine: Press W again while hiding to get up.
@@ -16,8 +15,3 @@ actions:
   - !dialogue
     characterName: Steve
     dialogueLine: Be mindful of your stamina, you can only sprint for a limited time.
-  
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: hide
-

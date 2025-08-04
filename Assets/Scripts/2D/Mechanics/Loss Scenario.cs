@@ -9,7 +9,8 @@ public class LossScenario : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private GameObject player;
-    [SerializeField] private GameObject ghost;
+    [SerializeField] private GameObject enemy;
+    [SerializeField] private GameObject objective;
 
     [Header("Haunting Settings")]
     [SerializeField] private float hauntingDistance = 2f;
@@ -20,12 +21,8 @@ public class LossScenario : MonoBehaviour
     [SerializeField] private Volume volume;
     private Vignette vignette;
 
-    private float currentSanity;
-    private float tickTimer;
-    private bool isHaunted;
     private bool isLost;
-
-    private IHidable currentHidingSpot;
+    private HauntingSystem hauntingSystem;
 
     private void OnEnable()
     {
@@ -41,53 +38,48 @@ public class LossScenario : MonoBehaviour
 
     private void OnPlayerHiding()
     {
-        currentHidingSpot = FindCurrentHidingSpot();
+        hauntingSystem.SetHidingSpot(FindCurrentHidingSpot());
     }
 
     private void OnPlayerRevealed()
     {
-        currentHidingSpot = null;
+        hauntingSystem.ClearHidingSpot();
     }
 
     void Start()
     {
-        currentSanity = 0f;
         isLost = false;
-        tickTimer = 0f;
 
         if (volume != null && volume.profile != null)
         {
             volume.profile.TryGet(out vignette);
         }
+
+        hauntingSystem = new HauntingSystem(
+            player,
+            enemy,
+            hauntingDistance,
+            hiddenHauntingDistance,
+            hauntingTick,
+            maxSanity
+        );
     }
 
     void Update()
     {
         if (isLost)
-            EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_LEVEL_FAILED);
+            return;
 
-        bool isHidden = currentHidingSpot != null && currentHidingSpot.IsPlayerHiding;
+        float defeatDistance = 1.0f;
 
-        if (isHidden)
-            isHaunted = IsHidingPlayerHaunted();
-        else
-            isHaunted = IsPlayerHaunted();
-
-        tickTimer += Time.deltaTime;
-
-        if (isHaunted)
-        {
-            TryIncreaseSanity();
-        }
-        else
-        {
-            TryDecreaseSanity();
-        }
-
-        if (currentSanity >= maxSanity)
-        {
+        if (Vector3.Distance(enemy.transform.position, player.transform.position) < defeatDistance)
             HandleDefeat();
-        }
+
+        if (Vector3.Distance(objective.transform.position, player.transform.position) < defeatDistance)
+            HandleDefeat();
+
+        bool haunted = hauntingSystem.IsHaunted();
+        bool reachedMax = hauntingSystem.UpdateSanity();
 
         UpdateVignetteEffect();
     }
@@ -103,52 +95,49 @@ public class LossScenario : MonoBehaviour
         return null;
     }
 
-    private bool IsHidingPlayerHaunted()
-    {
-        if (currentHidingSpot is MonoBehaviour hidingMono)
-        {
-            float distance = Mathf.Abs(hidingMono.transform.position.x - ghost.transform.position.x);
-            return distance <= hiddenHauntingDistance;
-        }
-        return false;
-    }
-
-    private bool IsPlayerHaunted()
-    {
-        float distance = Mathf.Abs(player.transform.position.x - ghost.transform.position.x);
-        return distance <= hauntingDistance;
-    }
-
-    private void TryIncreaseSanity()
-    {
-        if (currentSanity < maxSanity && tickTimer >= hauntingTick)
-        {
-            currentSanity = Mathf.Clamp(currentSanity + 1, 0, maxSanity);
-            tickTimer = 0f;
-        }
-    }
-
-    private void TryDecreaseSanity()
-    {
-        if (currentSanity > 0 && tickTimer >= hauntingTick * 2)
-        {
-            currentSanity = Mathf.Clamp(currentSanity - 1, 0, maxSanity);
-            Debug.Log($"Current Haunted Points: {currentSanity}/{maxSanity}");
-            tickTimer = 0f;
-        }
-    }
-
     private void HandleDefeat()
     {
-        isLost = true;
+        if (!isLost)
+        {
+            Debug.Log("Player has been defeated!");
+            isLost = true;
+            EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_LEVEL_FAILED);
+        }
     }
 
     private void UpdateVignetteEffect()
     {
-        if (vignette != null)
+        if (vignette != null && hauntingSystem != null)
         {
-            float t = Mathf.Clamp01(currentSanity / maxSanity);
-            vignette.intensity.value = Mathf.Lerp(0f, 0.75f, t);
+            float t = Mathf.Clamp01(hauntingSystem.CurrentSanity / hauntingSystem.MaxSanity);
+            vignette.intensity.value = Mathf.Lerp(0f, 0.5f, t);
+        }
+    }
+    private void OnDrawGizmos()
+    {
+        if (player != null)
+        {
+            Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
+            Gizmos.DrawWireSphere(player.transform.position, hauntingDistance);
+        }
+
+        if (hauntingSystem != null)
+        {
+            var hidingSpot = typeof(HauntingSystem)
+                .GetField("currentHidingSpot", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.GetValue(hauntingSystem) as MonoBehaviour;
+
+            if (hidingSpot != null)
+            {
+                Gizmos.color = new Color(0f, 0.5f, 1f, 0.3f);
+                Gizmos.DrawWireSphere(hidingSpot.transform.position, hiddenHauntingDistance);
+            }
+        }
+
+        if (enemy != null)
+        {
+            Gizmos.color = new Color(1f, 0f, 0f, 0.2f); // Red, more transparent
+            Gizmos.DrawWireSphere(enemy.transform.position, hauntingDistance);
         }
     }
 }

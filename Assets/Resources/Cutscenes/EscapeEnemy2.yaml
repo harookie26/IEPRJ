@@ -1,7 +1,4 @@
 actions:
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: show
 
   - !wait {}
   - !dialogue
@@ -19,8 +16,3 @@ actions:
   - !dialogue
     characterName: Steve
     dialogueLine: See if you can find a door past here.
-  
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: hide
-

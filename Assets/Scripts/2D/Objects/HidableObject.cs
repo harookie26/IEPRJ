@@ -74,20 +74,20 @@ public class HidableObject : MonoBehaviour, IHidable
         }
     }
 
-    private void OnGUI()
-    {
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        bool playerNearby = player != null && Mathf.Abs(transform.position.x - player.transform.position.x) <= graceDistance;
+    //private void OnGUI()
+    //{
+    //    GameObject player = GameObject.FindGameObjectWithTag("Player");
+    //    bool playerNearby = player != null && Mathf.Abs(transform.position.x - player.transform.position.x) <= graceDistance;
 
-        if (playerNearby && !isHiding && cooldownTimer <= 0f)
-        {
-            GUI.Label(new Rect(Screen.width / 2, Screen.height / 2, 200, 30), "Press W to hide");
-        }
-        else if (isHiding)
-        {
-            GUI.Label(new Rect(Screen.width / 2, Screen.height / 2, 200, 30), "Press W to exit hiding");
-        }
-    }
+    //    if (playerNearby && !isHiding && cooldownTimer <= 0f)
+    //    {
+    //        GUI.Label(new Rect(Screen.width / 2, Screen.height / 2, 200, 30), "Press W to hide");
+    //    }
+    //    else if (isHiding)
+    //    {
+    //        GUI.Label(new Rect(Screen.width / 2, Screen.height / 2, 200, 30), "Press W to exit hiding");
+    //    }
+    //}
 
     public void EnterHiding(GameObject player)
     {
@@ -103,7 +103,7 @@ public class HidableObject : MonoBehaviour, IHidable
         var rb = player.GetComponent<Rigidbody2D>();
         if (rb != null) rb.linearVelocity = Vector2.zero;
 
-        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERMOVEMENT_DISABLED);
+        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERCONTROLS_DISABLED);
     }
 
     public void ExitHiding()
@@ -122,6 +122,6 @@ public class HidableObject : MonoBehaviour, IHidable
             currentPlayer = null;
         }
 
-        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERMOVEMENT_ENABLED);
+        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERCONTROLS_ENABLED);
     }
 }

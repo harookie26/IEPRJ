@@ -9,7 +9,7 @@ using static EventNames.ControlEvents2D;
 
 public class CutsceneManager : MonoBehaviour
 {
-    [SerializeField] private Animator cinematicBarsAnimator;
+    [SerializeField] private Animator infoUI;
     [SerializeField] private Animator cameraAnimator;
 
     public static CutsceneManager Instance { get; private set; }
@@ -81,7 +81,9 @@ public class CutsceneManager : MonoBehaviour
     private void OnCutsceneStart(CutsceneSequence sequence)
     {
         EventBroadcaster.Instance.PostEvent(CUTSCENE_START);
-        EventBroadcaster.Instance.PostEvent(ON_2D_PLAYERMOVEMENT_DISABLED);
+        EventBroadcaster.Instance.PostEvent(ON_2D_PLAYERCONTROLS_DISABLED);
+
+        infoUI.SetTrigger("cutsceneStart");
 
         cameraAnimator.SetTrigger("cutsceneStart");
 
@@ -122,12 +124,14 @@ public class CutsceneManager : MonoBehaviour
         if (!isCutsceneActive) return;
 
         EventBroadcaster.Instance.PostEvent(CUTSCENE_END);
-        EventBroadcaster.Instance.PostEvent(ON_2D_PLAYERMOVEMENT_ENABLED);
+        EventBroadcaster.Instance.PostEvent(ON_2D_PLAYERCONTROLS_ENABLED);
 
         Debug.Log($"Cutscene '{activeCutsceneId}' ended.");
         isCutsceneActive = false;
         activeCutsceneId = null;
 
         cameraAnimator.SetTrigger("cutsceneEnd");
+
+        infoUI.SetTrigger("cutsceneEnd");
     }
 }

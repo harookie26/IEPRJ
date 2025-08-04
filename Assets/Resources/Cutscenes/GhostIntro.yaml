@@ -1,8 +1,5 @@
 actions:
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: show
-  - !wait {}
+  - !wait{}
   - !dialogue
     characterName: Adam
     dialogueLine: Uhhh, Steve? Who's that?
@@ -21,7 +18,3 @@ actions:
   - !dialogue
     characterName: Steve
     dialogueLine: No time to explain! Just keep moving and try to find my body before she catches you!
-
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: hide

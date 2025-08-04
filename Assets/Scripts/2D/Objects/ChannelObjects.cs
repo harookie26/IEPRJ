@@ -5,7 +5,7 @@ using static EventNames;
 public class ChannelObject : MonoBehaviour, IChannelable
 {
     private float raiseSpeed = 0.5f;
-    private float progressMax = 10f;
+    private float progressMax = 5;
     private float graceDistance = 0.4f;
     private float progress = 0f;
     private bool isChanneling = false;

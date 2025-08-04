@@ -76,14 +76,17 @@ public class PlayerStateMachine : MonoBehaviour
         staminaLocked = false;
         ChangeState(State.Idle);
 
-        // If you want to find by tag or name, you can do:
-        GameObject enemy = GameObject.FindWithTag("Enemy");
-        if (enemy != null)
-            enemyStateMachine = enemy.GetComponent<EnemyStateMachine>();
     }
 
     private void Update()
     {
+        if (enemyStateMachine == null)
+        {
+            GameObject enemy = GameObject.FindWithTag("Enemy");
+            if (enemy != null)
+                enemyStateMachine = enemy.GetComponent<EnemyStateMachine>();
+        }
+
         if (!canMove)
             return;
 

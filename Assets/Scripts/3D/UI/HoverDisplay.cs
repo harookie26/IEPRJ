@@ -5,7 +5,7 @@ public class DisplayHover : MonoBehaviour
 {
     [SerializeField] private Transform player;
     [SerializeField] private Camera mainCamera;
-    [SerializeField] private Canvas uiCanvas;
+    [SerializeField] private GameObject uiCanvas;
     [SerializeField] private float viewAngleThreshold = 30f;
     [SerializeField] private float triggerDistance = 5f;
 
@@ -14,7 +14,7 @@ public class DisplayHover : MonoBehaviour
     void Start()
     {
         if (uiCanvas != null)
-            uiCanvas.enabled = false;
+            uiCanvas.SetActive(false);
         wasUIVisible = false;
     }
 
@@ -29,13 +29,13 @@ public class DisplayHover : MonoBehaviour
 
         if (shouldShowUI && !wasUIVisible)
         {
-            uiCanvas.enabled = true;
+            uiCanvas.SetActive(true);
             wasUIVisible = true;
             EventBroadcaster.Instance.PostEvent(EventNames.UIEvents.HOVER_UI_SHOWN);
         }
         else if (!shouldShowUI && wasUIVisible)
         {
-            uiCanvas.enabled = false;
+            uiCanvas.SetActive(false);
             wasUIVisible = false;
             EventBroadcaster.Instance.PostEvent(EventNames.UIEvents.HOVER_UI_HIDDEN);
         }

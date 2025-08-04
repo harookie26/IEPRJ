@@ -1,7 +1,4 @@
 actions:
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: show
   - !wait {}
   - !dialogue
     characterName: Steve
@@ -18,8 +15,3 @@ actions:
   - !dialogue
     characterName: Steve
     dialogueLine: Best plan of action is to retrace your steps and find the first room you came through.
-
-  
-  - !animation
-    targetAnimatorId: CinematicBarsAnimator
-    animationTrigger: hide
