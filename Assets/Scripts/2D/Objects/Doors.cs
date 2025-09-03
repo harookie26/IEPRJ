@@ -14,7 +14,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
     [SerializeField] private string linkID;
     [SerializeField, HideInInspector] private string uniqueID = System.Guid.NewGuid().ToString();
 
-    [SerializeField] private PolygonCollider2D triggerZone;
+    [SerializeField] private Collider triggerZone; // 3D collider
     private GameObject _player;
 
     private static float _entryCooldown = 0.5f;
@@ -25,14 +25,12 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
     public string LinkID => linkID;
     public string UniqueID => uniqueID;
 
-    // IDoor implementation
-    public int Id => GetInstanceID(); // Or use a serialized int if needed
+    public int Id => GetInstanceID();
     public IRoom RoomA => roomA;
     public IRoom RoomB => roomB;
 
     [SerializeField] private float weight = 1f;
     public float Weight => weight;
-
 
     private void Awake()
     {
@@ -45,12 +43,10 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
         _player = GameObject.FindGameObjectWithTag("Player");
         LinkRegistry.Register(this);
 
-        triggerZone = GetComponent<PolygonCollider2D>() ?? triggerZone;
+        triggerZone = GetComponent<Collider>() ?? triggerZone;
 
         roomA = RoomRegistry.GetRoom(roomAId);
         roomB = RoomRegistry.GetRoom(roomBId);
-
-        // Debug.Log($"[Door:{name}] connects Room {roomAId} and Room {roomBId}");
 
         if (roomA == null || roomB == null)
         {
@@ -61,9 +57,6 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
             if (roomA is RoomComponent rcA) rcA.AddDoor(this);
             if (roomB is RoomComponent rcB) rcB.AddDoor(this);
         }
-
-        // Debug.Log($"[Door:{name}] Connected Room {roomA?.Id} <--> Room {roomB?.Id} (LinkID: {linkID})");
-
     }
 
     private void OnDestroy()
@@ -71,7 +64,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
         LinkRegistry.Unregister(this);
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
@@ -90,7 +83,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
             }
         }
     }
-    void OnTriggerExit2D(Collider2D other)
+    void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player") && CurrentDoor == this)
         {
@@ -98,7 +91,6 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
             CurrentDoor = null;
         }
     }
-
 
     public bool IsReadyToUse()
     {
@@ -121,9 +113,8 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
             return;
         }
 
-        // Pick the farthest one to avoid teleporting to self
         var linked = linkedList
-            .OrderByDescending(d => Vector2.Distance(d.transform.position, transform.position))
+            .OrderByDescending(d => Vector3.Distance(d.transform.position, transform.position))
             .First();
 
         if (linked == this)
@@ -135,7 +126,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
         Vector3 targetPos = linked.transform.position;
         Vector3 playerPos = _player.transform.position;
 
-        _player.transform.position = new Vector3(targetPos.x, targetPos.y, playerPos.z);
+        _player.transform.position = new Vector3(targetPos.x, targetPos.y, targetPos.z);
         _lastEntryTime = Time.time;
     }
 
@@ -173,26 +164,24 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
             return;
         }
 
-        // Teleport and notify AI
         ai.transform.position = destination.transform.position;
         ai.RegisterTeleport(destination, toRoom);
 
         Debug.Log($"[Doors:{name}] Enemy teleported to Room {toRoom.Id} via {destination.name}");
     }
 
-
-    public Vector2 GetEntryPointFor(IRoom fromRoom)
+    public Vector3 GetEntryPointFor(IRoom fromRoom)
     {
-        Vector2 offset = Vector2.zero;
+        Vector3 offset = Vector3.zero;
 
         if (fromRoom == RoomA)
-            offset = (RoomB.Center - RoomA.Center).normalized * 0.5f;
+            offset = (RoomB.Center - RoomA.Center);
         else if (fromRoom == RoomB)
-            offset = (RoomA.Center - RoomB.Center).normalized * 0.5f;
+            offset = (RoomA.Center - RoomB.Center);
         else
             Debug.LogWarning($"[Door:{name}] Room {fromRoom?.Id} is not connected to this door.");
 
-        return transform.position + (Vector3)offset;
+        offset = offset.normalized * 0.5f;
+        return transform.position + offset;
     }
-
 }

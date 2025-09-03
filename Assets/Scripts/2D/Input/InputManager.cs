@@ -121,7 +121,7 @@ public class InputManager : MonoBehaviour
         }
         else
         {
-            interactPressed = Keyboard.current != null && Keyboard.current.wKey.wasPressedThisFrame;
+            interactPressed = Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
             channelPressed = Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
             shoutPressed = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
         }
