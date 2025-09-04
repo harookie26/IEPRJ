@@ -18,7 +18,6 @@ public class InputManager : MonoBehaviour
 
     private bool onlyAllowLMBOrEnter = false;
 
-    // New: Block input until all keys/buttons are released after re-enabling
     private bool blockInputUntilRelease = false;
 
     private void Awake()

@@ -19,6 +19,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        // Prevent movement if companion is in manual mode
+        if (PBController.IsCompanionManualModeActive)
+        {
+            previousInput = Vector2.zero;
+            return;
+        }
+
         Vector2 input = moveAction.ReadValue<Vector2>();
 
         // Get the camera's forward and right vectors, ignoring the y component
