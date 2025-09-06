@@ -228,7 +228,6 @@ public class PlayerStateMachine : MonoBehaviour
     {
         Debug.Log("Player shouted while hiding.");
         EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_SHOUTED);
-        enemyStateMachine.ChangeState(EnemyStateMachine.State.ShoutDistracted);
     }
 
     private void HandleStaminaRegen()
