@@ -100,12 +100,12 @@ public class PathfinderComponent : MonoBehaviour
 
         Debug.Log($"[EnemyAI] Entered Room {enteredRoom.Id} via {usedDoor.name}");
 
-        foreach (var door in enteredRoom.ConnectedDoors)
-        {
-            var doorName = ((MonoBehaviour)door).name;
-            var leadsTo = door.RoomA == enteredRoom ? door.RoomB : door.RoomA;
-            var leadsToId = leadsTo?.Id.ToString() ?? "null";
-        }
+        //foreach (var door in enteredRoom.ConnectedDoors)
+        //{
+        //    var doorName = ((MonoBehaviour)door).name;
+        //    var leadsTo = door.RoomA == enteredRoom ? door.RoomB : door.RoomA;
+        //    var leadsToId = leadsTo?.Id.ToString() ?? "null";
+        //}
 
         if (roomPathIndex + 1 < roomPath.Count && roomPath[roomPathIndex + 1] == enteredRoom)
             roomPathIndex++;

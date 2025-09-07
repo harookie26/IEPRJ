@@ -54,8 +54,8 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
         }
         else
         {
-            if (roomA is RoomComponent rcA) rcA.AddDoor(this);
-            if (roomB is RoomComponent rcB) rcB.AddDoor(this);
+            //if (roomA is RoomComponent rcA) rcA.AddDoor(this);
+            //if (roomB is RoomComponent rcB) rcB.AddDoor(this);
         }
     }
 

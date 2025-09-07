@@ -27,18 +27,18 @@ public static class RoomRegistry
         return room;
     }
 
-    public static void LogAllRoomsAndDoors()
-    {
-        foreach (var room in rooms.Values)
-        {
-            Debug.Log($"[Room {room.Id}] Connected doors: {room.ConnectedDoors.Count()}");
+    //public static void LogAllRoomsAndDoors()
+    //{
+    //    foreach (var room in rooms.Values)
+    //    {
+    //        Debug.Log($"[Room {room.Id}] Connected doors: {room.ConnectedDoors.Count()}");
 
-            foreach (var door in room.ConnectedDoors)
-            {
-                var otherRoom = door.RoomA == room ? door.RoomB : door.RoomA;
-                Debug.Log($"  ↳ Connected to Room {otherRoom?.Id} via Door {((MonoBehaviour)door).name}");
-            }
-        }
-    }
+    //        foreach (var door in room.ConnectedDoors)
+    //        {
+    //            var otherRoom = door.RoomA == room ? door.RoomB : door.RoomA;
+    //            Debug.Log($"  ↳ Connected to Room {otherRoom?.Id} via Door {((MonoBehaviour)door).name}");
+    //        }
+    //    }
+    //}
 
 }

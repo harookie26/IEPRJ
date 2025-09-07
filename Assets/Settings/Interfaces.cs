@@ -36,8 +36,8 @@ namespace Game.Level
     public interface IRoom
     {
         int Id { get; }
-        Vector2 Center { get; }
-        IEnumerable<IDoor> ConnectedDoors { get; }
+        Vector3 Center { get; }
+        //IEnumerable<IDoor> ConnectedDoors { get; }
 
         Bounds Bounds { get; }
     }

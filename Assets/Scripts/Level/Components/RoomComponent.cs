@@ -2,56 +2,75 @@ using UnityEngine;
 using System.Collections.Generic;
 using Game.Level;
 
+[ExecuteAlways]
 public class RoomComponent : MonoBehaviour, IRoom
 {
     [SerializeField] private int id;
-    [SerializeField] private Vector2 center;
-    [SerializeField] private float boundsOffset = 3.0f; // Added offset field
 
-    private Collider2D roomCollider;
+    private Vector3 center;
+    private BoxCollider boxCollider;
 
-    private List<IDoor> connectedDoors = new List<IDoor>();
     public int Id => id;
-    public Vector2 Center => center;
-    public IEnumerable<IDoor> ConnectedDoors => connectedDoors;
-    public Bounds Bounds => roomCollider.bounds;
+    public Vector3 Center => center;
+    public Bounds Bounds => boxCollider != null ? boxCollider.bounds : new Bounds();
 
-    public Bounds OffsetBounds
+    // Flag to indicate if the player is inside this room
+    public bool IsPlayerInside { get; private set; }
+
+    private void OnValidate()
     {
-        get
-        {
-            Bounds b = roomCollider.bounds;
-            b.Expand(-boundsOffset * 2f);
-            return b;
-        }
+        UpdateCenterFromCollider();
+    }
+
+    private void Reset()
+    {
+        UpdateCenterFromCollider();
     }
 
     private void Awake()
     {
-        RoomRegistry.RegisterRoom(this);
-        roomCollider = GetComponent<Collider2D>();
+        UpdateCenterFromCollider();
     }
 
-    public void AddDoor(IDoor door)
+    private void UpdateCenterFromCollider()
     {
-        if (!connectedDoors.Contains(door))
-            connectedDoors.Add(door);
+        if (boxCollider == null)
+            boxCollider = GetComponent<BoxCollider>();
+
+        if (boxCollider != null)
+            center = boxCollider.bounds.center;
     }
 
-#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawSphere(new Vector3(center.x, center.y, transform.position.z), 0.3f);
-        UnityEditor.Handles.Label(new Vector3(center.x, center.y, transform.position.z + 0.1f), $"Room {id}");
+        if (boxCollider == null)
+            boxCollider = GetComponent<BoxCollider>();
 
-        Collider2D col = GetComponent<Collider2D>();
-        if (col != null)
+        if (boxCollider != null)
         {
+            // Draw the bounds
             Gizmos.color = Color.cyan;
-            Bounds bounds = col.bounds;
-            Gizmos.DrawWireCube(bounds.center, bounds.size);
+            Gizmos.DrawWireCube(boxCollider.bounds.center, boxCollider.bounds.size);
+
+            // Draw the center
+            Gizmos.color = Color.red;
+            Gizmos.DrawSphere(boxCollider.bounds.center, 0.2f);
         }
     }
-#endif
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            IsPlayerInside = true;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            IsPlayerInside = false;
+        }
+    }
 }

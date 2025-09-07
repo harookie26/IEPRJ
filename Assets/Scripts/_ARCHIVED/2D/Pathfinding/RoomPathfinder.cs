@@ -37,25 +37,25 @@ public static class RoomPathfinder
 
             visited.Add(current);
 
-            foreach (var door in current.ConnectedDoors)
-            {
-                var neighbor = door.RoomA == current ? door.RoomB : door.RoomA;
-                if (neighbor == null || visited.Contains(neighbor)) continue;
+            //foreach (var door in current.ConnectedDoors)
+            //{
+            //    var neighbor = door.RoomA == current ? door.RoomB : door.RoomA;
+            //    if (neighbor == null || visited.Contains(neighbor)) continue;
 
-                float tentativeG = gScore[current] + Vector2.Distance(current.Center, neighbor.Center) * door.Weight;
+            //    float tentativeG = gScore[current] + Vector2.Distance(current.Center, neighbor.Center) * door.Weight;
 
-                if (!gScore.ContainsKey(neighbor) || tentativeG < gScore[neighbor])
-                {
-                    cameFrom[neighbor] = current;
-                    gScore[neighbor] = tentativeG;
-                    fScore[neighbor] = tentativeG + Heuristic(neighbor, goal);
+            //    if (!gScore.ContainsKey(neighbor) || tentativeG < gScore[neighbor])
+            //    {
+            //        cameFrom[neighbor] = current;
+            //        gScore[neighbor] = tentativeG;
+            //        fScore[neighbor] = tentativeG + Heuristic(neighbor, goal);
 
-                    if (!openSet.Contains(neighbor))
-                        openSet.Enqueue(neighbor, fScore[neighbor]);
-                    else
-                        openSet.UpdatePriority(neighbor, fScore[neighbor]);
-                }
-            }
+            //        if (!openSet.Contains(neighbor))
+            //            openSet.Enqueue(neighbor, fScore[neighbor]);
+            //        else
+            //            openSet.UpdatePriority(neighbor, fScore[neighbor]);
+            //    }
+            //}
         }
 
         Debug.LogWarning("[RoomPathfinder] No path found.");
