@@ -6,15 +6,23 @@ public class PlayerMovement : MonoBehaviour
 {
     PlayerInput playerInput;
     InputAction moveAction;
+    InputAction jumpAction;
 
     [SerializeField] float moveSpeed = 5f;
+    [SerializeField] float jumpForce = 5f;
 
     private Vector2 previousInput = Vector2.zero;
+    private Rigidbody rb;
+
+    private bool isGrounded = true;
 
     private void Awake()
     {
         playerInput = GetComponent<PlayerInput>();
         moveAction = playerInput.actions["Movement"];
+        jumpAction = playerInput.actions["Jump"];
+        rb = GetComponent<Rigidbody>();
+
     }
 
     private void Update()
@@ -51,5 +59,21 @@ public class PlayerMovement : MonoBehaviour
         // Calculate movement direction relative to camera
         Vector3 move = (camRight * input.x + camForward * input.y) * moveSpeed * Time.deltaTime;
         transform.Translate(move, Space.World);
+
+        if (jumpAction.triggered && isGrounded)
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            isGrounded = false;
+        }
+
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Simple ground check: set isGrounded to true when colliding with anything
+        if (collision.contacts.Length > 0)
+        {
+            isGrounded = true;
+        }
     }
 }
