@@ -4,14 +4,6 @@ using System.Runtime.CompilerServices;
 
 
 public class EventNames {
-	public const string ON_UPDATE_SCORE = "ON_UPDATE_SCORE";
-	public const string ON_CORRECT_MATCH = "ON_CORRECT_MATCH";
-	public const string ON_WRONG_MATCH = "ON_WRONG_MATCH";
-	public const string ON_INCREASE_LEVEL = "ON_INCREASE_LEVEL";
-
-	public const string ON_PICTURE_CLICKED = "ON_PICTURE_CLICKED";
-
-
 	public class GameStateEvents
 	{
 		public const string ON_GAME_START = "ON_GAME_START";
@@ -30,6 +22,13 @@ public class EventNames {
 		public const string ON_SCENE_SWITCH = "ON_SCENE_SWITCH";
 		public const string ON_SCENE_RELOAD = "ON_SCENE_RELOAD";
     }
+
+	public class LevelEvents
+	{
+		public const string ON_CORRUPTED_ROOM_TRUE = "ON_CORRUPTED_ROOM_TRUE";
+		public const string ON_CORRUPTED_ROOM_FALSE = "ON_CORRUPTED_ROOM_FALSE";
+    }
+
     public static class PlayerEvents
     {
 		public const string PLAYER_MOVED = "PLAYER_MOVED";
@@ -38,9 +37,6 @@ public class EventNames {
         public const string PLAYER_STOPPED_SPRINT = "PLAYER_STOPPED_SPRINT";
         public const string PLAYER_HID = "PLAYER_HID";
         public const string PLAYER_REVEALED = "PLAYER_REVEALED";
-		public const string PLAYER_CHANNELING = "PLAYER_CHANNELING";
-		public const string PLAYER_DECHANNELING = "PLAYER_DECHANNELING";
-		public const string PLAYER_SHOUTED = "PLAYER_SHOUTED";
     }
 
     public class EnemyEvents
@@ -48,19 +44,12 @@ public class EventNames {
         public const string ENEMY_SPOTTED_PLAYER = "ENEMY_SPOTTED_PLAYER";
         public const string ENEMY_LOST_PLAYER = "ENEMY_LOST_PLAYER";
         public const string ENEMY_SEARCHING = "ENEMY_SEARCHING";
-        public const string ENEMY_PATROLLING = "ENEMY_PATROLLING";
-		public const string ENEMY_CHASING = "ENEMY_CHASING";
     }
 
     public static class UIEvents
     {
         public const string HOVER_UI_SHOWN = "HOVER_UI_SHOWN";
         public const string HOVER_UI_HIDDEN = "HOVER_UI_HIDDEN";
-    }
-
-	public static class ObjectEvents
-	{
-		public const string OBJECT_HIDING_COOLDOWN = "OBJECT_HIDING_COOLDOWN";
     }
 
 	public static class CutsceneEvents
@@ -77,13 +66,6 @@ public class EventNames {
         public const string CAMERA_SHAKE = "CAMERA_SHAKE";
     }
 
-	public static class ControlEvents2D
-	{
-		public const string ON_2D_PLAYERMOVEMENT_DISABLED = "ON_2D_PLAYERMOVEMENT_DISABLED";
-		public const string ON_2D_PLAYERMOVEMENT_ENABLED = "ON_2D_PLAYERMOVEMENT_ENABLED";
-		public const string ON_2D_PLAYERCONTROLS_DISABLED = "ON_2D_PLAYERCONTROLS_DISABLED";
-		public const string ON_2D_PLAYERCONTROLS_ENABLED = "ON_2D_PLAYERCONTROLS_ENABLED";
-    }
 }
 
 

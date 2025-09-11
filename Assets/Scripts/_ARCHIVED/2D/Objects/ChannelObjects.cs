@@ -26,7 +26,7 @@ public class ChannelObject : MonoBehaviour, IChannelable
 
         bool playerNearby = CanChannel(player);
 
-        if (playerNearby && !isChanneling && InputManager.Instance.WasChannelPressed())
+        if (playerNearby && !isChanneling)
         {
             StartChannel(player);
         }
@@ -60,8 +60,6 @@ public class ChannelObject : MonoBehaviour, IChannelable
         if (!CanChannel(player)) return;
         isChanneling = true;
         currentPlayer = player;
-        EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_CHANNELING);
-        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERMOVEMENT_DISABLED);
     }
 
     public void StopChannel()
@@ -69,8 +67,6 @@ public class ChannelObject : MonoBehaviour, IChannelable
         if (!isChanneling) return;
         isChanneling = false;
         currentPlayer = null;
-        EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_DECHANNELING);
-        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERMOVEMENT_ENABLED);
     }
 
     public void ChannelTick(float deltaTime)

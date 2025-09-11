@@ -5,7 +5,6 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using System.IO;
 using static EventNames.CutsceneEvents;
-using static EventNames.ControlEvents2D;
 
 public class CutsceneManager : MonoBehaviour
 {
@@ -81,7 +80,6 @@ public class CutsceneManager : MonoBehaviour
     private void OnCutsceneStart(CutsceneSequence sequence)
     {
         EventBroadcaster.Instance.PostEvent(CUTSCENE_START);
-        EventBroadcaster.Instance.PostEvent(ON_2D_PLAYERCONTROLS_DISABLED);
 
         infoUI.SetTrigger("cutsceneStart");
 
@@ -124,7 +122,6 @@ public class CutsceneManager : MonoBehaviour
         if (!isCutsceneActive) return;
 
         EventBroadcaster.Instance.PostEvent(CUTSCENE_END);
-        EventBroadcaster.Instance.PostEvent(ON_2D_PLAYERCONTROLS_ENABLED);
 
         Debug.Log($"Cutscene '{activeCutsceneId}' ended.");
         isCutsceneActive = false;

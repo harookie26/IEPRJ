@@ -1,0 +1,49 @@
+// FluidField.compute
+// Builds the scalar field for metaballs on the GPU using a bounded cubic falloff.
+
+#pragma kernel BuildField
+
+StructuredBuffer<float3> _Particles;
+int _ParticleCount;
+
+RWStructuredBuffer<float> _Field; // length = _Resolution * _Resolution * _Resolution
+
+int _Resolution; // number of samples per axis (resolution + 1)
+float3 _Size; // world size of the room (x,y,z)
+float _ParticleRadius;
+
+[numthreads(8, 8, 8)]
+void BuildField(uint3 id : SV_DispatchThreadID)
+{
+    int3 tid = int3(id);
+
+    if (tid.x >= _Resolution || tid.y >= _Resolution || tid.z >= _Resolution)
+        return;
+
+    int res = _Resolution;
+    int idx = tid.x * res * res + tid.y * res + tid.z;
+
+    // step such that positions go from -_Size/2 to +_Size/2 across (res-1) intervals
+    float3 step = _Size / (float) (res - 1);
+    float3 p = (float3(tid) * step) - (_Size * 0.5);
+
+    float r = max(1e-6, _ParticleRadius);
+    float invR = 1.0 / r;
+    float field = 0.0f;
+
+    // Bounded cubic falloff: contrib = (1 - d/r)^3 for d < r
+    [loop]
+    for (int i = 0; i < _ParticleCount; i++)
+    {
+        float3 dvec = p - _Particles[i];
+        float d2 = dot(dvec, dvec);
+        if (d2 >= r * r)
+            continue;
+        float d = sqrt(d2);
+        float u = d * invR; // 0..1
+        float c = 1.0 - u;
+        field += c * c * c;
+    }
+
+    _Field[idx] = field;
+}

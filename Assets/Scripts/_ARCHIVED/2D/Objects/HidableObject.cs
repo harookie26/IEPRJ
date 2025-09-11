@@ -102,8 +102,6 @@ public class HidableObject : MonoBehaviour, IHidable
 
         var rb = player.GetComponent<Rigidbody2D>();
         if (rb != null) rb.linearVelocity = Vector2.zero;
-
-        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERCONTROLS_DISABLED);
     }
 
     public void ExitHiding()
@@ -121,7 +119,5 @@ public class HidableObject : MonoBehaviour, IHidable
 
             currentPlayer = null;
         }
-
-        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERCONTROLS_ENABLED);
     }
 }
