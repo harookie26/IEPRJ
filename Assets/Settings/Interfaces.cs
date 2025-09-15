@@ -29,6 +29,11 @@ namespace Game.ObjectTypes
         string LinkID { get; }
         string UniqueID { get; }
     }
+
+    public interface IInteractable
+    {
+        void Interact();
+    }
 }
 
 namespace Game.Level

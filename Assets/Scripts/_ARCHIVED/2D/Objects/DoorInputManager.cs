@@ -31,10 +31,10 @@ public class DoorInputManager : MonoBehaviour
         {
             Debug.Log("[DoorInputManager] W key pressed");
 
-            if (Doors.CurrentDoor?.IsReadyToUse() == true)
+            if (DoorsComponent.CurrentDoor?.IsReadyToUse() == true)
             {
-                Debug.Log($"[DoorInputManager] Teleporting via {Doors.CurrentDoor.name}");
-                Doors.CurrentDoor.MoveToLinkedDoor();
+                Debug.Log($"[DoorInputManager] Teleporting via {DoorsComponent.CurrentDoor.name}");
+                DoorsComponent.CurrentDoor.MoveToLinkedDoor();
             }
             else
             {
