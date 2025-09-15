@@ -3,7 +3,7 @@ using System.Linq;
 using Game.ObjectTypes;
 using Game.Level;
 
-public class Doors : MonoBehaviour, ILinkable, IDoor
+public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
 {
     [SerializeField] private int roomAId;
     [SerializeField] private int roomBId;
@@ -21,7 +21,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
     private static float _lastEntryTime = -1f;
     private bool _playerInZone = false;
 
-    public static Doors CurrentDoor;
+    public static DoorsComponent CurrentDoor;
     public string LinkID => linkID;
     public string UniqueID => uniqueID;
 
@@ -104,7 +104,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
     {
         var linkedList = LinkRegistry
             .GetLinkedObjects(linkID)
-            .OfType<Doors>()
+            .OfType<DoorsComponent>()
             .ToList();
 
         if (linkedList.Count < 2)
@@ -155,7 +155,7 @@ public class Doors : MonoBehaviour, ILinkable, IDoor
 
         var destination = LinkRegistry
             .GetLinkedObjects(linkID)
-            .OfType<Doors>()
+            .OfType<DoorsComponent>()
             .FirstOrDefault(d => d != this && (d.RoomA == toRoom || d.RoomB == toRoom));
 
         if (destination == null)

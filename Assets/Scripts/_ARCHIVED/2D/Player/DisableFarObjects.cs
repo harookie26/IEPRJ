@@ -28,13 +28,13 @@ public class DisableFarObjects : MonoBehaviour
                 roomsToEnable.Add(room);
 
                 // Step 2: Find all Doors components in this room
-                var doors = room.GetComponentsInChildren<Doors>(true);
+                var doors = room.GetComponentsInChildren<DoorsComponent>(true);
                 foreach (var door in doors)
                 {
                     // Step 3: Find linked doors via LinkRegistry
                     var linkedDoors = LinkRegistry
                         .GetLinkedObjects(door.LinkID)
-                        .OfType<Doors>()
+                        .OfType<DoorsComponent>()
                         .Where(d => d.UniqueID != door.UniqueID);
 
                     foreach (var linkedDoor in linkedDoors)

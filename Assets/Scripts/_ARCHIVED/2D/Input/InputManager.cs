@@ -19,8 +19,9 @@ public class InputManager : MonoBehaviour
 
     private bool blockInputUntilRelease = false;
 
-    // NEW: keep persistent corrupted-room state so we don't spam ON_CORRUPTED_ROOM_FALSE every frame
     private bool corruptedRoomMode = false;
+
+    public event Action OnInteractPressed;
 
     private void Awake()
     {
@@ -68,7 +69,7 @@ public class InputManager : MonoBehaviour
                 (Mouse.current == null || (!Mouse.current.leftButton.isPressed && !Mouse.current.rightButton.isPressed))
             )
             {
-                blockInputUntilRelease = false; // All released, resume input
+                blockInputUntilRelease = false;
             }
             else
             {
@@ -103,7 +104,6 @@ public class InputManager : MonoBehaviour
             corruptedRoomPressed = Keyboard.current != null && Keyboard.current.zKey.wasPressedThisFrame;
         }
 
-        // NEW: toggle corrupted-room mode on Z press (avoids posting FALSE continuously)
         if (corruptedRoomPressed)
         {
             corruptedRoomMode = !corruptedRoomMode;
@@ -113,10 +113,11 @@ public class InputManager : MonoBehaviour
                 EventBroadcaster.Instance.PostEvent(LevelEvents.ON_CORRUPTED_ROOM_FALSE);
         }
 
-        // NOTE:
-        // Previous implementation posted ON_CORRUPTED_ROOM_FALSE every frame when Z was not pressed,
-        // which immediately reverted any changes triggered by ON_CORRUPTED_ROOM_TRUE. That made
-        // levitation appear to never occur. Toggling on press fixes that.
+        if (interactPressed && !blockInputUntilRelease)
+        {
+            OnInteractPressed?.Invoke();
+        }
+
     }
 
     // Polling API for other scripts

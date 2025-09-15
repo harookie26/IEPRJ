@@ -14,12 +14,12 @@ public class PathfinderComponent : MonoBehaviour
 
     private List<IRoom> roomPath;
     private int roomPathIndex = 0;
-    private Doors currentDoorTarget;
+    private DoorsComponent currentDoorTarget;
 
     private float teleportCooldown = 1f;
     private float lastTeleportTime = -999f;
 
-    public Doors LastUsedDoor { get; private set; }
+    public DoorsComponent LastUsedDoor { get; private set; }
 
     private void Start()
     {
@@ -38,13 +38,13 @@ public class PathfinderComponent : MonoBehaviour
         }
     }
 
-    public Doors CurrentDoorTarget => currentDoorTarget;
+    public DoorsComponent CurrentDoorTarget => currentDoorTarget;
 
-    public bool CanTeleportFrom(Doors door) => door != LastUsedDoor || Time.time - lastTeleportTime >= teleportCooldown;
+    public bool CanTeleportFrom(DoorsComponent door) => door != LastUsedDoor || Time.time - lastTeleportTime >= teleportCooldown;
 
-    private Doors FindDoorTo(IRoom fromRoom, IRoom toRoom)
+    private DoorsComponent FindDoorTo(IRoom fromRoom, IRoom toRoom)
     {
-        var allDoors = GameObject.FindObjectsByType<Doors>(FindObjectsSortMode.None);
+        var allDoors = GameObject.FindObjectsByType<DoorsComponent>(FindObjectsSortMode.None);
 
         foreach (var door in allDoors)
         {
@@ -55,7 +55,7 @@ public class PathfinderComponent : MonoBehaviour
 
             foreach (var linkObj in linkedDoors)
             {
-                if (linkObj is not Doors linked) continue;
+                if (linkObj is not DoorsComponent linked) continue;
                 if (linked == door) continue;
 
                 if (RoomUtils.IsPositionInsideRoom(linked.transform.position, toRoom))
@@ -92,7 +92,7 @@ public class PathfinderComponent : MonoBehaviour
         Debug.Log(pathLog);
     }
 
-    public void RegisterTeleport(Doors usedDoor, IRoom enteredRoom)
+    public void RegisterTeleport(DoorsComponent usedDoor, IRoom enteredRoom)
     {
         LastUsedDoor = usedDoor;
         lastTeleportTime = Time.time;
