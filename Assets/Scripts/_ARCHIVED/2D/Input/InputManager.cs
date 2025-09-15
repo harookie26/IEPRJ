@@ -11,14 +11,16 @@ public class InputManager : MonoBehaviour
     private bool sprintHeld;
 
     private bool interactPressed;
-    private bool channelPressed;
-    private bool shoutPressed;
+    private bool corruptedRoomPressed;
 
     private InputSystem2D inputActions;
 
     private bool onlyAllowLMBOrEnter = false;
 
     private bool blockInputUntilRelease = false;
+
+    // NEW: keep persistent corrupted-room state so we don't spam ON_CORRUPTED_ROOM_FALSE every frame
+    private bool corruptedRoomMode = false;
 
     private void Awake()
     {
@@ -49,34 +51,11 @@ public class InputManager : MonoBehaviour
     private void OnEnable()
     {
         inputActions?.Enable();
-
-        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERCONTROLS_DISABLED, OnPlayerControlsDisabled);
-        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERCONTROLS_ENABLED, OnPlayerControlsEnabled);
-        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERMOVEMENT_DISABLED, () => inputActions?.Disable());
-        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERMOVEMENT_ENABLED, () => inputActions?.Enable());
     }
 
     private void OnDisable()
     {
         inputActions?.Disable();
-
-        EventBroadcaster.Instance.RemoveActionAtObserver(ControlEvents2D.ON_2D_PLAYERCONTROLS_DISABLED, OnPlayerControlsDisabled);
-        EventBroadcaster.Instance.RemoveActionAtObserver(ControlEvents2D.ON_2D_PLAYERCONTROLS_ENABLED, OnPlayerControlsEnabled);
-        EventBroadcaster.Instance.RemoveActionAtObserver(ControlEvents2D.ON_2D_PLAYERMOVEMENT_DISABLED, () => inputActions?.Disable());
-        EventBroadcaster.Instance.RemoveActionAtObserver(ControlEvents2D.ON_2D_PLAYERMOVEMENT_ENABLED, () => inputActions?.Enable());
-    }
-
-    private void OnPlayerControlsDisabled()
-    {
-        inputActions?.Disable();
-        onlyAllowLMBOrEnter = true;
-    }
-
-    private void OnPlayerControlsEnabled()
-    {
-        inputActions?.Enable();
-        onlyAllowLMBOrEnter = false;
-        blockInputUntilRelease = true; // Block input until all keys/buttons are released
     }
 
     private void Update()
@@ -95,8 +74,7 @@ public class InputManager : MonoBehaviour
             {
                 // While blocked, clear all input states
                 interactPressed = false;
-                channelPressed = false;
-                shoutPressed = false;
+                corruptedRoomPressed = false;
                 moveInput = Vector2.zero;
                 sprintHeld = false;
                 return;
@@ -106,8 +84,7 @@ public class InputManager : MonoBehaviour
         if (onlyAllowLMBOrEnter)
         {
             interactPressed = false;
-            channelPressed = false;
-            shoutPressed = false;
+            corruptedRoomPressed = false;
 
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
@@ -121,17 +98,31 @@ public class InputManager : MonoBehaviour
         else
         {
             interactPressed = Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
-            channelPressed = Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame;
-            shoutPressed = Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
+
+            // DETECT PRESS EVENT, do NOT post OFF every frame.
+            corruptedRoomPressed = Keyboard.current != null && Keyboard.current.zKey.wasPressedThisFrame;
         }
+
+        // NEW: toggle corrupted-room mode on Z press (avoids posting FALSE continuously)
+        if (corruptedRoomPressed)
+        {
+            corruptedRoomMode = !corruptedRoomMode;
+            if (corruptedRoomMode)
+                EventBroadcaster.Instance.PostEvent(LevelEvents.ON_CORRUPTED_ROOM_TRUE);
+            else
+                EventBroadcaster.Instance.PostEvent(LevelEvents.ON_CORRUPTED_ROOM_FALSE);
+        }
+
+        // NOTE:
+        // Previous implementation posted ON_CORRUPTED_ROOM_FALSE every frame when Z was not pressed,
+        // which immediately reverted any changes triggered by ON_CORRUPTED_ROOM_TRUE. That made
+        // levitation appear to never occur. Toggling on press fixes that.
     }
 
     // Polling API for other scripts
     public Vector2 GetMoveInput() => (onlyAllowLMBOrEnter || blockInputUntilRelease) ? Vector2.zero : moveInput;
     public bool IsSprinting() => !onlyAllowLMBOrEnter && !blockInputUntilRelease && sprintHeld;
     public bool WasInteractPressed() => !blockInputUntilRelease && interactPressed;
-    public bool WasChannelPressed() => !onlyAllowLMBOrEnter && !blockInputUntilRelease && channelPressed;
-    public bool WasShoutPressed() => !onlyAllowLMBOrEnter && !blockInputUntilRelease && shoutPressed;
     public bool WasAnyKeyExceptChannelPressed()
     {
         if (Keyboard.current == null || blockInputUntilRelease) return false;

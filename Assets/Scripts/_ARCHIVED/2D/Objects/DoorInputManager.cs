@@ -15,8 +15,6 @@ public class DoorInputManager : MonoBehaviour
 
     private void OnEnable()
     {
-        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERCONTROLS_DISABLED, () => enabled = false);
-        EventBroadcaster.Instance.AddObserver(ControlEvents2D.ON_2D_PLAYERCONTROLS_ENABLED, () => enabled = true);
     }
 
     private void Start()

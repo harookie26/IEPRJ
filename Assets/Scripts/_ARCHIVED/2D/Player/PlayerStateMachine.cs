@@ -52,9 +52,6 @@ public class PlayerStateMachine : MonoBehaviour
     private void OnEnable()
     {
         canMove = true;
-
-        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_CHANNELING, () => isChanneling = true);
-        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_DECHANNELING, () => isChanneling = false);
         EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_HID, () => isHiding = true);
         EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_REVEALED, () => isHiding = false);
     }
@@ -63,8 +60,6 @@ public class PlayerStateMachine : MonoBehaviour
     {
         canMove = false;
 
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_CHANNELING, () => isChanneling = true);
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_DECHANNELING, () => isChanneling = false);
         EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_HID, () => isHiding = true);
         EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_REVEALED, () => isHiding = false);
     }
@@ -94,7 +89,7 @@ public class PlayerStateMachine : MonoBehaviour
         bool sprintHeld = InputManager.Instance.IsSprinting();
 
         // Only allow entering Shout state on the frame the button is pressed
-        if (isHiding && InputManager.Instance.WasShoutPressed() && CurrentState != State.Shout)
+        if (isHiding && CurrentState != State.Shout)
         {
             ChangeState(State.Shout);
         }
@@ -227,7 +222,6 @@ public class PlayerStateMachine : MonoBehaviour
     private void HandleShout()
     {
         Debug.Log("Player shouted while hiding.");
-        EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_SHOUTED);
     }
 
     private void HandleStaminaRegen()

@@ -13,8 +13,6 @@ public class RoomComponent : MonoBehaviour, IRoom
     public int Id => id;
     public Vector3 Center => center;
     public Bounds Bounds => boxCollider != null ? boxCollider.bounds : new Bounds();
-
-    // Flag to indicate if the player is inside this room
     public bool IsPlayerInside { get; private set; }
 
     private void OnValidate()

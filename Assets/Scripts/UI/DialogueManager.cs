@@ -34,8 +34,6 @@ public class DialogueManager : MonoBehaviour
         dialogueLineText.text = dialogueLine;
 
         // Disable all input except LMB/Enter
-        EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERCONTROLS_DISABLED);
-
         if (InputManager.Instance != null)
         {
             InputManager.Instance.StartCoroutine(InputManager.Instance.WaitForInputCoroutine(() =>
@@ -46,8 +44,6 @@ public class DialogueManager : MonoBehaviour
                 dialogueLineText.gameObject.SetActive(false);
 
                 // Re-enable all input
-                EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERMOVEMENT_ENABLED);
-
                 onComplete?.Invoke();
             }));
         }
@@ -55,7 +51,6 @@ public class DialogueManager : MonoBehaviour
         {
             Debug.LogWarning("InputManager instance not found. Cannot wait for input. Completing immediately.");
             // Re-enable all input just in case
-            EventBroadcaster.Instance.PostEvent(ControlEvents2D.ON_2D_PLAYERCONTROLS_ENABLED);
             onComplete?.Invoke();
         }
     }
