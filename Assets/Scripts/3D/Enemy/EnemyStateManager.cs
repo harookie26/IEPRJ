@@ -7,6 +7,7 @@ public class EnemyStateManager : MonoBehaviour
     [SerializeField] private GameObject enemy;
 
     [SerializeField] private float moveSpeed;
+    [SerializeField] private float patrolSpeed = 2f;
     [SerializeField] private float targetingbuffer;
 
     [SerializeField] private float enemyAggroRadius;
@@ -15,12 +16,16 @@ public class EnemyStateManager : MonoBehaviour
     // Optional: allow assigning the NavMeshAgent in the inspector.
     // If not assigned, it will be cached at runtime from the `enemy` GameObject.
     [SerializeField] private NavMeshAgent navMeshAgent;
+    [SerializeField] private EnemyFOV enemyFOV;
+    public EnemyFOV EnemyFOV => enemyFOV;
+
 
     public float EnemyAggroRadius => enemyAggroRadius;
     public float EnemyKillRadius => enemyKillRadius;
     public GameObject TargetPlayer => targetPlayer;
     public GameObject Enemy => enemy;
-    public float MoveSpeed => moveSpeed;    
+    public float MoveSpeed => moveSpeed;
+    public float PatrolSpeed => patrolSpeed;
     public float TargetingBuffer => targetingbuffer;
     public EnemyChasing EnemyChasing => enemyChasing;
     public EnemyCalm EnemyCalm => enemyCalm;
