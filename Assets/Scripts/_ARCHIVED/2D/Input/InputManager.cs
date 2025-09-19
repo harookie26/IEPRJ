@@ -23,6 +23,18 @@ public class InputManager : MonoBehaviour
 
     public event Action OnInteractPressed;
 
+    // Channeling events
+    public event Action OnChannelStarted;
+    public event Action OnChannelStopped;
+
+    [Tooltip("Seconds the key must be held to count as a channel instead of a tap")]
+    [SerializeField] private float channelHoldThreshold = 0.18f;
+
+    // Internal channeling state
+    private bool ePressPending = false;
+    private float eHoldTimer = 0f;
+    private bool channeling = false;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -78,14 +90,33 @@ public class InputManager : MonoBehaviour
                 corruptedRoomPressed = false;
                 moveInput = Vector2.zero;
                 sprintHeld = false;
+
+                // reset channel state while blocked
+                ePressPending = false;
+                eHoldTimer = 0f;
+                if (channeling)
+                {
+                    channeling = false;
+                    OnChannelStopped?.Invoke();
+                }
+
                 return;
             }
         }
 
+        // Reset per-frame interact unless we set it below
+        interactPressed = false;
+
         if (onlyAllowLMBOrEnter)
         {
-            interactPressed = false;
-            corruptedRoomPressed = false;
+            // disable channeling while in this mode
+            if (channeling)
+            {
+                channeling = false;
+                OnChannelStopped?.Invoke();
+            }
+            ePressPending = false;
+            eHoldTimer = 0f;
 
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
@@ -98,7 +129,44 @@ public class InputManager : MonoBehaviour
         }
         else
         {
-            interactPressed = Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
+            // Tap vs Hold (channel) detection for E key
+            bool eWasPressed = Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
+            bool eIsPressed = Keyboard.current != null && Keyboard.current.eKey.isPressed;
+            bool eWasReleased = Keyboard.current != null && Keyboard.current.eKey.wasReleasedThisFrame;
+
+            if (eWasPressed)
+            {
+                ePressPending = true;
+                eHoldTimer = 0f;
+                Debug.Log("[InputManager] E was pressed (start tracking hold).");
+            }
+
+            if (ePressPending && eIsPressed)
+            {
+                eHoldTimer += Time.deltaTime;
+                if (eHoldTimer >= channelHoldThreshold && !channeling)
+                {
+                    channeling = true;
+                    OnChannelStarted?.Invoke();
+                }
+            }
+
+            if (eWasReleased)
+            {
+                Debug.Log("[InputManager] E was released.");
+                if (channeling)
+                {
+                    channeling = false;
+                    OnChannelStopped?.Invoke();
+                }
+                else if (ePressPending)
+                {
+                    interactPressed = true;
+                }
+
+                ePressPending = false;
+                eHoldTimer = 0f;
+            }
 
             // DETECT PRESS EVENT, do NOT post OFF every frame.
             corruptedRoomPressed = Keyboard.current != null && Keyboard.current.zKey.wasPressedThisFrame;
@@ -124,6 +192,8 @@ public class InputManager : MonoBehaviour
     public Vector2 GetMoveInput() => (onlyAllowLMBOrEnter || blockInputUntilRelease) ? Vector2.zero : moveInput;
     public bool IsSprinting() => !onlyAllowLMBOrEnter && !blockInputUntilRelease && sprintHeld;
     public bool WasInteractPressed() => !blockInputUntilRelease && interactPressed;
+    public bool IsChanneling() => !blockInputUntilRelease && !onlyAllowLMBOrEnter && channeling;
+
     public bool WasAnyKeyExceptChannelPressed()
     {
         if (Keyboard.current == null || blockInputUntilRelease) return false;
@@ -134,7 +204,10 @@ public class InputManager : MonoBehaviour
                    Keyboard.current.enterKey.wasPressedThisFrame;
         }
 
-        return Keyboard.current.anyKey.wasPressedThisFrame && !Keyboard.current.qKey.wasPressedThisFrame;
+        // Exclude channel key (E) from this test
+        return Keyboard.current.anyKey.wasPressedThisFrame
+               && !Keyboard.current.qKey.wasPressedThisFrame
+               && !Keyboard.current.eKey.wasPressedThisFrame;
     }
 
     public System.Collections.IEnumerator WaitForInputCoroutine(Action onComplete)

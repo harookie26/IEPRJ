@@ -14,14 +14,11 @@ namespace Game.ObjectTypes
 
     public interface IChannelable
     {
-        bool CanChannel(GameObject player);
-        void StartChannel(GameObject player);
+        // Called once when channeling begins (key held past threshold).
+        void StartChannel();
+
+        // Called once when channeling ends (key released).
         void StopChannel();
-        void ChannelTick(float deltaTime);
-        bool IsChanneling { get; }
-        float Progress { get; }
-        float ProgressMax { get; }
-        bool IsComplete { get; }
     }
 
     public interface ILinkable
