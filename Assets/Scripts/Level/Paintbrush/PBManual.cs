@@ -19,15 +19,43 @@ public class PBManual : MonoBehaviour
     {
         if (cameraTransform == null) return;
 
-        float moveInput = Input.GetKey(KeyCode.W) ? 1f : 0f;
+        // Forward / Back (W / S)
+        float moveInput = (Input.GetKey(KeyCode.W) ? 1f : 0f) + (Input.GetKey(KeyCode.S) ? -1f : 0f);
 
-        Vector3 moveDir = cameraTransform.forward * moveInput;
-
+        // Strafe (A / D)
         float strafeInput = Input.GetKey(KeyCode.D) ? 1f : Input.GetKey(KeyCode.A) ? -1f : 0f;
-        Vector3 strafeDir = cameraTransform.right * strafeInput;
+
+        // Vertical (UpArrow / DownArrow) - moves in world Y independent of camera pitch
+        float verticalInput = Input.GetKey(KeyCode.UpArrow) ? 1f : Input.GetKey(KeyCode.DownArrow) ? -1f : 0f;
+
+        // Build horizontal movement from camera orientation but keep it level (no unintended vertical movement when camera pitches)
+        Vector3 camForward = cameraTransform.forward;
+        camForward.y = 0f;
+        if (camForward.sqrMagnitude < 0.0001f) camForward = Vector3.forward;
+        camForward.Normalize();
+
+        Vector3 camRight = cameraTransform.right;
+        camRight.y = 0f;
+        if (camRight.sqrMagnitude < 0.0001f) camRight = Vector3.right;
+        camRight.Normalize();
+
+        Vector3 moveDir = camForward * moveInput;
+        Vector3 strafeDir = camRight * strafeInput;
 
         Vector3 finalDir = (moveDir + strafeDir) * moveSpeed;
 
+        // Apply vertical movement directly on Y (separate from camera forward/back)
+        finalDir.y = verticalInput * moveSpeed;
+
         rb.linearVelocity = finalDir;
+
+        // Rotation: follow camera yaw and pitch (brush tilts up/down with camera) but keep world up to avoid roll.
+        Vector3 lookDir = cameraTransform.forward;
+        if (lookDir.sqrMagnitude < 0.0001f)
+            lookDir = Vector3.forward;
+
+        Quaternion targetRot = Quaternion.LookRotation(lookDir, Vector3.up);
+
+        rb.MoveRotation(targetRot);
     }
 }

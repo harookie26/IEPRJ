@@ -771,6 +771,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f82b12ea04ba9f4daf4d330bc0d2c1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  channelHoldThreshold: 0.18
 --- !u!4 &633032994
 Transform:
   m_ObjectHideFlags: 0
@@ -1364,7 +1365,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1315959209}
-  - component: {fileID: 1315959207}
+  - component: {fileID: 1315959210}
   m_Layer: 0
   m_Name: EnemyManager
   m_TagString: Untagged
@@ -1372,27 +1373,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1315959207
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1315959206}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b2973c5f692d874985d811e5dd0f28f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  targetPlayer: {fileID: 951051694}
-  enemy: {fileID: 1473016690}
-  moveSpeed: 3
-  patrolSpeed: 1.5
-  targetingbuffer: 2
-  enemyAggroRadius: 5
-  enemyKillRadius: 1
-  navMeshAgent: {fileID: 1473016698}
-  enemyFOV: {fileID: 273613121}
 --- !u!4 &1315959209
 Transform:
   m_ObjectHideFlags: 0
@@ -1408,6 +1388,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1315959210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1315959206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cddcf05496b3e4489a058ef39a3e685, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetPlayer: {fileID: 0}
+  enemy: {fileID: 0}
+  moveSpeed: 0
+  patrolSpeed: 2
+  targetingbuffer: 0
+  enemyAggroRadius: 0
+  enemyKillRadius: 0
+  navMeshAgent: {fileID: 0}
+  enemyFOV: {fileID: 0}
 --- !u!1 &1452207401
 GameObject:
   m_ObjectHideFlags: 0

@@ -20,7 +20,7 @@ public class EnemyChasing : EnemyState
     public Collider LastHitCollider { get; private set; }
     public bool HasLastLoS { get; private set; }
 
-    public override void EnterState(EnemyStateManager state)
+    public override void EnterState(EnemyStateMachine state)
     {
         // Clear any previous LoS debug state when entering chase
         ResetLoSDebug();
@@ -77,7 +77,7 @@ public class EnemyChasing : EnemyState
         }
     }
 
-    public override void UpdateState(EnemyStateManager state)
+    public override void UpdateState(EnemyStateMachine state)
     {
         if (state.TargetPlayer == null || state.Enemy == null)
         {
@@ -162,12 +162,12 @@ public class EnemyChasing : EnemyState
         }
     }
 
-    public override void OnCollision(EnemyStateManager state)
+    public override void OnCollision(EnemyStateMachine state)
     {
         // Implement if needed
     }
 
-    private void checkPlayerOutside(EnemyStateManager state, float distanceToPlayer)
+    private void checkPlayerOutside(EnemyStateMachine state, float distanceToPlayer)
     {
         if (!playerOutside)
         {
@@ -193,7 +193,7 @@ public class EnemyChasing : EnemyState
         }
     }
 
-    private bool HasLineOfSight(EnemyStateManager state)
+    private bool HasLineOfSight(EnemyStateMachine state)
     {
         HasLastLoS = false;
         LastHitCollider = null;

@@ -4,18 +4,26 @@ using UnityEngine.AI;
 public class EnemyCalm : EnemyState
 {
     private float roamTimer;
-    private float roamCooldown = 3f; 
+    private float roamCooldown = 3f;
     private Vector3 roamDestination;
 
-    public override void EnterState(EnemyStateManager state)
+    // When set before switching into this state, the enemy will wait this many seconds
+    // before selecting a roam destination. Default 0 (immediate roaming).
+    public float EntryDelay { get; set; } = 0f;
+
+    public override void EnterState(EnemyStateMachine state)
     {
-        roamTimer = 0f;
-        roamDestination = state.Enemy.transform.position; 
+        // Use EntryDelay so other states (like Distracted) can cause a pause on entry.
+        roamTimer = EntryDelay;
+        // Clear EntryDelay after consuming so future entries use default unless explicitly set.
+        EntryDelay = 0f;
+
+        roamDestination = state.Enemy.transform.position;
         state.EnemyChasing.ResetLoSDebug();
         Debug.Log("Entered Calm State (Roaming)");
     }
 
-    public override void UpdateState(EnemyStateManager state)
+    public override void UpdateState(EnemyStateMachine state)
     {
         if (state.TargetPlayer == null || state.Enemy == null)
         {
@@ -47,14 +55,14 @@ public class EnemyCalm : EnemyState
         Debug.Log("Enemy roaming to " + roamDestination);
     }
 
-    public override void OnCollision(EnemyStateManager state)
+    public override void OnCollision(EnemyStateMachine state)
     {
-        
+
     }
 
     private Vector3 GetRandomPoint(Vector3 center, float range)
     {
-        for (int i = 0; i < 10; i++) 
+        for (int i = 0; i < 10; i++)
         {
             Vector3 randomPos = center + new Vector3(
                 Random.Range(-range, range),
@@ -68,6 +76,6 @@ public class EnemyCalm : EnemyState
             }
         }
 
-        return center; 
+        return center;
     }
 }

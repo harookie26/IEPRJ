@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public class EnemyStateManager : MonoBehaviour
+public class EnemyStateMachine : MonoBehaviour
 {
     [SerializeField] private GameObject targetPlayer;
     [SerializeField] private GameObject enemy;
@@ -31,9 +31,17 @@ public class EnemyStateManager : MonoBehaviour
     public EnemyCalm EnemyCalm => enemyCalm;
     public NavMeshAgent NavAgent => navMeshAgent;
 
+    // How long the enemy should remain in Calm after being distracted (seconds).
+    [SerializeField] private float distractedCalmDuration = 3f;
+    public float DistractedCalmDuration => distractedCalmDuration;
+
+    // Added distracted state
+    public EnemyDistracted EnemyDistracted => enemyDistracted;
+
     EnemyState CurrentState;
     private EnemyChasing enemyChasing = new EnemyChasing();
     private EnemyCalm enemyCalm = new EnemyCalm();
+    private EnemyDistracted enemyDistracted = new EnemyDistracted();
 
     private void Start()
     {
@@ -59,7 +67,17 @@ public class EnemyStateManager : MonoBehaviour
     public void Switchstate(EnemyState state)
     {
         CurrentState = state;
-        state.EnterState(this); 
+        state.EnterState(this);
+    }
+
+    /// <summary>
+    /// Called by interactables (e.g. a painting) to distract the enemy and make it rush
+    /// to the provided world position.
+    /// </summary>
+    public void DistractAt(Vector3 paintingWorldPosition)
+    {
+        enemyDistracted.PaintingPosition = paintingWorldPosition;
+        Switchstate(enemyDistracted);
     }
 
     // Draw LoS ray and hit point for debugging in the Scene view.
