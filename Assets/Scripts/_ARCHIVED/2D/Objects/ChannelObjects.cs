@@ -1,93 +1,93 @@
-using Game.ObjectTypes;
-using UnityEngine;
-using static EventNames;
+//using Game.ObjectTypes;
+//using UnityEngine;
+//using static EventNames;
 
-public class ChannelObject : MonoBehaviour, IChannelable
-{
-    private float raiseSpeed = 0.5f;
-    private float progressMax = 5;
-    private float graceDistance = 0.4f;
-    private float progress = 0f;
-    private bool isChanneling = false;
-    private bool isComplete = false;
-    private GameObject currentPlayer;
+//public class ChannelObject : MonoBehaviour, IChannelable
+//{
+//    private float raiseSpeed = 0.5f;
+//    private float progressMax = 5;
+//    private float graceDistance = 0.4f;
+//    private float progress = 0f;
+//    private bool isChanneling = false;
+//    private bool isComplete = false;
+//    private GameObject currentPlayer;
 
-    public bool IsChanneling => isChanneling;
-    public float Progress => progress;
-    public float ProgressMax => progressMax;
-    public bool IsComplete => isComplete;
+//    public bool IsChanneling => isChanneling;
+//    public float Progress => progress;
+//    public float ProgressMax => progressMax;
+//    public bool IsComplete => isComplete;
 
-    private void Update()
-    {
-        if (isComplete) return;
+//    private void Update()
+//    {
+//        if (isComplete) return;
 
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player == null) return;
+//        GameObject player = GameObject.FindGameObjectWithTag("Player");
+//        if (player == null) return;
 
-        bool playerNearby = CanChannel(player);
+//        bool playerNearby = CanChannel(player);
 
-        if (playerNearby && !isChanneling)
-        {
-            StartChannel(player);
-        }
-        else if (isChanneling)
-        {
-            if (InputManager.Instance.WasAnyKeyExceptChannelPressed())
-            {
-                StopChannel();
-            }
-            else
-            {
-                ChannelTick(Time.deltaTime);
-                if (isComplete)
-                {
-                    StopChannel();
-                    Destroy(gameObject);
-                }
-            }
-        }
-    }
+//        if (playerNearby && !isChanneling)
+//        {
+//            StartChannel(player);
+//        }
+//        else if (isChanneling)
+//        {
+//            if (InputManager.Instance.WasAnyKeyExceptChannelPressed())
+//            {
+//                StopChannel();
+//            }
+//            else
+//            {
+//                ChannelTick(Time.deltaTime);
+//                if (isComplete)
+//                {
+//                    StopChannel();
+//                    Destroy(gameObject);
+//                }
+//            }
+//        }
+//    }
 
-    public bool CanChannel(GameObject player)
-    {
-        if (isComplete) return false;
-        if (player == null) return false;
-        return Mathf.Abs(player.transform.position.x - transform.position.x) <= graceDistance;
-    }
+//    public bool CanChannel(GameObject player)
+//    {
+//        if (isComplete) return false;
+//        if (player == null) return false;
+//        return Mathf.Abs(player.transform.position.x - transform.position.x) <= graceDistance;
+//    }
 
-    public void StartChannel(GameObject player)
-    {
-        if (!CanChannel(player)) return;
-        isChanneling = true;
-        currentPlayer = player;
-    }
+//    public void StartChannel(GameObject player)
+//    {
+//        if (!CanChannel(player)) return;
+//        isChanneling = true;
+//        currentPlayer = player;
+//    }
 
-    public void StopChannel()
-    {
-        if (!isChanneling) return;
-        isChanneling = false;
-        currentPlayer = null;
-    }
+//    public void StopChannel()
+//    {
+//        if (!isChanneling) return;
+//        isChanneling = false;
+//        currentPlayer = null;
+//    }
 
-    public void ChannelTick(float deltaTime)
-    {
-        if (!isChanneling || isComplete) return;
+//    public void ChannelTick(float deltaTime)
+//    {
+//        if (!isChanneling || isComplete) return;
 
-        if (TryGetComponent<Rigidbody2D>(out var rb) && rb != null)
-        {
-            Vector2 targetPosition = rb.position + Vector2.up * raiseSpeed * deltaTime;
-            rb.MovePosition(targetPosition);
-        }
-        else
-        {
-            transform.position += Vector3.up * raiseSpeed * deltaTime;
-        }
+//        if (TryGetComponent<Rigidbody2D>(out var rb) && rb != null)
+//        {
+//            Vector2 targetPosition = rb.position + Vector2.up * raiseSpeed * deltaTime;
+//            rb.MovePosition(targetPosition);
+//        }
+//        else
+//        {
+//            transform.position += Vector3.up * raiseSpeed * deltaTime;
+//        }
 
-        progress += deltaTime;
-        if (progress >= progressMax)
-        {
-            progress = progressMax;
-            isComplete = true;
-        }
-    }
-}
+//        progress += deltaTime;
+//        if (progress >= progressMax)
+//        {
+//            progress = progressMax;
+//            isComplete = true;
+//        }
+//    }
+//}

@@ -61,4 +61,26 @@ public class PaintbrushInteractor : MonoBehaviour
 
         Debug.Log("Interact pressed but nothing in front to interact with.");
     }
+
+    // Visualize the interact ray origin, direction and reach in the Scene view.
+    private void OnDrawGizmos()
+    {
+        if (rayOrigin == null)
+            return;
+
+        Vector3 origin = rayOrigin.position;
+        Vector3 dir = rayOrigin.forward;
+
+        // Small marker at the origin
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawSphere(origin, 0.03f);
+
+        // Ray showing the interaction direction and max distance
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawRay(origin, dir * maxDistance);
+
+        // Wire sphere showing the max reach
+        Gizmos.color = new Color(1f, 0.5f, 0f, 0.2f); // translucent orange
+        Gizmos.DrawWireSphere(origin, maxDistance);
+    }
 }

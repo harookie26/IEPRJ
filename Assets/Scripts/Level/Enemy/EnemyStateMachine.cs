@@ -1,12 +1,13 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public class EnemyStateManager : MonoBehaviour
+public class EnemyStateMachine : MonoBehaviour
 {
     [SerializeField] private GameObject targetPlayer;
     [SerializeField] private GameObject enemy;
 
     [SerializeField] private float moveSpeed;
+    [SerializeField] private float patrolSpeed = 2f;
     [SerializeField] private float targetingbuffer;
 
     [SerializeField] private float enemyAggroRadius;
@@ -15,20 +16,32 @@ public class EnemyStateManager : MonoBehaviour
     // Optional: allow assigning the NavMeshAgent in the inspector.
     // If not assigned, it will be cached at runtime from the `enemy` GameObject.
     [SerializeField] private NavMeshAgent navMeshAgent;
+    [SerializeField] private EnemyFOV enemyFOV;
+    public EnemyFOV EnemyFOV => enemyFOV;
+
 
     public float EnemyAggroRadius => enemyAggroRadius;
     public float EnemyKillRadius => enemyKillRadius;
     public GameObject TargetPlayer => targetPlayer;
     public GameObject Enemy => enemy;
-    public float MoveSpeed => moveSpeed;    
+    public float MoveSpeed => moveSpeed;
+    public float PatrolSpeed => patrolSpeed;
     public float TargetingBuffer => targetingbuffer;
     public EnemyChasing EnemyChasing => enemyChasing;
     public EnemyCalm EnemyCalm => enemyCalm;
     public NavMeshAgent NavAgent => navMeshAgent;
 
+    // How long the enemy should remain in Calm after being distracted (seconds).
+    [SerializeField] private float distractedCalmDuration = 3f;
+    public float DistractedCalmDuration => distractedCalmDuration;
+
+    // Added distracted state
+    public EnemyDistracted EnemyDistracted => enemyDistracted;
+
     EnemyState CurrentState;
     private EnemyChasing enemyChasing = new EnemyChasing();
     private EnemyCalm enemyCalm = new EnemyCalm();
+    private EnemyDistracted enemyDistracted = new EnemyDistracted();
 
     private void Start()
     {
@@ -54,7 +67,17 @@ public class EnemyStateManager : MonoBehaviour
     public void Switchstate(EnemyState state)
     {
         CurrentState = state;
-        state.EnterState(this); 
+        state.EnterState(this);
+    }
+
+    /// <summary>
+    /// Called by interactables (e.g. a painting) to distract the enemy and make it rush
+    /// to the provided world position.
+    /// </summary>
+    public void DistractAt(Vector3 paintingWorldPosition)
+    {
+        enemyDistracted.PaintingPosition = paintingWorldPosition;
+        Switchstate(enemyDistracted);
     }
 
     // Draw LoS ray and hit point for debugging in the Scene view.
