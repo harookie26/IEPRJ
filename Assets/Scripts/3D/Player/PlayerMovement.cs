@@ -10,6 +10,7 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float jumpForce = 5f;
+    [SerializeField] float rotationSpeed = 10f; // new: how fast the player rotates toward movement
 
     private Vector2 previousInput = Vector2.zero;
     private Rigidbody rb;
@@ -56,9 +57,19 @@ public class PlayerMovement : MonoBehaviour
 
         previousInput = input;
 
-        // Calculate movement direction relative to camera
-        Vector3 move = (camRight * input.x + camForward * input.y) * moveSpeed * Time.deltaTime;
+        // Calculate movement direction relative to camera (direction only)
+        Vector3 moveDirection = (camRight * input.x + camForward * input.y);
+
+        // Apply translation
+        Vector3 move = moveDirection * moveSpeed * Time.deltaTime;
         transform.Translate(move, Space.World);
+
+        // Rotate the player to look at movement direction when there is input
+        if (moveDirection.sqrMagnitude > 0.0001f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
 
         if (jumpAction.triggered && isGrounded)
         {

@@ -1,9 +1,10 @@
-﻿using System.Collections;
+﻿ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Game.ObjectTypes;
 
 [DisallowMultipleComponent]
+[FoldableInspector]
 public class PlayerInteractor : MonoBehaviour
 {
     [Tooltip("Origin used for the interact raycast. Typically the player's camera or a head transform.")]
@@ -60,5 +61,29 @@ public class PlayerInteractor : MonoBehaviour
         }
 
         Debug.Log("Interact pressed but nothing in front to interact with.");
+
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (rayOrigin == null)
+            return;
+
+        Vector3 origin = rayOrigin.position;
+        Vector3 direction = rayOrigin.forward;
+
+        Ray ray = new Ray(origin, direction);
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, interactMask, QueryTriggerInteraction.Collide))
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(origin, hit.point);
+            Gizmos.DrawWireSphere(hit.point, 0.05f);
+        }
+        else
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(origin, origin + direction * maxDistance);
+            Gizmos.DrawWireSphere(origin + direction * maxDistance, 0.03f);
+        }
     }
 }
