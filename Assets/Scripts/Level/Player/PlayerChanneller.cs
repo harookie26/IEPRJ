@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using Game.ObjectTypes;
 
 [DisallowMultipleComponent]
+[FoldableInspector]
 public class PlayerChanneller : MonoBehaviour
 {
     [Tooltip("Origin used for the interact raycast. Typically the player's camera or a head transform.")]

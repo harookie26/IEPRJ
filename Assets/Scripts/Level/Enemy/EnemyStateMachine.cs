@@ -1,43 +1,58 @@
 using UnityEngine;
 using UnityEngine.AI;
 
+[FoldableInspector(hideFieldHeaders: true)]
 public class EnemyStateMachine : MonoBehaviour
 {
+    [Header("References")]
+    [Tooltip("The player GameObject this enemy will target.")]
     [SerializeField] private GameObject targetPlayer;
+    [Tooltip("The enemy GameObject (used to cache components like the NavMeshAgent).")]
     [SerializeField] private GameObject enemy;
 
-    [SerializeField] private float moveSpeed;
-    [SerializeField] private float patrolSpeed = 2f;
-    [SerializeField] private float targetingbuffer;
+    [Header("Config")]
+    [Tooltip("Reference to a ScriptableObject that holds tunable values (speeds, ranges, durations). " +
+             "Use this to keep per-enemy data out of the MonoBehaviour and reduce script length.")]
+    [SerializeField] private EnemyConfig config;
 
-    [SerializeField] private float enemyAggroRadius;
-    [SerializeField] private float enemyKillRadius;
-
-    // Optional: allow assigning the NavMeshAgent in the inspector.
-    // If not assigned, it will be cached at runtime from the `enemy` GameObject.
+    [Header("Navigation")]
+    [Tooltip("Optional: assign a NavMeshAgent here. If left empty, the agent will be cached from the 'enemy' GameObject at runtime.")]
     [SerializeField] private NavMeshAgent navMeshAgent;
+    [Tooltip("Reference to the EnemyFOV component that determines line-of-sight / visibility.")]
     [SerializeField] private EnemyFOV enemyFOV;
     public EnemyFOV EnemyFOV => enemyFOV;
 
+    private bool configWarned = false;
+    private void WarnMissingConfig()
+    {
+        if (!configWarned)
+        {
+            Debug.LogWarning("EnemyStateMachine: No EnemyConfig assigned. Using fallback values. Create/assign an EnemyConfig asset to customize values.");
+            configWarned = true;
+        }
+    }
 
-    public float EnemyAggroRadius => enemyAggroRadius;
-    public float EnemyKillRadius => enemyKillRadius;
+    private float WarnAndReturn(float fallback)
+    {
+        WarnMissingConfig();
+        return fallback;
+    }
+
+    public float MoveSpeed => config != null ? config.moveSpeed : WarnAndReturn(3f);
+    public float PatrolSpeed => config != null ? config.patrolSpeed : WarnAndReturn(2f);
+    public float TargetingBuffer => config != null ? config.targetingBuffer : WarnAndReturn(1f);
+    public float EnemyAggroRadius => config != null ? config.enemyAggroRadius : WarnAndReturn(8f);
+    public float EnemyKillRadius => config != null ? config.enemyKillRadius : WarnAndReturn(1f);
+    public float DistractedCalmDuration => config != null ? config.distractedCalmDuration : WarnAndReturn(3f);
+
     public GameObject TargetPlayer => targetPlayer;
     public GameObject Enemy => enemy;
-    public float MoveSpeed => moveSpeed;
-    public float PatrolSpeed => patrolSpeed;
-    public float TargetingBuffer => targetingbuffer;
     public EnemyChasing EnemyChasing => enemyChasing;
     public EnemyCalm EnemyCalm => enemyCalm;
     public NavMeshAgent NavAgent => navMeshAgent;
-
-    // How long the enemy should remain in Calm after being distracted (seconds).
-    [SerializeField] private float distractedCalmDuration = 3f;
-    public float DistractedCalmDuration => distractedCalmDuration;
-
-    // Added distracted state
     public EnemyDistracted EnemyDistracted => enemyDistracted;
 
+    [Header("Enemy States")]
     EnemyState CurrentState;
     private EnemyChasing enemyChasing = new EnemyChasing();
     private EnemyCalm enemyCalm = new EnemyCalm();
