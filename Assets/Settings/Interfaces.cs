@@ -53,3 +53,15 @@ namespace Game.Level
     }
 
 }
+
+namespace Game.States
+{
+    public interface IPlayerState
+    {
+        void Enter();
+        void Exit();
+        void HandleInput();
+        void Tick();
+    }
+
+}
