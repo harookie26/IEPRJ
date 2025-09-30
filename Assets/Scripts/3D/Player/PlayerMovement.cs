@@ -10,7 +10,7 @@ public class PlayerMovement : MonoBehaviour
 
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float jumpForce = 5f;
-    [SerializeField] float rotationSpeed = 10f; // new: how fast the player rotates toward movement
+    [SerializeField] float rotationSpeed = 10f; // how fast the player rotates toward movement
 
     private Vector2 previousInput = Vector2.zero;
     private Rigidbody rb;
@@ -23,7 +23,6 @@ public class PlayerMovement : MonoBehaviour
         moveAction = playerInput.actions["Movement"];
         jumpAction = playerInput.actions["Jump"];
         rb = GetComponent<Rigidbody>();
-
     }
 
     private void Update()
@@ -37,15 +36,6 @@ public class PlayerMovement : MonoBehaviour
 
         Vector2 input = moveAction.ReadValue<Vector2>();
 
-        // Get the camera's forward and right vectors, ignoring the y component
-        Transform cam = Camera.main.transform;
-        Vector3 camForward = cam.forward;
-        Vector3 camRight = cam.right;
-        camForward.y = 0f;
-        camRight.y = 0f;
-        camForward.Normalize();
-        camRight.Normalize();
-
         if (input != Vector2.zero)
         {
             EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_MOVED);
@@ -57,14 +47,14 @@ public class PlayerMovement : MonoBehaviour
 
         previousInput = input;
 
-        // Calculate movement direction relative to camera (direction only)
-        Vector3 moveDirection = (camRight * input.x + camForward * input.y);
+        // World-space movement: X = horizontal, Z = vertical input
+        Vector3 moveDirection = new Vector3(input.x, 0f, input.y);
 
-        // Apply translation
+        // Apply translation in world space
         Vector3 move = moveDirection * moveSpeed * Time.deltaTime;
         transform.Translate(move, Space.World);
 
-        // Rotate the player to look at movement direction when there is input
+        // Rotate the player to face movement direction
         if (moveDirection.sqrMagnitude > 0.0001f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up);
@@ -76,12 +66,11 @@ public class PlayerMovement : MonoBehaviour
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             isGrounded = false;
         }
-
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        // Simple ground check: set isGrounded to true when colliding with anything
+        // Simple ground check
         if (collision.contacts.Length > 0)
         {
             isGrounded = true;

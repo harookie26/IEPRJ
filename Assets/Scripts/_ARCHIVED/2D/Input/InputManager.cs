@@ -12,6 +12,7 @@ public class InputManager : MonoBehaviour
 
     private bool interactPressed;
     private bool corruptedRoomPressed;
+    private bool stealthPressed;
 
     private InputSystem2D inputActions;
 
@@ -22,6 +23,7 @@ public class InputManager : MonoBehaviour
     private bool corruptedRoomMode = false;
 
     public event Action OnInteractPressed;
+    public event Action OnStealthPressed;
 
     // Channeling events
     public event Action OnChannelStarted;
@@ -88,6 +90,7 @@ public class InputManager : MonoBehaviour
                 // While blocked, clear all input states
                 interactPressed = false;
                 corruptedRoomPressed = false;
+                stealthPressed = false;
                 moveInput = Vector2.zero;
                 sprintHeld = false;
 
@@ -104,8 +107,9 @@ public class InputManager : MonoBehaviour
             }
         }
 
-        // Reset per-frame interact unless we set it below
+        // Reset per-frame interact & stealth unless we set them below
         interactPressed = false;
+        stealthPressed = false;
 
         if (onlyAllowLMBOrEnter)
         {
@@ -170,6 +174,9 @@ public class InputManager : MonoBehaviour
 
             // DETECT PRESS EVENT, do NOT post OFF every frame.
             corruptedRoomPressed = Keyboard.current != null && Keyboard.current.zKey.wasPressedThisFrame;
+
+            // New stealth key detection (C)
+            stealthPressed = Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame;
         }
 
         if (corruptedRoomPressed)
@@ -186,12 +193,18 @@ public class InputManager : MonoBehaviour
             OnInteractPressed?.Invoke();
         }
 
+        if (stealthPressed && !blockInputUntilRelease)
+        {
+            OnStealthPressed?.Invoke();
+        }
+
     }
 
     // Polling API for other scripts
     public Vector2 GetMoveInput() => (onlyAllowLMBOrEnter || blockInputUntilRelease) ? Vector2.zero : moveInput;
     public bool IsSprinting() => !onlyAllowLMBOrEnter && !blockInputUntilRelease && sprintHeld;
     public bool WasInteractPressed() => !blockInputUntilRelease && interactPressed;
+    public bool WasStealthPressed() => !blockInputUntilRelease && stealthPressed;
     public bool IsChanneling() => !blockInputUntilRelease && !onlyAllowLMBOrEnter && channeling;
 
     public bool WasAnyKeyExceptChannelPressed()
@@ -204,10 +217,11 @@ public class InputManager : MonoBehaviour
                    Keyboard.current.enterKey.wasPressedThisFrame;
         }
 
-        // Exclude channel key (E) from this test
+        // Exclude channel key (E) and stealth key (C) from this test
         return Keyboard.current.anyKey.wasPressedThisFrame
                && !Keyboard.current.qKey.wasPressedThisFrame
-               && !Keyboard.current.eKey.wasPressedThisFrame;
+               && !Keyboard.current.eKey.wasPressedThisFrame
+               && !Keyboard.current.cKey.wasPressedThisFrame;
     }
 
     public System.Collections.IEnumerator WaitForInputCoroutine(Action onComplete)
