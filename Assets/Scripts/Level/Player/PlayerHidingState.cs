@@ -5,8 +5,6 @@ using UnityEngine.InputSystem;
 public class PlayerHidingState : IPlayerState
 {
     readonly PlayerStateMachine _owner;
-    readonly float _maxHideTime;
-    float _timer;
 
     // Wall snap info
     readonly Vector3? _wallPoint;
@@ -24,26 +22,35 @@ public class PlayerHidingState : IPlayerState
     // Wall sliding
     PlayerMovement _playerMovement;
     bool _wasMovementEnabled;
-    float _wallMoveSpeed = 3f; // You can tweak this
+    float _wallMoveSpeed = 3f;
+
+    // Rotation while hiding
+    float _rotationLerpSpeed = 10f;
+    bool _rotateTowardMovementAlongWall = true;
 
     bool _ignoreInteractThisFrame = true;
 
-    public PlayerHidingState(PlayerStateMachine owner, Vector3? wallPoint = null, Vector3? wallNormal = null, float maxHideTime = 10f)
+    // Nudge feedback
+    float _nudgeDistance = 0.5f;
+    float _nudgeDuration = 0.15f;
+    float _nudgeElapsed = 0f;
+    bool _isNudging = false;
+    Vector3 _nudgeStart;
+    Vector3 _nudgeEnd;
+
+    // Removed timed auto-exit: player can now hide indefinitely.
+    public PlayerHidingState(PlayerStateMachine owner, Vector3? wallPoint = null, Vector3? wallNormal = null)
     {
         _owner = owner;
-        _maxHideTime = maxHideTime;
-        _timer = 0f;
         _wallPoint = wallPoint;
         _wallNormal = wallNormal;
     }
 
     public void Enter()
     {
-        _timer = 0f;
         _ignoreInteractThisFrame = true;
         Debug.Log("PlayerHidingState: Enter");
 
-        // Cache PlayerMovement and disable its normal movement
         _playerMovement = _owner.GetComponent<PlayerMovement>();
         if (_playerMovement != null)
         {
@@ -55,17 +62,14 @@ public class PlayerHidingState : IPlayerState
         {
             Debug.Log($"PlayerHidingState: Hiding against wall at {_wallPoint.Value} with normal {_wallNormal.Value}");
 
-            // Start interpolation
             var player = _owner.gameObject;
             _startPosition = player.transform.position;
             _startRotation = player.transform.rotation;
 
-            // Offset the player slightly away from the wall to avoid clipping
-            float offset = 0.5f; // adjust as needed for your player size
+            float offset = 0.5f;
+            Vector3 outward = _wallNormal.Value.normalized; // normal already points outward
             _targetPosition = _wallPoint.Value + _wallNormal.Value.normalized * offset;
-
-            // Face outward from the wall (opposite the wall normal)
-            _targetRotation = Quaternion.LookRotation(-_wallNormal.Value.normalized, Vector3.up);
+            _targetRotation = Quaternion.LookRotation(outward, Vector3.up);
 
             _isSnapping = true;
             _snapElapsed = 0f;
@@ -82,11 +86,33 @@ public class PlayerHidingState : IPlayerState
     public void Exit()
     {
         Debug.Log("PlayerHidingState: Exit");
-        // Restore PlayerMovement
+
+        if (_wallNormal.HasValue)
+        {
+            var player = _owner.gameObject;
+            _nudgeStart = player.transform.position;
+            _nudgeEnd = _nudgeStart + _wallNormal.Value.normalized * _nudgeDistance;
+            _nudgeElapsed = 0f;
+            _isNudging = true;
+            _owner.StartCoroutine(NudgeCoroutine(player));
+        }
+
         if (_playerMovement != null)
             _playerMovement.enabled = _wasMovementEnabled;
 
         _owner.NotifyHidingExited();
+    }
+
+    private System.Collections.IEnumerator NudgeCoroutine(GameObject player)
+    {
+        while (_nudgeElapsed < _nudgeDuration)
+        {
+            _nudgeElapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(_nudgeElapsed / _nudgeDuration);
+            player.transform.position = Vector3.Lerp(_nudgeStart, _nudgeEnd, t);
+            yield return null;
+        }
+        _isNudging = false;
     }
 
     public void HandleInput()
@@ -97,63 +123,70 @@ public class PlayerHidingState : IPlayerState
             return;
         }
 
-        // Keyboard fallback
         if (Input.GetKeyDown(KeyCode.H) || Input.GetKeyDown(KeyCode.Space))
         {
             _owner.SetToDefaultState();
             return;
         }
 
-        // InputManager interact key (E by default, or whatever is mapped)
-        if (InputManager.Instance != null && InputManager.Instance.WasInteractPressed())
+        if (InputManager.Instance != null && InputManager.Instance.WasStealthPressed())
         {
             _owner.SetToDefaultState();
             return;
         }
     }
+
     public void Tick()
     {
-        // Interpolate to wall if needed
+        var player = _owner.gameObject;
+
         if (_isSnapping)
         {
             _snapElapsed += Time.deltaTime;
             float t = Mathf.Clamp01(_snapElapsed / _snapDuration);
-
-            var player = _owner.gameObject;
             player.transform.position = Vector3.Lerp(_startPosition, _targetPosition, t);
             player.transform.rotation = Quaternion.Slerp(_startRotation, _targetRotation, t);
 
             if (t >= 1f)
-            {
                 _isSnapping = false;
-            }
         }
         else if (_wallNormal.HasValue)
         {
-            // Only allow A/D (left/right) movement along the wall tangent
             float input = 0f;
+
             if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
                 input = -1f;
             else if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
                 input = 1f;
 
-            if (Mathf.Abs(input) > 0.01f)
-            {
-                // Calculate wall tangent (cross wall normal with up)
-                Vector3 wallNormal = _wallNormal.Value.normalized;
-                Vector3 wallTangent = Vector3.Cross(Vector3.up, wallNormal).normalized;
+            Vector3 wallNormal = _wallNormal.Value.normalized;
+            Vector3 outward = wallNormal;
+            if (outward.sqrMagnitude < 0.0001f) outward = player.transform.forward;
 
-                // Move player along the wall tangent
-                var player = _owner.gameObject;
+            Vector3 wallTangent = Vector3.Cross(Vector3.up, wallNormal).normalized;
+            if (wallTangent.sqrMagnitude < 0.0001f)
+                wallTangent = Vector3.Cross(outward, Vector3.up).normalized;
+
+            if (Mathf.Abs(input) > 0.01f)
+                wallTangent = -wallTangent;
                 player.transform.position += wallTangent * input * _wallMoveSpeed * Time.deltaTime;
+
+            if (_rotateTowardMovementAlongWall)
+            {
+                Vector3 desiredForward = Mathf.Abs(input) > 0.01f ? (wallTangent * input) : outward;
+                if (desiredForward.sqrMagnitude > 0.0001f)
+                {
+                    Quaternion targetRot = Quaternion.LookRotation(desiredForward, Vector3.up);
+                    player.transform.rotation = Quaternion.Slerp(player.transform.rotation, targetRot, Time.deltaTime * _rotationLerpSpeed);
+                }
+            }
+            else
+            {
+                Quaternion targetRot = Quaternion.LookRotation(outward, Vector3.up);
+                player.transform.rotation = Quaternion.Slerp(player.transform.rotation, targetRot, Time.deltaTime * _rotationLerpSpeed);
             }
         }
 
-        // Auto-exit after max hide time
-        _timer += Time.deltaTime;
-        if (_timer >= _maxHideTime)
-        {
-            _owner.SetToDefaultState();
-        }
+        // Removed timed auto-exit: player stays hidden until player input exits.
     }
 }
