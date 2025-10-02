@@ -38,12 +38,13 @@ public class EnemyStateMachine : MonoBehaviour
         return fallback;
     }
 
-    public float MoveSpeed => config != null ? config.moveSpeed : WarnAndReturn(3f);
-    public float PatrolSpeed => config != null ? config.patrolSpeed : WarnAndReturn(2f);
-    public float TargetingBuffer => config != null ? config.targetingBuffer : WarnAndReturn(1f);
-    public float EnemyAggroRadius => config != null ? config.enemyAggroRadius : WarnAndReturn(8f);
-    public float EnemyKillRadius => config != null ? config.enemyKillRadius : WarnAndReturn(1f);
-    public float DistractedCalmDuration => config != null ? config.distractedCalmDuration : WarnAndReturn(3f);
+    public float MoveSpeed;
+    public float PatrolSpeed;
+    public float TargetingBuffer;
+    public float EnemyAggroRadius;
+    public float EnemyKillRadius;
+    public float DistractedCalmDuration;
+    public float DistractedRushMultiplier; // << added
 
     public GameObject TargetPlayer => targetPlayer;
     public GameObject Enemy => enemy;
@@ -68,6 +69,29 @@ public class EnemyStateMachine : MonoBehaviour
             {
                 Debug.LogWarning("EnemyStateManager: No NavMeshAgent found on the enemy. Assign one in the inspector or add one to the enemy GameObject.");
             }
+        }
+
+        if (config != null)
+        {
+            MoveSpeed = config.moveSpeed;
+            PatrolSpeed = config.patrolSpeed;
+            TargetingBuffer = config.targetingBuffer;
+            EnemyAggroRadius = config.enemyAggroRadius;
+            EnemyKillRadius = config.enemyKillRadius;
+            DistractedCalmDuration = config.distractedCalmDuration;
+            DistractedRushMultiplier = config.distractedRushMultiplier; // << added
+        }
+        else
+        {
+            // Fallbacks (keep consistent with existing pattern)
+            if (!configWarned) WarnMissingConfig();
+            MoveSpeed = 3f;
+            PatrolSpeed = 2f;
+            TargetingBuffer = 1f;
+            EnemyAggroRadius = 8f;
+            EnemyKillRadius = 1f;
+            DistractedCalmDuration = 3f;
+            DistractedRushMultiplier = 1.5f; // safe default
         }
 
         CurrentState = enemyCalm;

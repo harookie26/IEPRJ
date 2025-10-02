@@ -12,9 +12,14 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] float jumpForce = 5f;
     [SerializeField] float rotationSpeed = 10f; // how fast the player rotates toward movement
 
+    [Header("Corruption Effects")]
+    [Tooltip("Multiplier applied to movement speed while in a corrupted room.")]
+    [SerializeField] private float corruptedSpeedMultiplier = 0.6f;
+
+    private bool isInCorruptedRoom = false;
+
     private Vector2 previousInput = Vector2.zero;
     private Rigidbody rb;
-
     private bool isGrounded = true;
 
     private void Awake()
@@ -23,6 +28,28 @@ public class PlayerMovement : MonoBehaviour
         moveAction = playerInput.actions["Movement"];
         jumpAction = playerInput.actions["Jump"];
         rb = GetComponent<Rigidbody>();
+    }
+
+    private void OnEnable()
+    {
+        EventBroadcaster.Instance.AddObserver(LevelEvents.ON_CORRUPTED_ROOM_TRUE, OnCorruptedEnter);
+        EventBroadcaster.Instance.AddObserver(LevelEvents.ON_CORRUPTED_ROOM_FALSE, OnCorruptedExit);
+    }
+
+    private void OnDisable()
+    {
+         EventBroadcaster.Instance.RemoveActionAtObserver(LevelEvents.ON_CORRUPTED_ROOM_TRUE, OnCorruptedEnter);
+         EventBroadcaster.Instance.RemoveActionAtObserver(LevelEvents.ON_CORRUPTED_ROOM_FALSE, OnCorruptedExit);
+    }
+
+    private void OnCorruptedEnter()
+    {
+        isInCorruptedRoom = true;
+    }
+
+    private void OnCorruptedExit()
+    {
+        isInCorruptedRoom = false;
     }
 
     private void Update()
@@ -50,8 +77,10 @@ public class PlayerMovement : MonoBehaviour
         // World-space movement: X = horizontal, Z = vertical input
         Vector3 moveDirection = new Vector3(input.x, 0f, input.y);
 
-        // Apply translation in world space
-        Vector3 move = moveDirection * moveSpeed * Time.deltaTime;
+        // Apply corruption speed modifier
+        float effectiveSpeed = moveSpeed * (isInCorruptedRoom ? corruptedSpeedMultiplier : 1f);
+
+        Vector3 move = moveDirection * effectiveSpeed * Time.deltaTime;
         transform.Translate(move, Space.World);
 
         // Rotate the player to face movement direction
