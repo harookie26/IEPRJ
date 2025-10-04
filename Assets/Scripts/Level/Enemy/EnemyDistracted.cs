@@ -24,7 +24,11 @@ public class EnemyDistracted : EnemyState
 
         // Save and set speed to the configured move speed for rushing
         originalSpeed = agent.speed;
-        agent.speed = state.MoveSpeed;
+
+        // Compute rush speed (fallback to MoveSpeed if multiplier invalid)
+        float multiplier = state.DistractedRushMultiplier > 0f ? state.DistractedRushMultiplier : 1f;
+        agent.speed = state.MoveSpeed * multiplier;
+
         agent.isStopped = false;
 
         // Set destination to the exact painting position that was interacted with

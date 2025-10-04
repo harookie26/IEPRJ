@@ -5,9 +5,6 @@ using Game.ObjectTypes;
 [FoldableInspector]
 public class PaintingChannelable : MonoBehaviour, IChannelable
 {
-    // Tracks whether this object is currently considered channeling.
-    // PaintbrushChanneller calls StartChannel() every frame while aiming at a target,
-    // so we make these idempotent to avoid log spam.
     private bool isChanneling;
 
     [Header("Channeling / Completion")]
@@ -20,11 +17,9 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
     [Tooltip("Number of consecutive completions required to trigger pause.")]
     [SerializeField] private int consecutiveCompletionsToPause = 2;
 
-    // Tracks progress while channeling
     private float channelTimer = 0f;
     private bool isCompleted = false;
 
-    // Count consecutive completions across instances (shared game-wide)
     private static int consecutiveCompletions = 0;
 
     public void StartChannel()
@@ -40,7 +35,6 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
     {
         if (!isChanneling) return;
 
-        // If we stopped before completing, break the consecutive chain
         if (!isCompleted)
         {
             consecutiveCompletions = 0;
@@ -48,7 +42,6 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
         }
         else
         {
-            // Stopped after completion: keep consecutive count (so repeated completes without interruption accumulate)
             Debug.Log($"[PaintingChannelable] Channel STOP after completion on '{gameObject.name}'. Consecutive completions = {consecutiveCompletions}.");
         }
 
@@ -61,7 +54,6 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
 
     private void Update()
     {
-        // Only progress the channel timer while channeling and not yet completed
         if (isChanneling && !isCompleted)
         {
             channelTimer += Time.deltaTime;
@@ -70,8 +62,6 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
             {
                 isCompleted = true;
                 HandleCompletion();
-                // Note: we do NOT reset isChanneling here. StopChannel() will be called by PlayerChanneller
-                // when the player releases or aim is lost. This preserves the semantics that Start/Stop are input-driven.
             }
         }
     }
@@ -81,12 +71,22 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
         consecutiveCompletions++;
         Debug.Log($"[PaintingChannelable] Channel COMPLETE on '{gameObject.name}'. Consecutive completions = {consecutiveCompletions}.");
 
+        // NEW: Restore (normalize) only the corrupted room containing this painting
+        if (CorruptedRoomsManager.Instance != null)
+        {
+            CorruptedRoomsManager.Instance.RestoreRoomAtPosition(transform.position);
+        }
+        else
+        {
+            Debug.LogWarning("[PaintingChannelable] No CorruptedRoomsManager instance found to restore room.");
+        }
+
         if (pauseOnConsecutiveCompletions && consecutiveCompletions >= Mathf.Max(1, consecutiveCompletionsToPause))
         {
             Debug.Log($"[PaintingChannelable] Consecutive completions threshold reached ({consecutiveCompletions}). Pausing game (Time.timeScale = 0).");
             Time.timeScale = 0f;
         }
 
-        // TODO: Trigger any completion effects here (play sound, spawn, mark objective, etc.)
+        // Additional completion effects can be added here.
     }
 }
