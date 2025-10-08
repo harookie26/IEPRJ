@@ -7,10 +7,11 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
     private AudioSource sfxAudioSource;
     private AudioList audioList;
 
-
-
     /* When Awake is called it will find the SFX object with the 
      SFX audio source component in the scene and store a reference to it.
+
+     Along with this is the AudioList component which has all 
+     the SFX and Music clips that will be used in the game
 
      This audio source is what will be used to play the SFX clips with 
      the VolumeSettings script controlling the volume.
@@ -19,11 +20,13 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
      as this prefab houses everything needed for audio management including the audio mixer 
      and settings panel.
 
-     this prefab already includes the SFX and Music audio source object with the correct tag 
-     so as long this container is in every scene there should be no problem.
+     this prefab already includes the SFX and Music audio source object with the correct tag
+     and the AudioList (component of AudioManager).
+     So as long this container is in every scene there should be no problem.
      */
     void Awake()
     {
+        //Find the AudioList object in the scene
         audioList = FindAnyObjectByType<AudioList>();
         //Find the SFX audio source object in the scene by its tag
         GameObject audioObject = GameObject.FindWithTag("SFXAudioSource");
@@ -49,7 +52,7 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
             return;
         }
 
-        sfxAudioSource.PlayOneShot(audioList.enemyDistractedSFX); //Play the SFX using the SFX audio source object reference
+        sfxAudioSource.PlayOneShot(audioList.enemyDistractedSFX); //Play the needed SFX clip from the AudioList component
         enemyStateMachine.DistractAt(transform.position);
     }
 }
