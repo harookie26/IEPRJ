@@ -9,10 +9,22 @@ public class LevelCameraDefault : MonoBehaviour
 
     private Camera cam;
 
+    // Cache rooms to avoid expensive per-frame FindObjects calls (fixes hitching when crossing room triggers)
+    private RoomComponent[] roomsCache;
+
     private void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player").transform;
         cam = GetComponent<Camera>();
+
+        RefreshRoomsCache();
+    }
+
+    // Public helper to refresh the room cache if rooms are added/removed at runtime
+    public void RefreshRoomsCache()
+    {
+        // Single allocation / query instead of doing this every LateUpdate
+        roomsCache = Object.FindObjectsByType<RoomComponent>(FindObjectsSortMode.None);
     }
 
     private void LateUpdate()
@@ -20,14 +32,23 @@ public class LevelCameraDefault : MonoBehaviour
         if (player == null || cam == null)
             return;
 
-        // Find the current room the player is in
+        // Ensure cache exists (defensive)
+        if (roomsCache == null || roomsCache.Length == 0)
+            RefreshRoomsCache();
+
+        // Find the current room the player is in (iterate cached array - no per-frame object search)
         RoomComponent currentRoom = null;
-        foreach (var room in Object.FindObjectsByType<RoomComponent>(FindObjectsSortMode.None))
+        if (roomsCache != null)
         {
-            if (room.IsPlayerInside)
+            for (int i = 0; i < roomsCache.Length; i++)
             {
-                currentRoom = room;
-                break;
+                var room = roomsCache[i];
+                if (room == null) continue;
+                if (room.IsPlayerInside)
+                {
+                    currentRoom = room;
+                    break;
+                }
             }
         }
 
