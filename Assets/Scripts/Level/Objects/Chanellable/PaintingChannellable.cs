@@ -71,7 +71,6 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
         consecutiveCompletions++;
         Debug.Log($"[PaintingChannelable] Channel COMPLETE on '{gameObject.name}'. Consecutive completions = {consecutiveCompletions}.");
 
-        // NEW: Restore (normalize) only the corrupted room containing this painting
         if (CorruptedRoomsManager.Instance != null)
         {
             CorruptedRoomsManager.Instance.RestoreRoomAtPosition(transform.position);
