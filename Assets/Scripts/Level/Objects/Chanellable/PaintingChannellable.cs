@@ -17,10 +17,40 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
     [Tooltip("Number of consecutive completions required to trigger pause.")]
     [SerializeField] private int consecutiveCompletionsToPause = 2;
 
+    private AudioSource sfxAudioSource;
+    private AudioSource musicAudioSource;
+    private AudioList audioList;
+
     private float channelTimer = 0f;
     private bool isCompleted = false;
 
     private static int consecutiveCompletions = 0;
+
+    void Awake()
+    {
+        audioList = FindAnyObjectByType<AudioList>();
+        //Find the SFX audio source object in the scene by its tag
+        GameObject audioObject1 = GameObject.FindWithTag("SFXAudioSource");
+        GameObject audioObject2 = GameObject.FindWithTag("MusicAudioSource");
+
+        if (audioObject1 != null)
+        {
+            sfxAudioSource = audioObject1.GetComponent<AudioSource>();
+        }
+        else
+        {
+            Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
+        }
+
+        if (audioObject2 != null)
+        {
+            musicAudioSource = audioObject2.GetComponent<AudioSource>();
+        }
+        else
+        {
+            Debug.LogWarning("No GameObject with tag 'MusicAudioSource' found in scene.");
+        }
+    }
 
     public void StartChannel()
     {
@@ -29,10 +59,12 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
         isCompleted = false;
         channelTimer = 0f;
         Debug.Log($"[PaintingChannelable] Channel START on '{gameObject.name}' (instance id {GetInstanceID()}).");
+        musicAudioSource.PlayOneShot(audioList.paintingRestorationMusic); // play the restoration music
     }
 
     public void StopChannel()
     {
+        musicAudioSource.Stop(); // stop the restoration music if still playing
         if (!isChanneling) return;
 
         if (!isCompleted)
@@ -68,6 +100,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
 
     private void HandleCompletion()
     {
+        musicAudioSource.Stop(); // stop the restoration music if still playing
         consecutiveCompletions++;
         Debug.Log($"[PaintingChannelable] Channel COMPLETE on '{gameObject.name}'. Consecutive completions = {consecutiveCompletions}.");
 
@@ -87,5 +120,6 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
         }
 
         // Additional completion effects can be added here.
+        sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
     }
 }
