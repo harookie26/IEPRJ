@@ -1,71 +1,68 @@
 using UnityEngine;
-using static EventNames;
+using static EventNames.GameStateEvents;
 using UnityEngine.SceneManagement;
+using Unity.VisualScripting;
 
 public class GameStateManager : MonoBehaviour
 {
     private bool isGamePaused;
-    private bool isLevelFailed;
-    private bool isLevelComplete;
+
+    private InputManager inputManager;
+
+    private bool debugMode = false;
+
+    private void Awake()
+    {
+        inputManager = InputManager.Instance;
+    }
 
     private void OnEnable()
     {
-        EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_LEVEL_COMPLETE, OnLevelComplete);
-        EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_LEVEL_FAILED, OnLevelFailed);
+        EventBroadcaster.Instance.AddObserver(ON_GAME_PAUSE, PauseGame);
+        EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, ResumeGame);
     }
 
     private void OnDisable()
     {
-        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_LEVEL_COMPLETE, OnLevelComplete);
-        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_LEVEL_FAILED, OnLevelFailed);
-    }
-
-    private void OnLevelComplete()
-    {
-        isLevelComplete = true;
-        Debug.Log("QUEST IS COMPLETE");
-
-    }
-
-    private void OnLevelFailed()
-    {
-        isLevelFailed = true;
-        Debug.Log("Boo!");
+        EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_PAUSE, PauseGame);
+        EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_RESUME, ResumeGame);
     }
 
     void Start()
     {
         isGamePaused = false;
-        isLevelFailed = false;
-        isLevelComplete = false;
-
-        //LinkRegistry.Clear();
     }
 
     void Update()
     {
-        if (isLevelComplete)
-        {
-            SceneLoader sceneLoader = FindFirstObjectByType<SceneLoader>();
-            sceneLoader?.LoadSceneByName(SceneNames.HubScene);
-        }
+        if (inputManager == null)
+            inputManager = InputManager.Instance;
 
-        if (isLevelFailed)
+        if (inputManager != null && inputManager.WasDebugModePressed())
         {
-            SceneLoader sceneLoader = FindFirstObjectByType<SceneLoader>();
-            sceneLoader?.LoadSceneByName(SceneNames.LoseQuestion);
+            debugMode = !debugMode;
+            if (debugMode)
+            {
+                EventBroadcaster.Instance.PostEvent(ON_DEBUG_MODE_ON);
+                Debug.Log("[GameStateManager] Debug mode ON");
+            }
+            else
+            {
+                EventBroadcaster.Instance.PostEvent(ON_DEBUG_MODE_OFF);
+                Debug.Log("[GameStateManager] Debug mode OFF");
+            }
         }
     }
 
     private void PauseGame()
     {
-        EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_PAUSE);
+        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
         Time.timeScale = 0.00000001f;
     }
 
     private void ResumeGame()
     {
-        EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESUME);
+        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
         Time.timeScale = 1f;
     }
 
