@@ -13,6 +13,9 @@ public class EventNames {
 		public const string ON_GAME_RESTART = "ON_GAME_RESTART";
 		public const string ON_LEVEL_COMPLETE = "ON_LEVEL_COMPLETE";
 		public const string ON_LEVEL_FAILED = "ON_LEVEL_FAILED";
+
+		public const string ON_DEBUG_MODE_ON = "ON_DEBUG_MODE_ON";
+		public const string ON_DEBUG_MODE_OFF = "ON_DEBUG_MODE_OFF";
     }
 
 	public class SceneEvents
