@@ -5,6 +5,7 @@ public class PBManual : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private Transform cameraTransform;
+    [SerializeField] private float rotationSpeed = 10f; // new: how fast the companion rotates toward camera
 
     private Rigidbody rb;
 
@@ -13,6 +14,10 @@ public class PBManual : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
+
+        // Prevent physics from rotating the companion due to collisions while still allowing script-driven rotation.
+        if (rb != null)
+            rb.constraints |= RigidbodyConstraints.FreezeRotation;
     }
 
     private void FixedUpdate()
@@ -49,6 +54,10 @@ public class PBManual : MonoBehaviour
 
         rb.linearVelocity = finalDir;
 
+        // Ensure physics doesn't keep rotating the rigidbody from collisions
+        if (rb != null)
+            rb.angularVelocity = Vector3.zero;
+
         // Rotation: follow camera yaw and pitch (brush tilts up/down with camera) but keep world up to avoid roll.
         Vector3 lookDir = cameraTransform.forward;
         if (lookDir.sqrMagnitude < 0.0001f)
@@ -56,6 +65,7 @@ public class PBManual : MonoBehaviour
 
         Quaternion targetRot = Quaternion.LookRotation(lookDir, Vector3.up);
 
-        rb.MoveRotation(targetRot);
+        // Use transform.rotation for script-driven rotation so constraints won't block it.
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.fixedDeltaTime);
     }
 }
