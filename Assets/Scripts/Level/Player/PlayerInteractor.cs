@@ -16,6 +16,9 @@ public class PlayerInteractor : MonoBehaviour
     [Tooltip("Layers that can be interacted with.")]
     public LayerMask interactMask = ~0;
 
+    [Tooltip("Layers that can be collected.")]
+    public LayerMask collectMask = ~0;
+
     private void Reset()
     {
         if (Camera.main != null)
@@ -50,12 +53,22 @@ public class PlayerInteractor : MonoBehaviour
         }
 
         Ray ray = new Ray(rayOrigin.position, rayOrigin.forward);
+
         if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, interactMask, QueryTriggerInteraction.Collide))
         {
             var interactable = hit.collider.GetComponentInParent<IInteractable>();
             if (interactable != null)
             {
                 interactable.Interact();
+                return;
+            }
+        }
+        if (Physics.Raycast(ray, out RaycastHit hitCollect, maxDistance, collectMask, QueryTriggerInteraction.Collide))
+        {
+            var collectible = hitCollect.collider.GetComponentInParent<ICollectible>();
+            if (collectible != null)
+            {
+                collectible.Collect();
                 return;
             }
         }

@@ -16,6 +16,11 @@ public class LevelDebugger : MonoBehaviour
     private GameObject enemy;
     private GameObject companion;
 
+    private bool suppressToggleEvents = false;
+
+    private CursorLockMode previousLockState;
+    private bool previousCursorVisible;
+
     private void Awake()
     {
         if (debugPanel == null)
@@ -38,21 +43,36 @@ public class LevelDebugger : MonoBehaviour
 
     private void Start()
     {
+        // setup toggles: initialize state without firing callbacks, then add listeners
         if (playerToggle != null && player != null)
         {
+            suppressToggleEvents = true;
             playerToggle.isOn = player.activeSelf;
+            suppressToggleEvents = false;
             playerToggle.onValueChanged.AddListener(SetPlayerEnabled);
         }
 
         if (companionToggle != null && companion != null)
         {
+            suppressToggleEvents = true;
             companionToggle.isOn = companion.activeSelf;
+            suppressToggleEvents = false;
             companionToggle.onValueChanged.AddListener(SetCompanionEnabled);
         }
 
-        if (spawnEnemyButton != null && enemy != null)
+        // add button listeners separately (previous code incorrectly grouped them)
+        if (spawnEnemyButton != null)
         {
             spawnEnemyButton.onClick.AddListener(SpawnEnemy);
+            // set initial interactable state based on enemy presence
+            if (enemy != null)
+                spawnEnemyButton.interactable = !enemy.activeSelf;
+            else
+                spawnEnemyButton.interactable = true;
+        }
+
+        if (removeEnemyButton != null)
+        {
             removeEnemyButton.onClick.AddListener(RemoveEnemy);
         }
     }
@@ -81,12 +101,28 @@ public class LevelDebugger : MonoBehaviour
     private void StartDebugMode()
     {
         Time.timeScale = 0.0000001f;
-        debugPanel.SetActive(true);
+        if (debugPanel != null)
+            debugPanel.SetActive(true);
+
+        // save and show/unlock cursor so player can interact with UI
+        previousCursorVisible = Cursor.visible;
+        previousLockState = Cursor.lockState;
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
 
         if (playerToggle != null && player != null)
+        {
+            suppressToggleEvents = true;
             playerToggle.isOn = player.activeSelf;
+            suppressToggleEvents = false;
+        }
         if (companionToggle != null && companion != null)
+        {
+            suppressToggleEvents = true;
             companionToggle.isOn = companion.activeSelf;
+            suppressToggleEvents = false;
+        }
+
         if (spawnEnemyButton != null && enemy != null)
             spawnEnemyButton.interactable = !enemy.activeSelf;
 
@@ -96,50 +132,84 @@ public class LevelDebugger : MonoBehaviour
     private void EndDebugMode()
     {
         Time.timeScale = 1f;
-        debugPanel.SetActive(false);
+        if (debugPanel != null)
+            debugPanel.SetActive(false);
+
+        // restore previous cursor state
+        Cursor.visible = previousCursorVisible;
+        Cursor.lockState = previousLockState;
 
         Debug.Log("Debug mode deactivated.");
     }
 
+    // Optional inspector-bound methods: use suppress flag to avoid double-calls
     public void ToggleEnablePlayer()
     {
-        if (player != null)
-            player.SetActive(!player.activeSelf);
+        if (player == null || playerToggle == null) return;
 
-        if (playerToggle != null && player != null)
-            playerToggle.isOn = player.activeSelf;
+        // flip player, then update toggle without firing the listener
+        player.SetActive(!player.activeSelf);
+        suppressToggleEvents = true;
+        playerToggle.isOn = player.activeSelf;
+        suppressToggleEvents = false;
     }
 
     public void ToggleEnableCompanion()
     {
-        if (companion != null)
-            companion.SetActive(!companion.activeSelf);
+        if (companion == null || companionToggle == null) return;
 
-        if (companionToggle != null && companion != null)
-            companionToggle.isOn = companion.activeSelf;
+        companion.SetActive(!companion.activeSelf);
+        suppressToggleEvents = true;
+        companionToggle.isOn = companion.activeSelf;
+        suppressToggleEvents = false;
     }
 
     public void SetPlayerEnabled(bool enabled)
     {
+        if (suppressToggleEvents) return;
         if (player != null)
             player.SetActive(enabled);
+
+        // ensure toggle reflects actual state (defensive)
+        if (playerToggle != null)
+        {
+            suppressToggleEvents = true;
+            playerToggle.isOn = player != null && player.activeSelf;
+            suppressToggleEvents = false;
+        }
     }
 
     public void SetCompanionEnabled(bool enabled)
     {
+        if (suppressToggleEvents) return;
         if (companion != null)
             companion.SetActive(enabled);
+
+        if (companionToggle != null)
+        {
+            suppressToggleEvents = true;
+            companionToggle.isOn = companion != null && companion.activeSelf;
+            suppressToggleEvents = false;
+        }
     }
 
     public void SpawnEnemy()
     {
         if (enemy != null)
+        {
             enemy.SetActive(true);
+            if (spawnEnemyButton != null)
+                spawnEnemyButton.interactable = false;
+        }
     }
 
     public void RemoveEnemy()
     {
         if (enemy != null)
+        {
             enemy.SetActive(false);
+            if (spawnEnemyButton != null)
+                spawnEnemyButton.interactable = true;
+        }
     }
 }
