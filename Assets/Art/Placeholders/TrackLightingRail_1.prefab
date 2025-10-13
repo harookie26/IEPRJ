@@ -618,6 +618,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -639,6 +641,7 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
@@ -976,6 +979,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -997,6 +1002,7 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
@@ -1649,6 +1655,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1670,6 +1678,7 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
@@ -1712,13 +1721,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5732600004628709756}
     m_Modifications:
+    - target: {fileID: 2008907315260871264, guid: f25b90067a973a940a222043cf8216db, type: 3}
+      propertyPath: m_VersionIndex
+      value: 87
+      objectReference: {fileID: 0}
     - target: {fileID: 6497577693514119748, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_Name
       value: Spotlight
       objectReference: {fileID: 0}
     - target: {fileID: 7025875898714833289, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_VersionIndex
-      value: 1501
+      value: 1591
       objectReference: {fileID: 0}
     - target: {fileID: 8866624905808277529, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1778,13 +1791,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5732600004628709756}
     m_Modifications:
+    - target: {fileID: 2008907315260871264, guid: f25b90067a973a940a222043cf8216db, type: 3}
+      propertyPath: m_VersionIndex
+      value: 87
+      objectReference: {fileID: 0}
     - target: {fileID: 6497577693514119748, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_Name
       value: Spotlight (1)
       objectReference: {fileID: 0}
     - target: {fileID: 7025875898714833289, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_VersionIndex
-      value: 1501
+      value: 1591
       objectReference: {fileID: 0}
     - target: {fileID: 8866624905808277529, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1844,13 +1861,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5732600004628709756}
     m_Modifications:
+    - target: {fileID: 2008907315260871264, guid: f25b90067a973a940a222043cf8216db, type: 3}
+      propertyPath: m_VersionIndex
+      value: 87
+      objectReference: {fileID: 0}
     - target: {fileID: 6497577693514119748, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_Name
       value: Spotlight (2)
       objectReference: {fileID: 0}
     - target: {fileID: 7025875898714833289, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_VersionIndex
-      value: 1501
+      value: 1591
       objectReference: {fileID: 0}
     - target: {fileID: 8866624905808277529, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1910,13 +1931,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5732600004628709756}
     m_Modifications:
+    - target: {fileID: 2008907315260871264, guid: f25b90067a973a940a222043cf8216db, type: 3}
+      propertyPath: m_VersionIndex
+      value: 87
+      objectReference: {fileID: 0}
     - target: {fileID: 6497577693514119748, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_Name
       value: Spotlight (3)
       objectReference: {fileID: 0}
     - target: {fileID: 7025875898714833289, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_VersionIndex
-      value: 1501
+      value: 1591
       objectReference: {fileID: 0}
     - target: {fileID: 8866624905808277529, guid: f25b90067a973a940a222043cf8216db, type: 3}
       propertyPath: m_LocalPosition.x
