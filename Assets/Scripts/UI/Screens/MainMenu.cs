@@ -20,7 +20,7 @@ public class MainMenu : MonoBehaviour
 
         if (playButton != null)
         {
-            playButton.onClick.AddListener(() => sceneLoader.LoadSceneByName(SceneNames.HubScene));
+            playButton.onClick.AddListener(() => sceneLoader.LoadSceneByName(SceneNames.GameScene));
         }
         else
         {

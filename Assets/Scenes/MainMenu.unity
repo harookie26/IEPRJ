@@ -1574,17 +1574,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Version: 3
   m_UsePipelineSettings: 1
   m_AdditionalLightsShadowResolutionTier: 2
-  m_LightLayerMask: 1
-  m_RenderingLayers: 1
   m_CustomShadowLayers: 0
-  m_ShadowLayerMask: 1
-  m_ShadowRenderingLayers: 1
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1001 &741532687377034464
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1593,6 +1599,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2340276551026889314, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: testSFX
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2340276551026889314, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: testMusic
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1065.5854

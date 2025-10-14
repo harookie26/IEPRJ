@@ -33,7 +33,6 @@ public class ArcadeStart : MonoBehaviour
 
     private void OnStartButtonClicked()
     {
-        sceneLoader.LoadSceneByName(SceneNames.LevelSelection);
 
     }
 }
