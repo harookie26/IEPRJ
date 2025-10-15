@@ -29,7 +29,6 @@ public class DoorInputManager : MonoBehaviour
         
         if (InputManager.Instance.WasInteractPressed())
         {
-            Debug.Log("[DoorInputManager] W key pressed");
 
             if (DoorsComponent.CurrentDoor?.IsReadyToUse() == true)
             {

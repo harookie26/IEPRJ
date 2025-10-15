@@ -28,6 +28,11 @@ public class PlayerMovement : MonoBehaviour
         moveAction = playerInput.actions["Movement"];
         jumpAction = playerInput.actions["Jump"];
         rb = GetComponent<Rigidbody>();
+
+        // Prevent physics from rotating the player due to collisions while still allowing
+        // rotation driven by this script. Use |= to preserve any other constraints set in the Inspector.
+        if (rb != null)
+            rb.constraints |= RigidbodyConstraints.FreezeRotation;
     }
 
     private void OnEnable()
@@ -83,7 +88,11 @@ public class PlayerMovement : MonoBehaviour
         Vector3 move = moveDirection * effectiveSpeed * Time.deltaTime;
         transform.Translate(move, Space.World);
 
-        // Rotate the player to face movement direction
+        // Ensure physics doesn't keep rotating the rigidbody from collisions
+        if (rb != null)
+            rb.angularVelocity = Vector3.zero;
+
+        // Rotate the player to face movement direction (only script-driven)
         if (moveDirection.sqrMagnitude > 0.0001f)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up);

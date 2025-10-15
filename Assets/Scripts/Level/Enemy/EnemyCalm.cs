@@ -52,7 +52,6 @@ public class EnemyCalm : EnemyState
 
         }
 
-        Debug.Log("Enemy roaming to " + roamDestination);
     }
 
     public override void OnCollision(EnemyStateMachine state)

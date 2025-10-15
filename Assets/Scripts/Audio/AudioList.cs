@@ -4,6 +4,12 @@ public class AudioList : MonoBehaviour
 {
     //Add here music clips and SFX clips to be used in the game
 
+    [Header("Locked Door Clip")]
+    [SerializeField] public AudioClip lockedDoorSFX;
+
+    [Header("Unlock Door Clip")]
+    [SerializeField] public AudioClip unlockDoorSFX;
+
     [Header("Painting Restoration Music Clip")]
     [SerializeField] public AudioClip paintingRestorationMusic;
 
@@ -16,4 +22,5 @@ public class AudioList : MonoBehaviour
     [Header("Testing Clips")]
     [SerializeField] public AudioClip testMusic;
     [SerializeField] public AudioClip testSFX;
+
 }

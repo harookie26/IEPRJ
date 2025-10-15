@@ -3,10 +3,10 @@ using System.Collections;
 
 public class LevelCameraDefault : MonoBehaviour
 {
-    public Transform player;
-    public float smoothSpeed = 0.125f;
+    [SerializeField] private float smoothSpeed = 0.125f;
     public Vector3 offset;
 
+    private Transform player;
     private Camera cam;
 
     // Cache rooms to avoid expensive per-frame FindObjects calls (fixes hitching when crossing room triggers)

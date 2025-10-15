@@ -5,8 +5,8 @@ public class CameraController : MonoBehaviour
     public enum Mode { Default, Companion }
     public Mode CurrentMode { get; private set; } = Mode.Default;
 
-    [SerializeField] private LevelCameraDefault defaultCamera;
-    [SerializeField] private LevelCameraCompanion companionCamera;
+    private LevelCameraDefault defaultCamera;
+    private LevelCameraCompanion companionCamera;
 
     private void Awake()
     {

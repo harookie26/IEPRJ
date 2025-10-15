@@ -31,6 +31,13 @@ namespace Game.ObjectTypes
     {
         void Interact();
     }
+
+    public interface ICollectible
+    {
+        void Collect();
+        string GetID { get; }
+        void Levitate();
+    }
 }
 
 namespace Game.Level
