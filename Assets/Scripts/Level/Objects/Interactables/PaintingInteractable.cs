@@ -32,13 +32,9 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
         GameObject audioObject = GameObject.FindWithTag("SFXAudioSource");
 
         if (audioObject != null)
-        {
             sfxAudioSource = audioObject.GetComponent<AudioSource>();
-        }
         else
-        {
             Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
-        }
 
     }
 

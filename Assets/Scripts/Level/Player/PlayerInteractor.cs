@@ -27,10 +27,21 @@ public class PlayerInteractor : MonoBehaviour
     [Tooltip("Layers that can be collected.")]
     public LayerMask collectMask = ~0;
 
+    [Tooltip("Optional: assign the scene UIManager in the inspector. Will FindObjectOfType if null.")]
+    [SerializeField] private UIManager uiManager;
+
+    private string currentHudKey;
+
     private void Reset()
     {
         if (Camera.main != null)
             rayOrigin = Camera.main.transform;
+    }
+
+    private void Awake()
+    {
+        if (uiManager == null)
+            uiManager = FindFirstObjectByType<UIManager>();
     }
 
     private void OnEnable()
@@ -43,6 +54,11 @@ public class PlayerInteractor : MonoBehaviour
     {
         if (InputManager.Instance != null)
             InputManager.Instance.OnInteractPressed -= HandleInteract;
+    }
+
+    private void Update()
+    {
+        UpdateInteractHud();
     }
 
     private void HandleInteract()
@@ -60,7 +76,6 @@ public class PlayerInteractor : MonoBehaviour
             return;
         }
 
-        // First try interactables in cone
         if (TryFindClosestInCone(interactMask, out Collider interactCollider, out Vector3 interactPoint))
         {
             var interactable = interactCollider.GetComponentInParent<IInteractable>();
@@ -71,7 +86,6 @@ public class PlayerInteractor : MonoBehaviour
             }
         }
 
-        // Then try collectibles in cone
         if (TryFindClosestInCone(collectMask, out Collider collectCollider, out Vector3 collectPoint))
         {
             var collectible = collectCollider.GetComponentInParent<ICollectible>();
@@ -83,6 +97,38 @@ public class PlayerInteractor : MonoBehaviour
         }
 
         Debug.Log("Interact pressed but nothing in front to interact with.");
+    }
+
+    private void UpdateInteractHud()
+    {
+        if (rayOrigin == null || uiManager == null)
+            return;
+
+        string desiredKey = null;
+
+        if (TryFindClosestInCone(interactMask, out Collider interactCollider, out _))
+        {
+            var interactable = interactCollider.GetComponentInParent<IInteractable>();
+            if (interactable != null)
+                desiredKey = UIManager.Keys.Interact;
+        }
+
+        if (desiredKey == null && TryFindClosestInCone(collectMask, out Collider collectCollider, out _))
+        {
+            var collectible = collectCollider.GetComponentInParent<ICollectible>();
+            if (collectible != null)
+                desiredKey = UIManager.Keys.Interact; 
+        }
+
+        if (currentHudKey != desiredKey)
+        {
+            currentHudKey = desiredKey;
+
+            if (string.IsNullOrEmpty(currentHudKey))
+                uiManager.ShowHUD(string.Empty); 
+            else
+                uiManager.ShowHUD(currentHudKey);
+        }
     }
 
     /// <summary>
@@ -100,23 +146,20 @@ public class PlayerInteractor : MonoBehaviour
         float halfAngleRad = Mathf.Deg2Rad * (coneAngle * 0.5f);
         float cosHalfAngle = Mathf.Cos(halfAngleRad);
 
-        // Broad-phase: collect all colliders within maxDistance radius
         Collider[] candidates = Physics.OverlapSphere(origin, maxDistance, mask, QueryTriggerInteraction.Collide);
         float bestSqr = float.MaxValue;
 
         foreach (var col in candidates)
         {
-            // use closest point on collider to origin (handles large colliders correctly)
             Vector3 closest = col.ClosestPoint(origin);
             Vector3 toPoint = closest - origin;
             float sqrMag = toPoint.sqrMagnitude;
 
             if (sqrMag > maxDistSqr)
-                continue; // outside max distance (defensive)
+                continue;
 
             if (sqrMag <= Mathf.Epsilon)
             {
-                // inside origin - consider it a hit and prefer it
                 if (sqrMag < bestSqr)
                 {
                     bestCollider = col;
@@ -127,7 +170,6 @@ public class PlayerInteractor : MonoBehaviour
             }
 
             Vector3 dirToPoint = toPoint / Mathf.Sqrt(sqrMag); // normalized
-            // angle test (using dot for speed)
             float dot = Vector3.Dot(forward, dirToPoint);
             if (dot >= cosHalfAngle)
             {
@@ -151,7 +193,6 @@ public class PlayerInteractor : MonoBehaviour
         Vector3 origin = rayOrigin.position;
         Vector3 forward = rayOrigin.forward;
 
-        // Draw central forward line (green if it would hit an interactable directly on the center ray, else red)
         Ray centerRay = new Ray(origin, forward);
         if (Physics.Raycast(centerRay, out RaycastHit hit, maxDistance, interactMask, QueryTriggerInteraction.Collide))
         {
@@ -166,7 +207,6 @@ public class PlayerInteractor : MonoBehaviour
             Gizmos.DrawWireSphere(origin + forward * maxDistance, 0.03f);
         }
 
-        // Draw cone outline
         Gizmos.color = new Color(0f, 0.75f, 1f, 0.9f);
         int samples = Mathf.Max(3, coneGizmoSamples);
         float halfAngle = coneAngle * 0.5f;
@@ -185,7 +225,6 @@ public class PlayerInteractor : MonoBehaviour
             }
         }
 
-        // Draw sphere representing broad-phase radius
         Gizmos.color = new Color(1f, 1f, 0f, 0.1f);
         Gizmos.DrawWireSphere(origin, maxDistance);
     }
