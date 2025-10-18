@@ -266,4 +266,26 @@ public class InputManager : MonoBehaviour
 
         onComplete?.Invoke();
     }
+
+    // --- NEW: UI mode helpers used by UI systems (debug panel, menus, etc.)
+    /// <summary>
+    /// Put InputManager into a UI-focused mode:
+    /// - optionally restricts inputs to left-mouse/Enter (useful for click-only UI)
+    /// - blocks processing until all buttons/keys are released (prevents accidental clicks)
+    /// </summary>
+    public void EnterUIMode(bool restrictToLmbOrEnter = true)
+    {
+        onlyAllowLMBOrEnter = restrictToLmbOrEnter;
+        blockInputUntilRelease = true;
+    }
+
+    /// <summary>
+    /// Exit UI-focused mode and block input until release to avoid immediate re-triggering
+    /// of gameplay actions.
+    /// </summary>
+    public void ExitUIMode()
+    {
+        onlyAllowLMBOrEnter = false;
+        blockInputUntilRelease = true;
+    }
 }

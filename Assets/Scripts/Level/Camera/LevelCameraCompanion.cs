@@ -2,8 +2,6 @@ using UnityEngine;
 
 public class LevelCameraCompanion : MonoBehaviour
 {
-    [SerializeField] private Transform target;
-
     [SerializeField] private Vector3 offset = new Vector3(0, 2, -5);
     [SerializeField] private float smoothSpeed = 10f;
     [SerializeField] private float mouseSensitivity = 100f;
@@ -11,6 +9,7 @@ public class LevelCameraCompanion : MonoBehaviour
     [SerializeField] private float minVerticalAngle = -80f;
     [SerializeField] private float maxVerticalAngle = 80f;
 
+    private Transform target;
     private float rotationX = 0f;
     private float rotationY = 0f;
 
