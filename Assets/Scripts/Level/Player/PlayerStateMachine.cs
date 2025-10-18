@@ -9,6 +9,10 @@ public class PlayerStateMachine : MonoBehaviour
     public event Action HidingEntered;
     public event Action HidingExited;
 
+    // New idle events
+    public event Action IdleEntered;
+    public event Action IdleExited;
+
     [Header("Stealth")]
     [Tooltip("Radius to search for nearby walls when stealth key is pressed")]
     public float stealthRadius = 2f;
@@ -20,12 +24,20 @@ public class PlayerStateMachine : MonoBehaviour
     [Tooltip("When true, prefer explicit WallHideAnchor components when selecting a hide point.")]
     public bool preferWallComponents = true;
 
+    [Header("Idle")]
+    [Tooltip("Seconds of no input before entering Idle state")]
+    public float idleDelay = 3f;
+
     private float hideCooldown = 0.2f;
     private float hideCooldownTimer = 0f;
+
+    // idle timer
+    private float idleTimer = 0f;
 
     void Start()
     {
         SetToDefaultState();
+        idleTimer = idleDelay;
     }
 
     void OnEnable()
@@ -45,8 +57,53 @@ public class PlayerStateMachine : MonoBehaviour
         if (hideCooldownTimer > 0f)
             hideCooldownTimer -= Time.deltaTime;
 
+        // Detect any player input / activity this frame
+        bool inputDetected = DetectInput();
+
+        if (inputDetected)
+        {
+            // reset idle timer when input occurs
+            idleTimer = idleDelay;
+
+            // if currently idle, leave immediately on input
+            if (_currentState is IdleState)
+            {
+                SetToDefaultState();
+            }
+        }
+        else
+        {
+            // count down to idle
+            if (!(_currentState is IdleState))
+            {
+                idleTimer -= Time.deltaTime;
+                if (idleTimer <= 0f)
+                {
+                    SetState(new IdleState(this));
+                }
+            }
+        }
+
         _currentState?.HandleInput();
         _currentState?.Tick();
+    }
+
+    // simple, conservative input detection covering keys, mouse, axes
+    bool DetectInput()
+    {
+        // Any key (includes mouse buttons while held)
+        if (Input.anyKey) return true;
+
+        // Mouse buttons
+        if (Input.GetMouseButton(0) || Input.GetMouseButton(1) || Input.GetMouseButton(2)) return true;
+
+        // Common axes
+        if (Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.01f) return true;
+        if (Mathf.Abs(Input.GetAxisRaw("Vertical")) > 0.01f) return true;
+        if (Mathf.Abs(Input.GetAxisRaw("Mouse X")) > 0.01f) return true;
+        if (Mathf.Abs(Input.GetAxisRaw("Mouse Y")) > 0.01f) return true;
+
+        return false;
     }
 
     public void SetState(IPlayerState newState)
@@ -85,11 +142,19 @@ public class PlayerStateMachine : MonoBehaviour
     {
         SetState(new DefaultState(this));
         hideCooldownTimer = hideCooldown;
+        // reset idle timer whenever we explicitly go to default
+        idleTimer = idleDelay;
     }
 
     public void NotifyHidingEntered() => HidingEntered?.Invoke();
     public void NotifyHidingExited() => HidingExited?.Invoke();
+
+    // New idle notify helpers
+    public void NotifyIdleEntered() => IdleEntered?.Invoke();
+    public void NotifyIdleExited() => IdleExited?.Invoke();
+
     public bool IsHiding => _currentState is PlayerHidingState;
+    public bool IsIdle => _currentState is IdleState;
 
     void HandleStealthPressed()
     {
@@ -216,6 +281,46 @@ public class PlayerStateMachine : MonoBehaviour
             {
                 // Now uses the unified auto-find path.
                 _owner.RequestHide();
+            }
+        }
+
+        public void Tick() { }
+    }
+
+    // New IdleState: entered after idleDelay seconds of no input.
+    // Any input immediately forces a transition back to DefaultState.
+    class IdleState : IPlayerState
+    {
+        readonly PlayerStateMachine _owner;
+        public IdleState(PlayerStateMachine owner) => _owner = owner;
+
+        public void Enter()
+        {
+            Debug.Log("PlayerStateMachine: Enter IdleState");
+            // Notify listeners that player is idle
+            _owner.NotifyIdleEntered();
+            // Add any idle-specific setup here (e.g. play idle animation)
+        }
+
+        public void Exit()
+        {
+            Debug.Log("PlayerStateMachine: Exit IdleState");
+            // Notify listeners that player left idle
+            _owner.NotifyIdleExited();
+            // Cleanup idle-specific state
+        }
+
+        public void HandleInput()
+        {
+            // Redundant with the machine-level detection, but keeps the state robust:
+            if (Input.anyKey ||
+                Input.GetMouseButton(0) || Input.GetMouseButton(1) || Input.GetMouseButton(2) ||
+                Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.01f ||
+                Mathf.Abs(Input.GetAxisRaw("Vertical")) > 0.01f ||
+                Mathf.Abs(Input.GetAxisRaw("Mouse X")) > 0.01f ||
+                Mathf.Abs(Input.GetAxisRaw("Mouse Y")) > 0.01f)
+            {
+                _owner.SetToDefaultState();
             }
         }
 

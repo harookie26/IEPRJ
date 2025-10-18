@@ -117,18 +117,19 @@ public class PlayerInteractor : MonoBehaviour
         {
             var collectible = collectCollider.GetComponentInParent<ICollectible>();
             if (collectible != null)
-                desiredKey = UIManager.Keys.Interact; 
+                desiredKey = UIManager.Keys.Interact;
         }
 
-        if (currentHudKey != desiredKey)
-        {
-            currentHudKey = desiredKey;
+        // Only call ShowHUD when the desired key actually changes.
+        if (currentHudKey == desiredKey)
+            return;
 
-            if (string.IsNullOrEmpty(currentHudKey))
-                uiManager.ShowHUD(string.Empty); 
-            else
-                uiManager.ShowHUD(currentHudKey);
-        }
+        currentHudKey = desiredKey;
+
+        if (string.IsNullOrEmpty(currentHudKey))
+            uiManager.ShowHUD(string.Empty);
+        else
+            uiManager.ShowHUD(currentHudKey);
     }
 
     /// <summary>
