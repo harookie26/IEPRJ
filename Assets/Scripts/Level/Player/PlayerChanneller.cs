@@ -16,11 +16,46 @@ public class PlayerChanneller : MonoBehaviour
     [Tooltip("Layers that can be channeled with.")]
     public LayerMask channelMask = ~0;
 
+    [Header("Channel Aim")]
+    [Tooltip("Sphere radius used for aim tolerance. Larger = more forgiving.")]
+    public float aimSphereRadius = 0.08f;
+    [Tooltip("Consecutive frames a miss is tolerated before stopping the current target.")]
+    public int missGraceFrames = 5;
+
+    [Header("Re-channel control")]
+    [Tooltip("Require releasing the channel key before another channel can start after completion.")]
+    public bool requireReleaseAfterCompletion = true;
+
+    [Tooltip("Delay after completion before a new channel can start (even if the key is still held). Uses unscaled time.")]
+    public float rechannelCooldown = 0.35f;
+
     private Coroutine channelCoroutine;
     private bool subscribed;
 
     // Track the currently channeled target so we can stop it when we lose focus or switch targets.
     private IChannelable currentChannelTarget;
+
+    // Optional completion notifier (if target implements it)
+    private INotifiesChannelCompletion currentCompletionNotifier;
+
+    // Reference to state machine to toggle ChannelState
+    private PlayerStateMachine stateMachine;
+
+    // Debounce counter for short-lived misses
+    private int consecutiveMisses;
+
+    // Gate to prevent re-channeling during same hold and/or for cooldown duration
+    private bool holdGateActive; // true until the key is released after a completion
+    private float rechannelAvailableAt; // unscaled time when a new channel may start
+
+    private void Awake()
+    {
+        stateMachine = GetComponent<PlayerStateMachine>();
+        if (stateMachine == null)
+        {
+            Debug.LogWarning("[PlayerChanneller] PlayerStateMachine not found on the same GameObject. ChannelState transitions will be skipped.");
+        }
+    }
 
     private void Reset()
     {
@@ -50,6 +85,16 @@ public class PlayerChanneller : MonoBehaviour
             StopCoroutine(channelCoroutine);
             channelCoroutine = null;
         }
+
+        UnsubscribeFromCompletion();
+
+        consecutiveMisses = 0;
+        holdGateActive = false;
+        rechannelAvailableAt = 0f;
+
+        // Leave ChannelState if we were channeling
+        if (stateMachine != null && stateMachine.IsChanneling)
+            stateMachine.ExitChannelState();
     }
 
     private void TrySubscribe()
@@ -61,6 +106,12 @@ public class PlayerChanneller : MonoBehaviour
             InputManager.Instance.OnChannelStarted += HandleChannelStart;
             InputManager.Instance.OnChannelStopped += HandleChannelStop;
             subscribed = true;
+
+            // If the input is already active when we subscribe, sync our state now.
+            if (InputManager.Instance.IsChanneling())
+            {
+                HandleChannelStart();
+            }
         }
         else
         {
@@ -79,6 +130,11 @@ public class PlayerChanneller : MonoBehaviour
                 InputManager.Instance.OnChannelStarted += HandleChannelStart;
                 InputManager.Instance.OnChannelStopped += HandleChannelStop;
                 subscribed = true;
+
+                if (InputManager.Instance.IsChanneling())
+                {
+                    HandleChannelStart();
+                }
                 yield break;
             }
             t += Time.deltaTime;
@@ -105,9 +161,11 @@ public class PlayerChanneller : MonoBehaviour
 
     private void HandleChannelStart()
     {
+        consecutiveMisses = 0;
+
         if (rayOrigin == null)
         {
-            Debug.LogWarning("PlayerChanneller: rayOrigin not set.");
+            Debug.LogWarning("PlayerChanneller: rayOrigin not set. Targeting disabled.");
             return;
         }
 
@@ -126,7 +184,7 @@ public class PlayerChanneller : MonoBehaviour
             // Stop channel on current target before killing coroutine.
             if (currentChannelTarget != null)
             {
-                Debug.Log($"[PlayerChanneller] Stopping channel on current target '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' due to channel stop.");
+                Debug.Log($"[PlayerChanneller] Stopping channel on current target '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' due to input stop.");
                 currentChannelTarget.StopChannel();
                 currentChannelTarget = null;
             }
@@ -134,6 +192,36 @@ public class PlayerChanneller : MonoBehaviour
             StopCoroutine(channelCoroutine);
             channelCoroutine = null;
         }
+
+        UnsubscribeFromCompletion();
+
+        consecutiveMisses = 0;
+
+        // Releasing the key clears the hold-gate
+        holdGateActive = false;
+
+        // Exit ChannelState now that channeling input ended
+        if (stateMachine != null && stateMachine.IsChanneling)
+            stateMachine.ExitChannelState();
+    }
+
+    private bool CanBeginNewChannel()
+    {
+        // Cooldown gate (unscaled so it works during pause)
+        if (Time.unscaledTime < rechannelAvailableAt)
+            return false;
+
+        // Require-release gate
+        if (holdGateActive)
+        {
+            if (InputManager.Instance != null && InputManager.Instance.IsChanneling())
+                return false;
+
+            // Key is released; clear the hold gate now
+            holdGateActive = false;
+        }
+
+        return true;
     }
 
     private IEnumerator ChannelRoutine()
@@ -149,51 +237,147 @@ public class PlayerChanneller : MonoBehaviour
             }
 
             Ray ray = new Ray(rayOrigin.position, rayOrigin.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, channelMask, QueryTriggerInteraction.Collide))
+
+            // Use a forgiving spherecast
+            bool gotHit = Physics.SphereCast(ray, aimSphereRadius, out RaycastHit hit, maxDistance, channelMask, QueryTriggerInteraction.Collide);
+            IChannelable hitTarget = gotHit ? hit.collider.GetComponentInParent<IChannelable>() : null;
+
+            if (hitTarget != null)
             {
-                var hitTarget = hit.collider.GetComponentInParent<IChannelable>();
+                // Reset miss debounce
+                consecutiveMisses = 0;
 
-                if (hitTarget != null)
+                // Switched to a new target or we had none
+                if (hitTarget != currentChannelTarget)
                 {
-                    // Switched to a new target
-                    if (hitTarget != currentChannelTarget)
-                    {
-                        // Stop previous target if present
-                        if (currentChannelTarget != null)
-                        {
-                            Debug.Log($"[PlayerChanneller] Lost focus on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' -> calling StopChannel().");
-                            currentChannelTarget.StopChannel();
-                        }
-
-                        currentChannelTarget = hitTarget;
-                        Debug.Log($"[PlayerChanneller] Gained focus on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' -> calling StartChannel().");
-                        currentChannelTarget.StartChannel();
-                    }
-                    // else same target: do nothing (StartChannel is idempotent on the target)
-                }
-                else
-                {
-                    // Hit something that isn't channelable
+                    // Stop previous target if present
                     if (currentChannelTarget != null)
                     {
-                        Debug.Log($"[PlayerChanneller] Ray hit non-channelable object; stopping previous target '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}'.");
+                        Debug.Log($"[PlayerChanneller] Lost focus on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' -> StopChannel().");
                         currentChannelTarget.StopChannel();
-                        currentChannelTarget = null;
                     }
+
+                    // Unsubscribe old completion notifier
+                    UnsubscribeFromCompletion();
+
+                    // Gate: only acquire a new target if allowed
+                    if (!CanBeginNewChannel())
+                    {
+                        // Block re-channeling under same hold or during cooldown
+                        // Debug (comment out if too noisy):
+                        // Debug.Log("[PlayerChanneller] Re-channel gated (require release and/or cooldown).");
+                        currentChannelTarget = null;
+                        yield return null;
+                        continue;
+                    }
+
+                    currentChannelTarget = hitTarget;
+
+                    // Enter ChannelState when a target is actually acquired
+                    if (stateMachine != null && !stateMachine.IsChanneling)
+                        stateMachine.EnterChannelState();
+
+                    // Subscribe to completion if available
+                    var mb = currentChannelTarget as MonoBehaviour;
+                    currentCompletionNotifier = mb != null ? mb.GetComponent<INotifiesChannelCompletion>() : null;
+                    if (currentCompletionNotifier != null)
+                    {
+                        currentCompletionNotifier.ChannelCompleted += OnTargetCompleted;
+                    }
+
+                    Debug.Log($"[PlayerChanneller] Gained focus on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' -> StartChannel().");
+                    currentChannelTarget.StartChannel();
                 }
+                // else same target: do nothing
             }
             else
             {
-                // Ray didn't hit anything: stop current target if any
+                // Not directly hitting a channelable; see if our current target is still within the sphere path
+                bool keepCurrent = false;
+
                 if (currentChannelTarget != null)
                 {
-                    Debug.Log($"[PlayerChanneller] Ray missed; stopping current target '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}'.");
-                    currentChannelTarget.StopChannel();
-                    currentChannelTarget = null;
+                    var mb = currentChannelTarget as MonoBehaviour;
+                    if (mb != null)
+                    {
+                        var targetCols = mb.GetComponentsInChildren<Collider>();
+                        if (targetCols != null && targetCols.Length > 0)
+                        {
+                            var hits = Physics.SphereCastAll(ray, aimSphereRadius, maxDistance, channelMask, QueryTriggerInteraction.Collide);
+                            for (int i = 0; i < hits.Length && !keepCurrent; i++)
+                            {
+                                var hCol = hits[i].collider;
+                                for (int j = 0; j < targetCols.Length; j++)
+                                {
+                                    if (hCol == targetCols[j])
+                                    {
+                                        keepCurrent = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (keepCurrent)
+                {
+                    // Still grazing our current target; don't stop
+                    consecutiveMisses = 0;
+                }
+                else
+                {
+                    // Apply grace frames to avoid flicker stops
+                    consecutiveMisses++;
+                    if (consecutiveMisses >= missGraceFrames && currentChannelTarget != null)
+                    {
+                        Debug.Log($"[PlayerChanneller] Lost channel (miss {consecutiveMisses} frames) -> StopChannel on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}'.");
+                        currentChannelTarget.StopChannel();
+                        currentChannelTarget = null;
+                        consecutiveMisses = 0;
+
+                        UnsubscribeFromCompletion();
+
+                        // Exit ChannelState because channeling ended (no active target)
+                        if (stateMachine != null && stateMachine.IsChanneling)
+                            stateMachine.ExitChannelState();
+                    }
                 }
             }
 
             yield return null;
+        }
+    }
+
+    private void OnTargetCompleted()
+    {
+        // Target reports completion; shut down channel immediately
+        if (currentChannelTarget != null)
+        {
+            Debug.Log($"[PlayerChanneller] Target completed -> StopChannel on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}'.");
+            currentChannelTarget.StopChannel();
+            currentChannelTarget = null;
+        }
+
+        UnsubscribeFromCompletion();
+        consecutiveMisses = 0;
+
+        // Arm the gates: require release and/or cooldown
+        if (requireReleaseAfterCompletion)
+            holdGateActive = true;
+
+        rechannelAvailableAt = Mathf.Max(rechannelAvailableAt, Time.unscaledTime + Mathf.Max(0f, rechannelCooldown));
+
+        if (stateMachine != null && stateMachine.IsChanneling)
+            stateMachine.ExitChannelState();
+    }
+
+    private void UnsubscribeFromCompletion()
+    {
+        if (currentCompletionNotifier != null)
+        {
+            currentCompletionNotifier.ChannelCompleted -= OnTargetCompleted;
+            currentCompletionNotifier = null;
         }
     }
 
@@ -204,16 +388,17 @@ public class PlayerChanneller : MonoBehaviour
         Vector3 origin = rayOrigin.position;
         Vector3 dir = rayOrigin.forward;
 
-        bool isChanneling = InputManager.Instance != null && InputManager.Instance.IsChanneling();
+        bool isChannelingInput = InputManager.Instance != null && InputManager.Instance.IsChanneling();
 
-        Gizmos.color = isChanneling ? Color.green : Color.cyan;
+        Gizmos.color = isChannelingInput ? Color.green : Color.cyan;
         Gizmos.DrawRay(origin, dir * maxDistance);
 
-        if (Physics.Raycast(origin, dir, out RaycastHit hit, maxDistance, channelMask, QueryTriggerInteraction.Collide))
+        // Visualize the SphereCast radius and hit
+        if (Physics.SphereCast(origin, aimSphereRadius, dir, out RaycastHit hit, maxDistance, channelMask, QueryTriggerInteraction.Collide))
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawSphere(hit.point, 0.05f);
             Gizmos.DrawLine(origin, hit.point);
+            Gizmos.DrawWireSphere(hit.point, aimSphereRadius);
         }
     }
 
@@ -227,11 +412,11 @@ public class PlayerChanneller : MonoBehaviour
         Gizmos.color = Color.white;
         Gizmos.DrawRay(origin, dir * maxDistance);
 
-        if (Physics.Raycast(origin, dir, out RaycastHit hit, maxDistance, channelMask, QueryTriggerInteraction.Collide))
+        if (Physics.SphereCast(origin, aimSphereRadius, dir, out RaycastHit hit, maxDistance, channelMask, QueryTriggerInteraction.Collide))
         {
             Gizmos.color = Color.red;
-            Gizmos.DrawSphere(hit.point, 0.06f);
             Gizmos.DrawLine(origin, hit.point);
+            Gizmos.DrawWireSphere(hit.point, aimSphereRadius);
         }
     }
 }

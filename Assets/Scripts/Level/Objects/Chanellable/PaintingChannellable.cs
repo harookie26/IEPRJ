@@ -1,9 +1,16 @@
 using UnityEngine;
 using Game.ObjectTypes;
 
+// Optional completion notification interface channelables can implement.
+public interface INotifiesChannelCompletion
+{
+    event System.Action ChannelCompleted;
+    bool IsCompleted { get; }
+}
+
 [DisallowMultipleComponent]
 [FoldableInspector]
-public class PaintingChannelable : MonoBehaviour, IChannelable
+public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannelCompletion
 {
     private bool isChanneling;
 
@@ -25,6 +32,10 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
     private bool isCompleted = false;
 
     private static int consecutiveCompletions = 0;
+
+    // Notify listeners (PlayerChanneller) when this target finishes.
+    public event System.Action ChannelCompleted;
+    public bool IsCompleted => isCompleted;
 
     void Awake()
     {
@@ -59,12 +70,15 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
         isCompleted = false;
         channelTimer = 0f;
         Debug.Log($"[PaintingChannelable] Channel START on '{gameObject.name}' (instance id {GetInstanceID()}).");
-        musicAudioSource.PlayOneShot(audioList.paintingRestorationMusic); // play the restoration music
+        if (musicAudioSource != null && audioList != null && audioList.paintingRestorationMusic != null)
+            musicAudioSource.PlayOneShot(audioList.paintingRestorationMusic); // play the restoration music
     }
 
     public void StopChannel()
     {
-        musicAudioSource.Stop(); // stop the restoration music if still playing
+        if (musicAudioSource != null)
+            musicAudioSource.Stop(); // stop the restoration music if still playing
+
         if (!isChanneling) return;
 
         if (!isCompleted)
@@ -93,14 +107,21 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
             if (channelTimer >= requiredChannelDuration)
             {
                 isCompleted = true;
+
+                // Notify listeners FIRST so the player can exit ChannelState immediately.
+                ChannelCompleted?.Invoke();
+
                 HandleCompletion();
+                // Do not call StopChannel() here; PlayerChanneller will call it upon completion.
             }
         }
     }
 
     private void HandleCompletion()
     {
-        musicAudioSource.Stop(); // stop the restoration music if still playing
+        if (musicAudioSource != null)
+            musicAudioSource.Stop(); // stop the restoration music if still playing
+
         consecutiveCompletions++;
         Debug.Log($"[PaintingChannelable] Channel COMPLETE on '{gameObject.name}'. Consecutive completions = {consecutiveCompletions}.");
 
@@ -120,6 +141,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable
         }
 
         // Additional completion effects can be added here.
-        sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
+        if (sfxAudioSource != null && audioList != null && audioList.paintingRestorationCompleteSFX != null)
+            sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
     }
 }

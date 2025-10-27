@@ -28,6 +28,24 @@ public class PlayerStateMachine : MonoBehaviour
     [Tooltip("Seconds of no input before entering Idle state")]
     public float idleDelay = 3f;
 
+    [Header("Channel")]
+    [Tooltip("Hover height above ground while channeling")]
+    public float channelHoverHeight = 0.3f;
+    [Tooltip("Vertical bob amplitude while channeling")]
+    public float channelBobAmplitude = 0.05f;
+    [Tooltip("Bob frequency (cycles per second)")]
+    public float channelBobFrequency = 2f;
+    [Tooltip("How fast to move toward target hover height")]
+    public float channelRiseLerpSpeed = 6f;
+    [Tooltip("Max raycast distance downward to find ground while channeling")]
+    public float channelGroundRayDistance = 5f;
+    [Tooltip("Layer mask for ground detection while channeling")]
+    public LayerMask channelGroundMask = ~0;
+
+    [Header("Debug")]
+    [Tooltip("Draw the channel ground ray while channeling")]
+    public bool channelDrawGroundRay = true;
+
     private float hideCooldown = 0.2f;
     private float hideCooldownTimer = 0f;
 
@@ -73,8 +91,8 @@ public class PlayerStateMachine : MonoBehaviour
         }
         else
         {
-            // count down to idle
-            if (!(_currentState is IdleState))
+            // count down to idle (but not if channeling)
+            if (!(_currentState is IdleState) && !(_currentState is ChannelState))
             {
                 idleTimer -= Time.deltaTime;
                 if (idleTimer <= 0f)
@@ -111,6 +129,19 @@ public class PlayerStateMachine : MonoBehaviour
         _currentState?.Exit();
         _currentState = newState;
         _currentState?.Enter();
+    }
+
+    // Public API to toggle channel state
+    public void EnterChannelState()
+    {
+        if (!(_currentState is ChannelState))
+            SetState(new ChannelState(this));
+    }
+
+    public void ExitChannelState()
+    {
+        if (_currentState is ChannelState)
+            SetToDefaultState();
     }
 
     // Updated: now can auto-find a wall if none provided.
@@ -155,6 +186,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     public bool IsHiding => _currentState is PlayerHidingState;
     public bool IsIdle => _currentState is IdleState;
+    public bool IsChanneling => _currentState is ChannelState;
 
     void HandleStealthPressed()
     {
@@ -325,5 +357,114 @@ public class PlayerStateMachine : MonoBehaviour
         }
 
         public void Tick() { }
+    }
+
+    class ChannelState : IPlayerState
+    {
+        readonly PlayerStateMachine _owner;
+
+        // bob state
+        float _time;
+        float _lastGroundY;
+        Rigidbody _rb;
+        bool _hadRb;
+        bool _originalUseGravity;
+
+        public ChannelState(PlayerStateMachine owner) => _owner = owner;
+
+        public void Enter()
+        {
+            Debug.Log("PlayerStateMachine: Enter ChannelState");
+
+            // Disable gravity while channeling if we have a Rigidbody
+            _rb = _owner.GetComponent<Rigidbody>();
+            _hadRb = _rb != null;
+            if (_hadRb)
+            {
+                _originalUseGravity = _rb.useGravity;
+                _rb.useGravity = false;
+                _rb.linearVelocity = Vector3.zero; // FIX: was linearVelocity
+            }
+
+            _time = 0f;
+            _lastGroundY = SampleGroundY(_owner.transform.position);
+        }
+
+        public void Exit()
+        {
+            Debug.Log("PlayerStateMachine: Exit ChannelState");
+
+            // Restore gravity
+            if (_hadRb && _rb != null)
+            {
+                _rb.useGravity = _originalUseGravity;
+            }
+        }
+
+        public void HandleInput() { }
+
+        public void Tick()
+        {
+            _time += Time.deltaTime;
+
+            // Follow ground height under player
+            float groundY = SampleGroundY(_owner.transform.position);
+            if (!float.IsNaN(groundY))
+                _lastGroundY = groundY;
+
+            float bob = Mathf.Sin(_time * Mathf.PI * 2f * _owner.channelBobFrequency) * _owner.channelBobAmplitude;
+            float targetY = _lastGroundY + _owner.channelHoverHeight + bob;
+
+            Vector3 pos = _owner.transform.position;
+            float newY = Mathf.Lerp(pos.y, targetY, Time.deltaTime * _owner.channelRiseLerpSpeed);
+            Vector3 newPos = new Vector3(pos.x, newY, pos.z);
+
+            if (_hadRb && _rb != null)
+            {
+                _rb.linearVelocity = Vector3.zero; // FIX: was linearVelocity
+                _rb.MovePosition(newPos);
+            }
+            else
+            {
+                _owner.transform.position = newPos;
+            }
+        }
+
+        float SampleGroundY(Vector3 origin)
+        {
+            Ray ray = new Ray(origin + Vector3.up * 0.1f, Vector3.down);
+            if (Physics.Raycast(ray, out RaycastHit hit, _owner.channelGroundRayDistance, _owner.channelGroundMask, QueryTriggerInteraction.Ignore))
+            {
+                return hit.point.y;
+            }
+            // Fallback: keep relative hover if no ground found
+            return origin.y - _owner.channelHoverHeight;
+        }
+    }
+
+    // Debug visualization of the ground ray while channeling
+    void OnDrawGizmos()
+    {
+        if (!channelDrawGroundRay || !IsChanneling) return;
+
+        Vector3 origin = transform.position + Vector3.up * 0.1f;
+        Vector3 dir = Vector3.down;
+        float maxDist = channelGroundRayDistance;
+
+        // Base ray
+        Gizmos.color = new Color(0.2f, 0.9f, 1f, 0.8f);
+        Gizmos.DrawRay(origin, dir * maxDist);
+
+        if (Physics.Raycast(origin, dir, out RaycastHit hit, maxDist, channelGroundMask, QueryTriggerInteraction.Ignore))
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(origin, hit.point);
+            Gizmos.DrawSphere(hit.point, 0.05f);
+        }
+        else
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawLine(origin, origin + dir * maxDist);
+        }
     }
 }
