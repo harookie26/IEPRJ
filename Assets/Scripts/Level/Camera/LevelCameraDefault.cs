@@ -36,7 +36,9 @@ public class LevelCameraDefault : MonoBehaviour
         if (roomsCache == null || roomsCache.Length == 0)
             RefreshRoomsCache();
 
-        // Find the current room the player is in (iterate cached array - no per-frame object search)
+        // Find the current room the player is in:
+        // 1) Prefer trigger-based flag (IsPlayerInside)
+        // 2) Fallback to bounds containment (handles doorway->inside transitions when bounds collider is non-trigger)
         RoomComponent currentRoom = null;
         if (roomsCache != null)
         {
@@ -48,6 +50,26 @@ public class LevelCameraDefault : MonoBehaviour
                 {
                     currentRoom = room;
                     break;
+                }
+            }
+
+            if (currentRoom == null)
+            {
+                // Small epsilon to be lenient at edges
+                const float containsEpsilon = 0.001f;
+                for (int i = 0; i < roomsCache.Length; i++)
+                {
+                    var room = roomsCache[i];
+                    if (room == null) continue;
+
+                    var b = room.Bounds;
+                    // Inflate slightly to ensure containment when exactly on the boundary
+                    b.Expand(containsEpsilon);
+                    if (b.Contains(player.position))
+                    {
+                        currentRoom = room;
+                        break;
+                    }
                 }
             }
         }
@@ -77,13 +99,13 @@ public class LevelCameraDefault : MonoBehaviour
         float frustumHeight = 2.0f * camToPlaneDist * Mathf.Tan(halfFovRad);
         float frustumWidth = frustumHeight * cam.aspect;
 
-        float minX = bounds.min.x + frustumWidth / 2f;
-        float maxX = bounds.max.x - frustumWidth / 2f;
-        // Calculate the clamped Y range, but bias it by the offset
+        // Account for camera offset in BOTH X and Y when clamping
+        float minX = bounds.min.x + frustumWidth / 2f + offset.x;
+        float maxX = bounds.max.x - frustumWidth / 2f + offset.x;
+
         float minY = bounds.min.y + frustumHeight / 2f + offset.y;
         float maxY = bounds.max.y - frustumHeight / 2f + offset.y;
 
-        // Clamp the camera's Y position using the biased range
         float clampedX = Mathf.Clamp(targetPos.x, minX, maxX);
         float clampedY = Mathf.Clamp(targetPos.y, minY, maxY);
 

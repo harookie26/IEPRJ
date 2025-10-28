@@ -5958,6 +5958,10 @@ MonoBehaviour:
   channelMask:
     serializedVersion: 2
     m_Bits: 65536
+  aimSphereRadius: 0.08
+  missGraceFrames: 5
+  requireReleaseAfterCompletion: 1
+  rechannelCooldown: 0.35
 --- !u!114 &1709919859
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5980,6 +5984,7 @@ MonoBehaviour:
   collectMask:
     serializedVersion: 2
     m_Bits: 262144
+  uiManager: {fileID: 0}
 --- !u!114 &1709919860
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5998,6 +6003,16 @@ MonoBehaviour:
     m_Bits: 131072
   stealthRayExtra: 0.1
   preferWallComponents: 1
+  idleDelay: 3
+  channelHoverHeight: 0.3
+  channelBobAmplitude: 0.05
+  channelBobFrequency: 2
+  channelRiseLerpSpeed: 6
+  channelGroundRayDistance: 5
+  channelGroundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  channelDrawGroundRay: 1
 --- !u!114 &1709919861
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6014,6 +6029,8 @@ MonoBehaviour:
   jumpForce: 5
   rotationSpeed: 10
   corruptedSpeedMultiplier: 0.45
+  fallMultiplier: 2.5
+  lowJumpMultiplier: 2
 --- !u!114 &1709919862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6081,7 +6098,7 @@ CapsuleCollider:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 524288
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -14191,12 +14208,13 @@ GameObject:
   - component: {fileID: 5111299738265831131}
   - component: {fileID: 2645237800117986477}
   - component: {fileID: 8770159657543272885}
-  m_Layer: 0
+  - component: {fileID: 8770159657543272886}
+  m_Layer: 19
   m_Name: Gallery_1-room
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!64 &8770159657543272885
 MeshCollider:
@@ -14215,11 +14233,32 @@ MeshCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 5
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -1452065771087830236, guid: 0bfa1ee552e31394e8fdc296360db26e, type: 3}
+--- !u!65 &8770159657543272886
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8770159657543272884}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 8
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 1
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.02, y: 0.049666792, z: 0.010455252}
+  m_Center: {x: -4.656613e-10, y: -0.0000000018626446, z: 0.0052276263}
 --- !u!23 &8812145887317999223
 MeshRenderer:
   m_ObjectHideFlags: 0
