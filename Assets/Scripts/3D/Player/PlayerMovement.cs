@@ -2,36 +2,43 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using static EventNames;
 
+[FoldableInspector]
 public class PlayerMovement : MonoBehaviour
 {
     PlayerInput playerInput;
     InputAction moveAction;
     InputAction jumpAction;
 
+    [Header("Movement Settings")]
+    [Tooltip("Movement speed in units per second.")]
     [SerializeField] float moveSpeed = 5f;
+
+    [Tooltip("Upward force applied when jumping.")]
     [SerializeField] float jumpForce = 5f;
+
+    [Tooltip("Speed of rotation to face movement direction.")]
     [SerializeField] float rotationSpeed = 10f;
+
+    [Tooltip("Multiplier for gravity when falling (makes falls snappier).")]
+    [SerializeField] private float fallMultiplier = 2.5f;
+
+    [Tooltip("Multiplier for gravity when jump is released early (variable jump height).")]
+    [SerializeField] private float lowJumpMultiplier = 2f;
 
     [Header("Corruption Effects")]
     [Tooltip("Multiplier applied to movement speed while in a corrupted room.")]
     [SerializeField] private float corruptedSpeedMultiplier = 0.6f;
 
-    [Header("Better Jumping (tune to taste)")]
-    [Tooltip("Multiplier for gravity when falling (makes falls snappier).")]
-    [SerializeField] private float fallMultiplier = 2.5f;
-    [Tooltip("Multiplier for gravity when jump is released early (variable jump height).")]
-    [SerializeField] private float lowJumpMultiplier = 2f;
-
     [Header("Room Constraint")]
     [Tooltip("If enabled, player movement is clamped to the current RoomComponent bounds.")]
     [SerializeField] private bool restrictToRoomBounds = true;
+
     [Tooltip("Also clamp Y to keep the player fully inside the room volume (including ceiling/floor).")]
     [SerializeField] private bool clampYInsideRoomVolume = false;
 
     [Tooltip("The room whose bounds restrict movement. Auto-detected at runtime when entering a room trigger.")]
     [SerializeField] private RoomComponent currentRoom;
 
-    // Optional: support doorway triggers placed on child GOs with tag "Doorway"
     private const string DoorwayTag = "Doorway";
 
     private bool isInCorruptedRoom = false;
@@ -40,15 +47,28 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody rb;
     private bool isGrounded = true;
 
-    // jump request / hold tracking (handle physics in FixedUpdate)
     private bool jumpRequested = false;
     private bool jumpHeld = false;
+    private bool isJumping = false;
 
-    // store desired move direction from Update, applied with MovePosition in FixedUpdate
     private Vector3 currentMoveDirection = Vector3.zero;
 
-    // Count of overlapping doorway triggers; when > 0, allow leaving room bounds
     private int doorwayOverlapCount = 0;
+
+    [Header("Grounding")]
+    [Tooltip("Upward offset for ground check ray origin.")]
+    [SerializeField] private float groundRayUpOffset = 0.1f;
+
+    [Tooltip("Max distance the ground check ray will search downward.")]
+    [SerializeField] private float groundRayDistance = 2.0f;
+
+    [Tooltip("Layers considered as walkable ground.")]
+    [SerializeField] private LayerMask groundMask = ~0;
+
+    [Tooltip("When true, snap player Y to ground while walking (not jumping, not channeling).")]
+    [SerializeField] private bool snapToGroundWhileWalking = true;
+
+    private PlayerStateMachine stateMachine;
 
     private void Awake()
     {
@@ -56,6 +76,7 @@ public class PlayerMovement : MonoBehaviour
         moveAction = playerInput.actions["Movement"];
         jumpAction = playerInput.actions["Jump"];
         rb = GetComponent<Rigidbody>();
+        stateMachine = GetComponent<PlayerStateMachine>();
 
         if (rb != null)
             rb.constraints |= RigidbodyConstraints.FreezeRotation;
@@ -122,7 +143,8 @@ public class PlayerMovement : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
 
-        if (jumpAction.triggered && isGrounded)
+        bool isChanneling = stateMachine != null && stateMachine.IsChanneling;
+        if (jumpAction.triggered && isGrounded && !isChanneling)
         {
             jumpRequested = true;
         }
@@ -132,6 +154,18 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        bool isChanneling = stateMachine != null && stateMachine.IsChanneling;
+
+        bool groundHitNow = TryGetGroundY(transform.position, out float currentGroundY);
+        if (groundHitNow && !isJumping)
+        {
+            isGrounded = true;
+        }
+        else if (!groundHitNow && !isJumping)
+        {
+            isGrounded = false;
+        }
+
         float effectiveSpeed = moveSpeed * (isInCorruptedRoom ? corruptedSpeedMultiplier : 1f);
         Vector3 delta = currentMoveDirection * effectiveSpeed * Time.fixedDeltaTime;
 
@@ -139,7 +173,6 @@ public class PlayerMovement : MonoBehaviour
         {
             Vector3 targetPos = rb.position + delta;
 
-            // Only clamp while NOT overlapping a doorway
             bool shouldClampToRoom = restrictToRoomBounds && currentRoom != null && doorwayOverlapCount <= 0;
 
             if (shouldClampToRoom)
@@ -148,11 +181,20 @@ public class PlayerMovement : MonoBehaviour
             }
             else if (currentRoom != null && clampYInsideRoomVolume)
             {
-                // Even while passing through doorway, optionally keep Y inside the room volume
                 targetPos.y = Mathf.Clamp(targetPos.y, currentRoom.Bounds.min.y, currentRoom.Bounds.max.y);
             }
 
-            if (delta.sqrMagnitude > 0f || (restrictToRoomBounds && currentRoom != null))
+            if (snapToGroundWhileWalking && !isChanneling && !isJumping)
+            {
+                if (TryGetGroundY(targetPos, out float groundY))
+                {
+                    targetPos.y = groundY;
+                    rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+                    isGrounded = true;
+                }
+            }
+
+            if (delta.sqrMagnitude > 0f || (restrictToRoomBounds && currentRoom != null) || (snapToGroundWhileWalking && !isChanneling && !isJumping))
             {
                 rb.MovePosition(targetPos);
             }
@@ -163,21 +205,36 @@ public class PlayerMovement : MonoBehaviour
                 rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
 
                 isGrounded = false;
+                isJumping = true;
                 jumpRequested = false;
             }
 
-            if (rb.linearVelocity.y < 0f)
+            if (isJumping && !isChanneling)
             {
-                rb.AddForce(Physics.gravity * (fallMultiplier - 1f) * rb.mass);
+                if (rb.linearVelocity.y < 0f)
+                {
+                    rb.AddForce(Physics.gravity * (fallMultiplier - 1f) * rb.mass);
+                }
+                else if (rb.linearVelocity.y > 0f && !jumpHeld)
+                {
+                    rb.AddForce(Physics.gravity * (lowJumpMultiplier - 1f) * rb.mass);
+                }
             }
-            else if (rb.linearVelocity.y > 0f && !jumpHeld)
+
+            if (isJumping && TryGetGroundY(rb.position, out float landedGroundY))
             {
-                rb.AddForce(Physics.gravity * (lowJumpMultiplier - 1f) * rb.mass);
+                if (rb.linearVelocity.y <= 0f && Mathf.Abs(rb.position.y - landedGroundY) <= 0.05f)
+                {
+                    isJumping = false;
+                    isGrounded = true;
+                    rb.MovePosition(new Vector3(rb.position.x, landedGroundY, rb.position.z));
+                    rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+                }
             }
         }
         else
         {
-            if (delta.sqrMagnitude > 0f)
+            if (delta.sqrMagnitude > 0f || (snapToGroundWhileWalking && !isChanneling && !isJumping))
             {
                 Vector3 targetPos = transform.position + delta;
 
@@ -190,6 +247,15 @@ public class PlayerMovement : MonoBehaviour
                 else if (currentRoom != null && clampYInsideRoomVolume)
                 {
                     targetPos.y = Mathf.Clamp(targetPos.y, currentRoom.Bounds.min.y, currentRoom.Bounds.max.y);
+                }
+
+                if (snapToGroundWhileWalking && !isChanneling && !isJumping)
+                {
+                    if (TryGetGroundY(targetPos, out float groundY))
+                    {
+                        targetPos.y = groundY;
+                        isGrounded = true;
+                    }
                 }
 
                 transform.position = targetPos;
@@ -205,16 +271,13 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    // Track the current room and detect doorway overlaps.
     private void OnTriggerEnter(Collider other)
     {
-        // 1) Room assignment and doorway detection for colliders on the same GameObject as the room
         var room = other.GetComponent<RoomComponent>();
         if (room != null)
         {
             currentRoom = room;
 
-            // If this trigger collider is NOT the bounds collider, treat as doorway
             var boundsCol = room.BoundsCollider;
             if (boundsCol != null && other != boundsCol)
             {
@@ -223,7 +286,6 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            // 2) Optional: doorway triggers on child objects tagged "Doorway"
             if (other.CompareTag(DoorwayTag))
             {
                 doorwayOverlapCount++;
@@ -286,5 +348,18 @@ public class PlayerMovement : MonoBehaviour
                 Mathf.Clamp(position.z, bounds.min.z, bounds.max.z)
             );
         }
+    }
+
+    private bool TryGetGroundY(Vector3 position, out float groundY)
+    {
+        Vector3 origin = position + Vector3.up * groundRayUpOffset;
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, groundRayDistance, groundMask, QueryTriggerInteraction.Ignore))
+        {
+            groundY = hit.point.y;
+            return true;
+        }
+
+        groundY = default;
+        return false;
     }
 }
