@@ -29,25 +29,21 @@ public class PlayerChanneller : MonoBehaviour
     [Tooltip("Delay after completion before a new channel can start (even if the key is still held). Uses unscaled time.")]
     public float rechannelCooldown = 0.35f;
 
+    private PlayerCollectibleManager collectibles;
+
     private Coroutine channelCoroutine;
     private bool subscribed;
 
-    // Track the currently channeled target so we can stop it when we lose focus or switch targets.
     private IChannelable currentChannelTarget;
 
-    // Optional completion notifier (if target implements it)
     private INotifiesChannelCompletion currentCompletionNotifier;
 
-    // Reference to state machine to toggle ChannelState
     private PlayerStateMachine stateMachine;
 
-    // Debounce counter for short-lived misses
     private int consecutiveMisses;
 
-    // Gate to prevent re-channeling during same hold and/or for cooldown duration
-    private bool holdGateActive; // true until the key is released after a completion
-    private float rechannelAvailableAt; // unscaled time when a new channel may start
-
+    private bool holdGateActive;
+    private float rechannelAvailableAt;
     private void Awake()
     {
         stateMachine = GetComponent<PlayerStateMachine>();
@@ -72,10 +68,8 @@ public class PlayerChanneller : MonoBehaviour
     {
         TryUnsubscribe();
 
-        // Ensure we stop the coroutine cleanly and stop any active channel target.
         if (channelCoroutine != null)
         {
-            // Stop channel on current target before killing coroutine.
             if (currentChannelTarget != null)
             {
                 currentChannelTarget.StopChannel();
@@ -92,7 +86,6 @@ public class PlayerChanneller : MonoBehaviour
         holdGateActive = false;
         rechannelAvailableAt = 0f;
 
-        // Leave ChannelState if we were channeling
         if (stateMachine != null && stateMachine.IsChanneling)
             stateMachine.ExitChannelState();
     }
@@ -107,10 +100,10 @@ public class PlayerChanneller : MonoBehaviour
             InputManager.Instance.OnChannelStopped += HandleChannelStop;
             subscribed = true;
 
-            // If the input is already active when we subscribe, sync our state now.
             if (InputManager.Instance.IsChanneling())
             {
-                HandleChannelStart();
+                if (collectibles != null && collectibles.HasCollected("Paintbucket"))
+                    HandleChannelStart();
             }
         }
         else
@@ -169,7 +162,6 @@ public class PlayerChanneller : MonoBehaviour
             return;
         }
 
-        // Start coroutine if not already running
         if (channelCoroutine == null)
         {
             channelCoroutine = StartCoroutine(ChannelRoutine());
@@ -178,10 +170,8 @@ public class PlayerChanneller : MonoBehaviour
 
     private void HandleChannelStop()
     {
-        // Stop coroutine and stop the current target if any
         if (channelCoroutine != null)
         {
-            // Stop channel on current target before killing coroutine.
             if (currentChannelTarget != null)
             {
                 Debug.Log($"[PlayerChanneller] Stopping channel on current target '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' due to input stop.");
@@ -197,27 +187,22 @@ public class PlayerChanneller : MonoBehaviour
 
         consecutiveMisses = 0;
 
-        // Releasing the key clears the hold-gate
         holdGateActive = false;
 
-        // Exit ChannelState now that channeling input ended
         if (stateMachine != null && stateMachine.IsChanneling)
             stateMachine.ExitChannelState();
     }
 
     private bool CanBeginNewChannel()
     {
-        // Cooldown gate (unscaled so it works during pause)
         if (Time.unscaledTime < rechannelAvailableAt)
             return false;
 
-        // Require-release gate
         if (holdGateActive)
         {
             if (InputManager.Instance != null && InputManager.Instance.IsChanneling())
                 return false;
 
-            // Key is released; clear the hold gate now
             holdGateActive = false;
         }
 
@@ -229,7 +214,6 @@ public class PlayerChanneller : MonoBehaviour
         Debug.Log("[PlayerChanneller] ChannelRoutine started.");
         while (true)
         {
-            // Skip UI-selected objects (same behavior as interact)
             if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
             {
                 yield return null;
@@ -238,34 +222,25 @@ public class PlayerChanneller : MonoBehaviour
 
             Ray ray = new Ray(rayOrigin.position, rayOrigin.forward);
 
-            // Use a forgiving spherecast
             bool gotHit = Physics.SphereCast(ray, aimSphereRadius, out RaycastHit hit, maxDistance, channelMask, QueryTriggerInteraction.Collide);
             IChannelable hitTarget = gotHit ? hit.collider.GetComponentInParent<IChannelable>() : null;
 
             if (hitTarget != null)
             {
-                // Reset miss debounce
                 consecutiveMisses = 0;
 
-                // Switched to a new target or we had none
                 if (hitTarget != currentChannelTarget)
                 {
-                    // Stop previous target if present
                     if (currentChannelTarget != null)
                     {
                         Debug.Log($"[PlayerChanneller] Lost focus on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' -> StopChannel().");
                         currentChannelTarget.StopChannel();
                     }
 
-                    // Unsubscribe old completion notifier
                     UnsubscribeFromCompletion();
 
-                    // Gate: only acquire a new target if allowed
                     if (!CanBeginNewChannel())
                     {
-                        // Block re-channeling under same hold or during cooldown
-                        // Debug (comment out if too noisy):
-                        // Debug.Log("[PlayerChanneller] Re-channel gated (require release and/or cooldown).");
                         currentChannelTarget = null;
                         yield return null;
                         continue;
@@ -273,11 +248,9 @@ public class PlayerChanneller : MonoBehaviour
 
                     currentChannelTarget = hitTarget;
 
-                    // Enter ChannelState when a target is actually acquired
                     if (stateMachine != null && !stateMachine.IsChanneling)
                         stateMachine.EnterChannelState();
 
-                    // Subscribe to completion if available
                     var mb = currentChannelTarget as MonoBehaviour;
                     currentCompletionNotifier = mb != null ? mb.GetComponent<INotifiesChannelCompletion>() : null;
                     if (currentCompletionNotifier != null)
@@ -288,11 +261,9 @@ public class PlayerChanneller : MonoBehaviour
                     Debug.Log($"[PlayerChanneller] Gained focus on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' -> StartChannel().");
                     currentChannelTarget.StartChannel();
                 }
-                // else same target: do nothing
             }
             else
             {
-                // Not directly hitting a channelable; see if our current target is still within the sphere path
                 bool keepCurrent = false;
 
                 if (currentChannelTarget != null)
@@ -322,12 +293,10 @@ public class PlayerChanneller : MonoBehaviour
 
                 if (keepCurrent)
                 {
-                    // Still grazing our current target; don't stop
                     consecutiveMisses = 0;
                 }
                 else
                 {
-                    // Apply grace frames to avoid flicker stops
                     consecutiveMisses++;
                     if (consecutiveMisses >= missGraceFrames && currentChannelTarget != null)
                     {
@@ -351,7 +320,6 @@ public class PlayerChanneller : MonoBehaviour
 
     private void OnTargetCompleted()
     {
-        // Target reports completion; shut down channel immediately
         if (currentChannelTarget != null)
         {
             Debug.Log($"[PlayerChanneller] Target completed -> StopChannel on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}'.");
@@ -362,7 +330,6 @@ public class PlayerChanneller : MonoBehaviour
         UnsubscribeFromCompletion();
         consecutiveMisses = 0;
 
-        // Arm the gates: require release and/or cooldown
         if (requireReleaseAfterCompletion)
             holdGateActive = true;
 
@@ -393,7 +360,6 @@ public class PlayerChanneller : MonoBehaviour
         Gizmos.color = isChannelingInput ? Color.green : Color.cyan;
         Gizmos.DrawRay(origin, dir * maxDistance);
 
-        // Visualize the SphereCast radius and hit
         if (Physics.SphereCast(origin, aimSphereRadius, dir, out RaycastHit hit, maxDistance, channelMask, QueryTriggerInteraction.Collide))
         {
             Gizmos.color = Color.yellow;
