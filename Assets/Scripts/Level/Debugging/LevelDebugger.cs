@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UI;
 using static EventNames.GameStateEvents;
@@ -8,13 +9,21 @@ public class LevelDebugger : MonoBehaviour
 
     [SerializeField] private Toggle playerToggle;
     [SerializeField] private Toggle companionToggle;
+    [SerializeField] private Toggle directionalLightToggle;
 
     [SerializeField] private Button spawnEnemyButton;
     [SerializeField] private Button removeEnemyButton;
 
+    [SerializeField] private Button mainLevelButton;
+    [SerializeField] private Button vFXLevelButton;
+
+    [SerializeField] private Button exitButton;
+
     private GameObject player;
     private GameObject enemy;
     private GameObject companion;
+
+    private SceneLoader sceneLoader;
 
     private bool suppressToggleEvents = false;
 
@@ -39,6 +48,10 @@ public class LevelDebugger : MonoBehaviour
         companion = GameObject.FindWithTag("Companion");
         if (companion == null)
             Debug.LogError("No GameObject with tag 'Companion' found in scene.");
+
+        sceneLoader = FindFirstObjectByType<SceneLoader>();
+        if (sceneLoader == null)
+            Debug.LogError("SceneLoader not found in the scene. Please add one and assign it.");
     }
 
     private void Start()
@@ -60,6 +73,42 @@ public class LevelDebugger : MonoBehaviour
             companionToggle.onValueChanged.AddListener(SetCompanionEnabled);
         }
 
+        if (directionalLightToggle != null)
+        {
+            // initialize based on current directional light state
+            Light dirLight = RenderSettings.sun;
+
+            // If RenderSettings.sun is missing, attempt to find any directional Light in the scene and assign it.
+            if (dirLight == null)
+            {
+                Light[] allLights = FindObjectsOfType<Light>(true);
+                foreach (var l in allLights)
+                {
+                    if (l != null && l.type == LightType.Directional)
+                    {
+                        dirLight = l;
+                        RenderSettings.sun = dirLight;
+                        Debug.Log($"Assigned RenderSettings.sun to existing directional light: '{dirLight.name}'.");
+                        break;
+                    }
+                }
+            }
+
+            if (dirLight != null)
+            {
+                suppressToggleEvents = true;
+                directionalLightToggle.isOn = dirLight.enabled;
+                suppressToggleEvents = false;
+                // Use the method that reads/writes RenderSettings.sun so we don't capture a stale local variable.
+                directionalLightToggle.onValueChanged.AddListener(SetDirectionalLightEnabled);
+            }
+            else
+            {
+                Debug.LogWarning("No directional light (RenderSettings.sun) found in scene.");
+                directionalLightToggle.interactable = false;
+            }
+        }
+
         // add button listeners separately (previous code incorrectly grouped them)
         if (spawnEnemyButton != null)
         {
@@ -74,6 +123,34 @@ public class LevelDebugger : MonoBehaviour
         if (removeEnemyButton != null)
         {
             removeEnemyButton.onClick.AddListener(RemoveEnemy);
+        }
+
+        if (mainLevelButton != null)
+        {
+            mainLevelButton.onClick.AddListener(() =>
+            {
+                sceneLoader.LoadSceneByName(SceneNames.GameScene);
+                EndDebugMode();
+            });
+        }
+
+        if (vFXLevelButton != null)
+        {
+            vFXLevelButton.onClick.AddListener(() =>
+            {
+                sceneLoader.LoadSceneByName(SceneNames.VFXLevel);
+                EndDebugMode();
+            });
+        }
+
+        if (exitButton != null)
+        {
+            exitButton.onClick.AddListener(() =>
+            {
+                sceneLoader.LoadSceneByName(SceneNames.MainMenu);
+                EndDebugMode();
+            });
+
         }
     }
 
@@ -164,6 +241,16 @@ public class LevelDebugger : MonoBehaviour
         suppressToggleEvents = false;
     }
 
+    public void ToggleDirectionalLight()
+    {
+        Light dirLight = RenderSettings.sun;
+        if (dirLight == null || directionalLightToggle == null) return;
+        dirLight.enabled = !dirLight.enabled;
+        suppressToggleEvents = true;
+        directionalLightToggle.isOn = dirLight.enabled;
+        suppressToggleEvents = false;
+    }
+
     public void SetPlayerEnabled(bool enabled)
     {
         if (suppressToggleEvents) return;
@@ -193,6 +280,19 @@ public class LevelDebugger : MonoBehaviour
         }
     }
 
+    public void SetDirectionalLightEnabled(bool enabled)
+    {
+        if (suppressToggleEvents) return;
+        Light dirLight = RenderSettings.sun;
+        if (dirLight != null)
+            dirLight.enabled = enabled;
+        if (directionalLightToggle != null)
+        {
+            suppressToggleEvents = true;
+            directionalLightToggle.isOn = dirLight != null && dirLight.enabled;
+            suppressToggleEvents = false;
+        }
+    }
     public void SpawnEnemy()
     {
         if (enemy != null)

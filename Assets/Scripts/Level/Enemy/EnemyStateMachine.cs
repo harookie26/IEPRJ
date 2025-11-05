@@ -44,7 +44,17 @@ public class EnemyStateMachine : MonoBehaviour
     public float EnemyAggroRadius;
     public float EnemyKillRadius;
     public float DistractedCalmDuration;
-    public float DistractedRushMultiplier; // << added
+    public float DistractedRushMultiplier;
+
+    [Header("Teleporting")]
+    [Tooltip("Minimum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
+    [SerializeField] private float teleportMinSeconds = 5f;
+    [Tooltip("Maximum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
+    [SerializeField] private float teleportMaxSeconds = 10f;
+
+    // Calm-only teleport countdown
+    private float teleportTimer = 0f;
+    private float nextTeleportDelay = 0f;
 
     public GameObject TargetPlayer => targetPlayer;
     public GameObject Enemy => enemy;
@@ -52,16 +62,17 @@ public class EnemyStateMachine : MonoBehaviour
     public EnemyCalm EnemyCalm => enemyCalm;
     public NavMeshAgent NavAgent => navMeshAgent;
     public EnemyDistracted EnemyDistracted => enemyDistracted;
+    public EnemyTeleporting EnemyTeleporting => enemyTeleporting;
 
     [Header("Enemy States")]
     EnemyState CurrentState;
     private EnemyChasing enemyChasing = new EnemyChasing();
     private EnemyCalm enemyCalm = new EnemyCalm();
     private EnemyDistracted enemyDistracted = new EnemyDistracted();
+    private EnemyTeleporting enemyTeleporting = new EnemyTeleporting();
 
     private void Start()
     {
-        // Cache NavMeshAgent from the enemy GameObject if not assigned in inspector
         if (navMeshAgent == null && enemy != null)
         {
             navMeshAgent = enemy.GetComponent<NavMeshAgent>();
@@ -79,11 +90,10 @@ public class EnemyStateMachine : MonoBehaviour
             EnemyAggroRadius = config.enemyAggroRadius;
             EnemyKillRadius = config.enemyKillRadius;
             DistractedCalmDuration = config.distractedCalmDuration;
-            DistractedRushMultiplier = config.distractedRushMultiplier; // << added
+            DistractedRushMultiplier = config.distractedRushMultiplier;
         }
         else
         {
-            // Fallbacks (keep consistent with existing pattern)
             if (!configWarned) WarnMissingConfig();
             MoveSpeed = 3f;
             PatrolSpeed = 2f;
@@ -91,8 +101,10 @@ public class EnemyStateMachine : MonoBehaviour
             EnemyAggroRadius = 8f;
             EnemyKillRadius = 1f;
             DistractedCalmDuration = 3f;
-            DistractedRushMultiplier = 1.5f; // safe default
+            DistractedRushMultiplier = 1.5f;
         }
+
+        RollNextTeleportDelay();
 
         CurrentState = enemyCalm;
         CurrentState.EnterState(this);
@@ -100,52 +112,76 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Update()
     {
+        // Only count down while Calm
+        if (CurrentState == enemyCalm)
+        {
+            teleportTimer += Time.deltaTime;
+            if (teleportTimer >= nextTeleportDelay)
+            {
+                teleportTimer = 0f;
+                RollNextTeleportDelay();
+                // Enter teleport state; it teleports immediately, then returns to Calm
+                Switchstate(enemyTeleporting);
+            }
+        }
+
         CurrentState?.UpdateState(this);
     }
 
     public void Switchstate(EnemyState state)
     {
+        // Reset Calm teleport timer when entering states that interrupt Calm behaviour
+        if (state == enemyChasing || state == enemyDistracted)
+        {
+            teleportTimer = 0f;
+            RollNextTeleportDelay();
+        }
+        else if (state == enemyCalm)
+        {
+            // Each time we come back to Calm, restart the countdown
+            teleportTimer = 0f;
+            RollNextTeleportDelay();
+        }
+
         CurrentState = state;
         state.EnterState(this);
     }
 
-    /// <summary>
-    /// Called by interactables (e.g. a painting) to distract the enemy and make it rush
-    /// to the provided world position.
-    /// </summary>
+    private void RollNextTeleportDelay()
+    {
+        var min = Mathf.Max(0f, Mathf.Min(teleportMinSeconds, teleportMaxSeconds));
+        var max = Mathf.Max(min, Mathf.Max(teleportMinSeconds, teleportMaxSeconds));
+        nextTeleportDelay = Random.Range(min, max);
+        // Debug.Log($"[EnemyStateMachine] Next Calm teleport in {nextTeleportDelay:0.00}s");
+    }
+
     public void DistractAt(Vector3 paintingWorldPosition)
     {
         enemyDistracted.PaintingPosition = paintingWorldPosition;
         Switchstate(enemyDistracted);
     }
 
-    // Draw LoS ray and hit point for debugging in the Scene view.
     private void OnDrawGizmos()
     {
         if (enemyChasing == null)
             return;
 
-        // Only draw gizmo while actively in the chasing state to avoid "stuck" visuals.
         if (CurrentState != enemyChasing)
             return;
 
-        // we need the scene objects
         if (enemy == null || targetPlayer == null)
             return;
 
         if (!enemyChasing.HasLastLoS)
             return;
 
-        // Draw main LoS line (green => clear, red => blocked)
         Gizmos.color = enemyChasing.LastLoSClear ? Color.green : Color.red;
         Gizmos.DrawLine(enemyChasing.LastLoSOrigin, enemyChasing.LastLoSTarget);
 
-        // Draw small spheres for origin and target
         Gizmos.color = Color.yellow;
         Gizmos.DrawSphere(enemyChasing.LastLoSOrigin, 0.05f);
         Gizmos.DrawSphere(enemyChasing.LastLoSTarget, 0.05f);
 
-        // If there was a blocking hit, draw the hit point larger and a label via icon-ish sphere
         if (enemyChasing.LastHitCollider != null)
         {
             Gizmos.color = Color.magenta;
