@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[FoldableInspector]
 public class LevelCameraDefault : MonoBehaviour
 {
     [SerializeField] private float smoothSpeed = 0.125f;

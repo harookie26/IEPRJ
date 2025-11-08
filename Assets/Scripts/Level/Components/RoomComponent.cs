@@ -1,6 +1,7 @@
 using UnityEngine;
 using Game.Level;
 
+[FoldableInspector]
 [ExecuteAlways]
 public class RoomComponent : MonoBehaviour, IRoom
 {

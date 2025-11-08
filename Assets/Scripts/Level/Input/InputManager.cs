@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using static EventNames;
 
+[FoldableInspector]
 public class InputManager : MonoBehaviour
 {
     public static InputManager Instance { get; private set; }

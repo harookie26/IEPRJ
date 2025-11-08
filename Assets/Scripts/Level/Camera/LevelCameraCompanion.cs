@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[FoldableInspector]
 public class LevelCameraCompanion : MonoBehaviour
 {
     [SerializeField] private Vector3 offset = new Vector3(0, 2, -5);

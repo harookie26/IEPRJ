@@ -44,6 +44,9 @@ public class PlayerChanneller : MonoBehaviour
 
     private bool holdGateActive;
     private float rechannelAvailableAt;
+
+    public int ChannelledPaintingCount = 0;
+
     private void Awake()
     {
         stateMachine = GetComponent<PlayerStateMachine>();
@@ -337,6 +340,8 @@ public class PlayerChanneller : MonoBehaviour
 
         if (stateMachine != null && stateMachine.IsChanneling)
             stateMachine.ExitChannelState();
+
+        ChannelledPaintingCount++;
     }
 
     private void UnsubscribeFromCompletion()
@@ -346,6 +351,11 @@ public class PlayerChanneller : MonoBehaviour
             currentCompletionNotifier.ChannelCompleted -= OnTargetCompleted;
             currentCompletionNotifier = null;
         }
+    }
+
+    public int GetChannelledPaintingCount()
+    {
+        return ChannelledPaintingCount;
     }
 
     private void OnDrawGizmos()

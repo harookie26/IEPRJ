@@ -3,6 +3,7 @@ using System.Linq;
 using Game.ObjectTypes;
 using Game.Level;
 
+[FoldableInspector]
 public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
 {
     [SerializeField] private int roomAId;

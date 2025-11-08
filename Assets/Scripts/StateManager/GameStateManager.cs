@@ -11,9 +11,15 @@ public class GameStateManager : MonoBehaviour
 
     private bool debugMode = false;
 
+    private EnemyStateMachine enemy;
+
+    private PlayerChanneller playerChanneller;
+
     private void Awake()
     {
         inputManager = InputManager.Instance;
+        enemy = FindFirstObjectByType<EnemyStateMachine>();
+        playerChanneller = FindFirstObjectByType<PlayerChanneller>();
     }
 
     private void OnEnable()
@@ -52,23 +58,45 @@ public class GameStateManager : MonoBehaviour
                 Debug.Log("[GameStateManager] Debug mode OFF");
             }
         }
+
+        if (playerChanneller != null)
+        {
+            int channeledPaintings = playerChanneller.GetChannelledPaintingCount();
+            
+            if (channeledPaintings >= 5)
+            {
+                WinGame();
+            }
+        }
     }
 
     private void PauseGame()
     {
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
         Time.timeScale = 0.00000001f;
+
+        if (enemy != null)
+            enemy.Freeze();
     }
 
     private void ResumeGame()
     {
         EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
         Time.timeScale = 1f;
+
+        if (enemy != null)
+            enemy.Unfreeze();
     }
 
     private void OnApplicationQuit()
     {
         PlayerPrefs.DeleteKey("Hub");
         PlayerPrefs.Save();
+    }
+
+    private void WinGame()
+    {
+        Debug.Log("You Win!");
+        Time.timeScale = 0.00000001f;
     }
 }
