@@ -13,13 +13,9 @@ public class PlayerInteractor : MonoBehaviour
     [Tooltip("Max distance for interaction raycast.")]
     public float maxDistance = 3f;
 
-    [Tooltip("Half-angle (in degrees) of the interaction cone.")]
-    [Range(0f, 90f)]
-    public float coneAngle = 15f;
-
-    [Tooltip("Number of samples used to draw the cone gizmo.")]
-    [Range(3, 64)]
-    public int coneGizmoSamples = 12;
+    [Header("Aim")]
+    [Tooltip("Sphere radius used for aim tolerance. Larger = more forgiving.")]
+    public float aimSphereRadius = 0.08f;
 
     [Tooltip("Layers that can be interacted with.")]
     public LayerMask interactMask = ~0;
@@ -31,6 +27,9 @@ public class PlayerInteractor : MonoBehaviour
     [SerializeField] private UIManager uiManager;
 
     private string currentHudKey;
+
+    // Reuse a static buffer to avoid GC from SphereCastAll/OverlapSphere allocations.
+    private static readonly RaycastHit[] s_HitBuffer = new RaycastHit[16];
 
     private void Reset()
     {
@@ -76,23 +75,25 @@ public class PlayerInteractor : MonoBehaviour
             return;
         }
 
-        if (TryFindClosestInCone(interactMask, out Collider interactCollider, out Vector3 interactPoint))
+        if (TrySphereCastPriority(out Collider hitCol, out Vector3 hitPoint, out bool isInteract))
         {
-            var interactable = interactCollider.GetComponentInParent<IInteractable>();
-            if (interactable != null)
+            if (isInteract)
             {
-                interactable.Interact();
-                return;
+                var interactable = hitCol.GetComponentInParent<IInteractable>();
+                if (interactable != null)
+                {
+                    interactable.Interact();
+                    return;
+                }
             }
-        }
-
-        if (TryFindClosestInCone(collectMask, out Collider collectCollider, out Vector3 collectPoint))
-        {
-            var collectible = collectCollider.GetComponentInParent<ICollectible>();
-            if (collectible != null)
+            else
             {
-                collectible.Collect();
-                return;
+                var collectible = hitCol.GetComponentInParent<ICollectible>();
+                if (collectible != null)
+                {
+                    collectible.Collect();
+                    return;
+                }
             }
         }
 
@@ -106,21 +107,20 @@ public class PlayerInteractor : MonoBehaviour
 
         string desiredKey = null;
 
-        if (TryFindClosestInCone(interactMask, out Collider interactCollider, out _))
+        if (TrySphereCastPriority(out Collider hitCol, out _, out bool isInteract))
         {
-            var interactable = interactCollider.GetComponentInParent<IInteractable>();
-            if (interactable != null)
-                desiredKey = UIManager.Keys.Interact;
+            if (isInteract)
+            {
+                if (hitCol.GetComponentInParent<IInteractable>() != null)
+                    desiredKey = UIManager.Keys.Interact;
+            }
+            else
+            {
+                if (hitCol.GetComponentInParent<ICollectible>() != null)
+                    desiredKey = UIManager.Keys.Interact;
+            }
         }
 
-        if (desiredKey == null && TryFindClosestInCone(collectMask, out Collider collectCollider, out _))
-        {
-            var collectible = collectCollider.GetComponentInParent<ICollectible>();
-            if (collectible != null)
-                desiredKey = UIManager.Keys.Interact;
-        }
-
-        // Only call ShowHUD when the desired key actually changes.
         if (currentHudKey == desiredKey)
             return;
 
@@ -132,58 +132,79 @@ public class PlayerInteractor : MonoBehaviour
             uiManager.ShowHUD(currentHudKey);
     }
 
-    /// <summary>
-    /// Finds the closest collider within a cone from the ray origin using an OverlapSphere + angle test.
-    /// Returns true when at least one collider within the given LayerMask lies inside the cone and within maxDistance.
-    /// </summary>
-    private bool TryFindClosestInCone(LayerMask mask, out Collider bestCollider, out Vector3 bestPoint)
+    // Forward SphereCast with a small radius, identical in spirit to PlayerChanneller.
+    // Uses NonAlloc variant and a reusable buffer to avoid per-frame allocations.
+    // Prioritizes interactable hits over collectible hits; selects the nearest within each category.
+    private bool TrySphereCastPriority(out Collider hitCollider, out Vector3 hitPoint, out bool isInteract)
     {
-        bestCollider = null;
-        bestPoint = Vector3.zero;
+        hitCollider = null;
+        hitPoint = Vector3.zero;
+        isInteract = false;
 
         Vector3 origin = rayOrigin.position;
-        Vector3 forward = rayOrigin.forward;
-        float maxDistSqr = maxDistance * maxDistance;
-        float halfAngleRad = Mathf.Deg2Rad * (coneAngle * 0.5f);
-        float cosHalfAngle = Mathf.Cos(halfAngleRad);
+        Vector3 dir = rayOrigin.forward;
+        Ray ray = new Ray(origin, dir);
 
-        Collider[] candidates = Physics.OverlapSphere(origin, maxDistance, mask, QueryTriggerInteraction.Collide);
-        float bestSqr = float.MaxValue;
+        int combinedMask = interactMask | collectMask;
+        int count = Physics.SphereCastNonAlloc(ray, aimSphereRadius, s_HitBuffer, maxDistance, combinedMask, QueryTriggerInteraction.Collide);
+        if (count <= 0)
+            return false;
 
-        foreach (var col in candidates)
+        float bestInteractDist = float.MaxValue;
+        float bestCollectDist = float.MaxValue;
+        Collider bestInteractCol = null;
+        Collider bestCollectCol = null;
+        Vector3 bestInteractPoint = Vector3.zero;
+        Vector3 bestCollectPoint = Vector3.zero;
+
+        for (int i = 0; i < count; i++)
         {
-            Vector3 closest = col.ClosestPoint(origin);
-            Vector3 toPoint = closest - origin;
-            float sqrMag = toPoint.sqrMagnitude;
+            var h = s_HitBuffer[i];
+            if (h.collider == null) continue;
 
-            if (sqrMag > maxDistSqr)
-                continue;
+            int layerBit = 1 << h.collider.gameObject.layer;
 
-            if (sqrMag <= Mathf.Epsilon)
+            // Interactable first
+            if ((interactMask.value & layerBit) != 0)
             {
-                if (sqrMag < bestSqr)
+                if (h.distance < bestInteractDist)
                 {
-                    bestCollider = col;
-                    bestPoint = closest;
-                    bestSqr = sqrMag;
+                    bestInteractDist = h.distance;
+                    bestInteractCol = h.collider;
+                    bestInteractPoint = h.point;
                 }
                 continue;
             }
 
-            Vector3 dirToPoint = toPoint / Mathf.Sqrt(sqrMag); // normalized
-            float dot = Vector3.Dot(forward, dirToPoint);
-            if (dot >= cosHalfAngle)
+            // Then collectible
+            if ((collectMask.value & layerBit) != 0)
             {
-                if (sqrMag < bestSqr)
+                if (h.distance < bestCollectDist)
                 {
-                    bestCollider = col;
-                    bestPoint = closest;
-                    bestSqr = sqrMag;
+                    bestCollectDist = h.distance;
+                    bestCollectCol = h.collider;
+                    bestCollectPoint = h.point;
                 }
             }
         }
 
-        return bestCollider != null;
+        if (bestInteractCol != null)
+        {
+            hitCollider = bestInteractCol;
+            hitPoint = bestInteractPoint;
+            isInteract = true;
+            return true;
+        }
+
+        if (bestCollectCol != null)
+        {
+            hitCollider = bestCollectCol;
+            hitPoint = bestCollectPoint;
+            isInteract = false;
+            return true;
+        }
+
+        return false;
     }
 
     private void OnDrawGizmos()
@@ -192,38 +213,17 @@ public class PlayerInteractor : MonoBehaviour
             return;
 
         Vector3 origin = rayOrigin.position;
-        Vector3 forward = rayOrigin.forward;
+        Vector3 dir = rayOrigin.forward;
 
-        Ray centerRay = new Ray(origin, forward);
-        if (Physics.Raycast(centerRay, out RaycastHit hit, maxDistance, interactMask, QueryTriggerInteraction.Collide))
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawRay(origin, dir * maxDistance);
+
+        int combinedMask = interactMask | collectMask;
+        if (Physics.SphereCast(origin, aimSphereRadius, dir, out RaycastHit hit, maxDistance, combinedMask, QueryTriggerInteraction.Collide))
         {
-            Gizmos.color = Color.green;
+            Gizmos.color = Color.yellow;
             Gizmos.DrawLine(origin, hit.point);
-            Gizmos.DrawWireSphere(hit.point, 0.05f);
-        }
-        else
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(origin, origin + forward * maxDistance);
-            Gizmos.DrawWireSphere(origin + forward * maxDistance, 0.03f);
-        }
-
-        Gizmos.color = new Color(0f, 0.75f, 1f, 0.9f);
-        int samples = Mathf.Max(3, coneGizmoSamples);
-        float halfAngle = coneAngle * 0.5f;
-
-        for (int i = 0; i < samples; i++)
-        {
-            float t = (float)i / samples;
-            float yaw = Mathf.Lerp(-halfAngle, halfAngle, t);
-            for (int j = 0; j < samples; j++)
-            {
-                float s = (float)j / samples;
-                float pitch = Mathf.Lerp(-halfAngle, halfAngle, s);
-                Quaternion rot = Quaternion.AngleAxis(yaw, Vector3.up) * Quaternion.AngleAxis(pitch, Vector3.right);
-                Vector3 sampleDir = rot * forward;
-                Gizmos.DrawLine(origin, origin + sampleDir.normalized * maxDistance);
-            }
+            Gizmos.DrawWireSphere(hit.point, aimSphereRadius);
         }
 
         Gizmos.color = new Color(1f, 1f, 0f, 0.1f);

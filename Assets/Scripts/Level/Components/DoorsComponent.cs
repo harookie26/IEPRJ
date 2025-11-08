@@ -14,7 +14,7 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
     [SerializeField] private string linkID;
     [SerializeField, HideInInspector] private string uniqueID = System.Guid.NewGuid().ToString();
 
-    [SerializeField] private Collider triggerZone; // 3D collider
+    [SerializeField] private Collider triggerZone;
     private GameObject _player;
 
     private static float _entryCooldown = 0.5f;
@@ -52,11 +52,6 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
         {
             Debug.LogError($"[Door:{name}] Could not find rooms for IDs {roomAId} and/or {roomBId}");
         }
-        else
-        {
-            //if (roomA is RoomComponent rcA) rcA.AddDoor(this);
-            //if (roomB is RoomComponent rcB) rcB.AddDoor(this);
-        }
     }
 
     private void OnDestroy()
@@ -70,17 +65,6 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
         {
             _playerInZone = true;
             CurrentDoor = this;
-        }
-
-        if (other.CompareTag("Enemy"))
-        {
-            var ai = other.GetComponent<PathfinderComponent>();
-            if (ai == null) return;
-
-            if (ai.CurrentDoorTarget == this && ai.CanTeleportFrom(this))
-            {
-                MoveToPathDoor(ai);
-            }
         }
     }
     void OnTriggerExit(Collider other)
@@ -128,46 +112,6 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
 
         _player.transform.position = new Vector3(targetPos.x, targetPos.y, targetPos.z);
         _lastEntryTime = Time.time;
-    }
-
-    private void MoveToPathDoor(PathfinderComponent ai)
-    {
-        if (!ai.CanTeleportFrom(this))
-        {
-            Debug.Log($"[Doors:{name}] Enemy teleport blocked by cooldown.");
-            return;
-        }
-
-        if (ai.CurrentDoorTarget != this)
-        {
-            Debug.Log($"[Doors:{name}] Enemy tried to use wrong door. Expected: {ai.CurrentDoorTarget?.name}, Got: {name}");
-            return;
-        }
-
-        var fromRoom = ai.CurrentRoom;
-        var toRoom = RoomA == fromRoom ? RoomB : RoomA;
-
-        if (toRoom == null)
-        {
-            Debug.LogWarning($"[Doors:{name}] Cannot resolve target room.");
-            return;
-        }
-
-        var destination = LinkRegistry
-            .GetLinkedObjects(linkID)
-            .OfType<DoorsComponent>()
-            .FirstOrDefault(d => d != this && (d.RoomA == toRoom || d.RoomB == toRoom));
-
-        if (destination == null)
-        {
-            Debug.LogError($"[Doors:{name}] No linked door in Room {toRoom.Id}");
-            return;
-        }
-
-        ai.transform.position = destination.transform.position;
-        ai.RegisterTeleport(destination, toRoom);
-
-        Debug.Log($"[Doors:{name}] Enemy teleported to Room {toRoom.Id} via {destination.name}");
     }
 
     public Vector3 GetEntryPointFor(IRoom fromRoom)

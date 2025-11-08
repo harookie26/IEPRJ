@@ -1,11 +1,15 @@
 using UnityEngine;
 using System.Linq;
+using System.Collections;
 using static EventNames;
 
 public class DoorInputManager : MonoBehaviour
 {
     private bool _isCutsceneActive = false;
     private GameObject _player;
+
+    private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
+    private EnemyStateMachine enemy => FindFirstObjectByType<EnemyStateMachine>();
 
     private void Awake()
     {
@@ -26,14 +30,13 @@ public class DoorInputManager : MonoBehaviour
     {
         if (_isCutsceneActive || _player == null)
             return;
-        
+
         if (InputManager.Instance.WasInteractPressed())
         {
 
             if (DoorsComponent.CurrentDoor?.IsReadyToUse() == true)
             {
-                Debug.Log($"[DoorInputManager] Teleporting via {DoorsComponent.CurrentDoor.name}");
-                DoorsComponent.CurrentDoor.MoveToLinkedDoor();
+                StartCoroutine(TransferPlayer(0.05f));
             }
             else
             {
@@ -42,5 +45,24 @@ public class DoorInputManager : MonoBehaviour
         }
     }
 
+    private IEnumerator TransferPlayer(float postFadeDelaySeconds)
+    {
+        if (screenFader == null)
+        {
+            Debug.LogWarning("[DoorInputManager] ScreenFader not found. Moving immediately.");
+            DoorsComponent.CurrentDoor.MoveToLinkedDoor();
+            yield break;
+        }
 
+        enemy.Freeze();
+        yield return StartCoroutine(screenFader.FadeOutSequence());
+
+        if (postFadeDelaySeconds > 0f)
+            yield return new WaitForSecondsRealtime(postFadeDelaySeconds);
+
+        DoorsComponent.CurrentDoor.MoveToLinkedDoor();
+
+        yield return StartCoroutine(screenFader.FadeInSequence());
+        enemy.Unfreeze();
+    }
 }

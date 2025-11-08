@@ -50,6 +50,16 @@ public class PlayerMovement : MonoBehaviour
     // Count of overlapping doorway triggers; when > 0, allow leaving room bounds
     private int doorwayOverlapCount = 0;
 
+    [Header("Focus Assist (signal for cameras)")]
+    [Tooltip("If true, exposes IsTouchingWalls/IsAtRoomCorner so cameras can focus on the player only when the PLAYER is against room walls.")]
+    [SerializeField] private bool emitFocusAssistWhenTouchingWalls = true;
+
+    [Tooltip("True when movement this frame was clamped by room bounds on the X or Z axis (doorways ignored).")]
+    public bool IsTouchingWalls { get; private set; }
+
+    [Tooltip("True when clamped on multiple lateral axes in the same frame (e.g., a corner).")]
+    public bool IsAtRoomCorner { get; private set; }
+
     private void Awake()
     {
         playerInput = GetComponent<PlayerInput>();
@@ -135,21 +145,35 @@ public class PlayerMovement : MonoBehaviour
         float effectiveSpeed = moveSpeed * (isInCorruptedRoom ? corruptedSpeedMultiplier : 1f);
         Vector3 delta = currentMoveDirection * effectiveSpeed * Time.fixedDeltaTime;
 
+        // Reset focus assist signal each physics step; recompute below
+        IsTouchingWalls = false;
+        IsAtRoomCorner = false;
+
         if (rb != null)
         {
-            Vector3 targetPos = rb.position + delta;
+            Vector3 basePos = rb.position;
+            Vector3 unclampedTarget = basePos + delta;
+            Vector3 targetPos = unclampedTarget;
 
             // Only clamp while NOT overlapping a doorway
             bool shouldClampToRoom = restrictToRoomBounds && currentRoom != null && doorwayOverlapCount <= 0;
 
+            // Track clamp on each axis (similar to LevelCameraCompanion pre-clamp tracking)
+            bool preXClamped = false, preYClamped = false, preZClamped = false;
+
             if (shouldClampToRoom)
             {
-                targetPos = ClampPositionToRoom(targetPos, currentRoom.Bounds, clampYInsideRoomVolume);
+                Vector3 clamped = ClampPositionToRoom(unclampedTarget, currentRoom.Bounds, clampYInsideRoomVolume);
+
+                preXClamped = !Mathf.Approximately(unclampedTarget.x, clamped.x);
+                preYClamped = clampYInsideRoomVolume && !Mathf.Approximately(unclampedTarget.y, clamped.y);
+                preZClamped = !Mathf.Approximately(unclampedTarget.z, clamped.z);
+
+                targetPos = clamped;
             }
             else if (currentRoom != null && clampYInsideRoomVolume)
             {
-                // Even while passing through doorway, optionally keep Y inside the room volume
-                targetPos.y = Mathf.Clamp(targetPos.y, currentRoom.Bounds.min.y, currentRoom.Bounds.max.y);
+                targetPos.y = Mathf.Clamp(unclampedTarget.y, currentRoom.Bounds.min.y, currentRoom.Bounds.max.y);
             }
 
             if (delta.sqrMagnitude > 0f || (restrictToRoomBounds && currentRoom != null))
@@ -157,6 +181,7 @@ public class PlayerMovement : MonoBehaviour
                 rb.MovePosition(targetPos);
             }
 
+            // Jump & better jumping
             if (jumpRequested && isGrounded)
             {
                 rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
@@ -174,25 +199,55 @@ public class PlayerMovement : MonoBehaviour
             {
                 rb.AddForce(Physics.gravity * (lowJumpMultiplier - 1f) * rb.mass);
             }
+
+            // Update focus assist signal (only engage for lateral clamping; floors/ceilings excluded)
+            if (emitFocusAssistWhenTouchingWalls && shouldClampToRoom)
+            {
+                bool xClamped = preXClamped;
+                bool zClamped = preZClamped;
+
+                IsTouchingWalls = xClamped || zClamped;
+                IsAtRoomCorner = (xClamped ? 1 : 0) + (zClamped ? 1 : 0) >= 2;
+            }
         }
         else
         {
+            Vector3 basePos = transform.position;
+            Vector3 unclampedTarget = basePos + delta;
+            Vector3 targetPos = unclampedTarget;
+
+            bool shouldClampToRoom = restrictToRoomBounds && currentRoom != null && doorwayOverlapCount <= 0;
+
+            bool preXClamped = false, preYClamped = false, preZClamped = false;
+
+            if (shouldClampToRoom)
+            {
+                Vector3 clamped = ClampPositionToRoom(unclampedTarget, currentRoom.Bounds, clampYInsideRoomVolume);
+
+                preXClamped = !Mathf.Approximately(unclampedTarget.x, clamped.x);
+                preYClamped = clampYInsideRoomVolume && !Mathf.Approximately(unclampedTarget.y, clamped.y);
+                preZClamped = !Mathf.Approximately(unclampedTarget.z, clamped.z);
+
+                targetPos = clamped;
+            }
+            else if (currentRoom != null && clampYInsideRoomVolume)
+            {
+                targetPos.y = Mathf.Clamp(unclampedTarget.y, currentRoom.Bounds.min.y, currentRoom.Bounds.max.y);
+            }
+
             if (delta.sqrMagnitude > 0f)
             {
-                Vector3 targetPos = transform.position + delta;
-
-                bool shouldClampToRoom = restrictToRoomBounds && currentRoom != null && doorwayOverlapCount <= 0;
-
-                if (shouldClampToRoom)
-                {
-                    targetPos = ClampPositionToRoom(targetPos, currentRoom.Bounds, clampYInsideRoomVolume);
-                }
-                else if (currentRoom != null && clampYInsideRoomVolume)
-                {
-                    targetPos.y = Mathf.Clamp(targetPos.y, currentRoom.Bounds.min.y, currentRoom.Bounds.max.y);
-                }
-
                 transform.position = targetPos;
+            }
+
+            // Update focus assist signal (only engage for lateral clamping; floors/ceilings excluded)
+            if (emitFocusAssistWhenTouchingWalls && shouldClampToRoom)
+            {
+                bool xClamped = preXClamped;
+                bool zClamped = preZClamped;
+
+                IsTouchingWalls = xClamped || zClamped;
+                IsAtRoomCorner = (xClamped ? 1 : 0) + (zClamped ? 1 : 0) >= 2;
             }
         }
     }

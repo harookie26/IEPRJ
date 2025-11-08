@@ -181,12 +181,6 @@ public class PlayerHidingState : IPlayerState
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.H) || Input.GetKeyDown(KeyCode.Space))
-        {
-            _owner.SetToDefaultState();
-            return;
-        }
-
         if (InputManager.Instance != null && InputManager.Instance.WasStealthPressed())
         {
             _owner.SetToDefaultState();

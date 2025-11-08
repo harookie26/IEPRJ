@@ -177,8 +177,8 @@ public class InputManager : MonoBehaviour
             // DETECT PRESS EVENT, do NOT post OFF every frame.
             corruptedRoomPressed = Keyboard.current != null && Keyboard.current.zKey.wasPressedThisFrame;
 
-            // New stealth key detection (C)
-            stealthPressed = Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame;
+            // New stealth key detection (F)
+            stealthPressed = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
 
             // Debug mode toggle (F12)
             debugModePressed = Keyboard.current != null && Keyboard.current.f12Key.wasPressedThisFrame;
@@ -223,11 +223,11 @@ public class InputManager : MonoBehaviour
                    Keyboard.current.enterKey.wasPressedThisFrame;
         }
 
-        // Exclude channel key (E) and stealth key (C) from this test
+        // Exclude channel key (E) and stealth key (F) from this test
         return Keyboard.current.anyKey.wasPressedThisFrame
                && !Keyboard.current.qKey.wasPressedThisFrame
                && !Keyboard.current.eKey.wasPressedThisFrame
-               && !Keyboard.current.cKey.wasPressedThisFrame;
+               && !Keyboard.current.fKey.wasPressedThisFrame;
     }
 
     public System.Collections.IEnumerator WaitForInputCoroutine(Action onComplete)

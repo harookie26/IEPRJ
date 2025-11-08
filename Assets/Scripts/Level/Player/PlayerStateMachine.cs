@@ -309,11 +309,11 @@ public class PlayerStateMachine : MonoBehaviour
 
         public void HandleInput()
         {
-            if (Input.GetKeyDown(KeyCode.H))
-            {
-                // Now uses the unified auto-find path.
-                _owner.RequestHide();
-            }
+            //if (Input.GetKeyDown(KeyCode.H))
+            //{
+            //    // Now uses the unified auto-find path.
+            //    _owner.RequestHide();
+            //}
         }
 
         public void Tick() { }

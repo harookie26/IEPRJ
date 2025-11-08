@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -52,7 +54,6 @@ public class EnemyStateMachine : MonoBehaviour
     [Tooltip("Maximum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
     [SerializeField] private float teleportMaxSeconds = 10f;
 
-    // Calm-only teleport countdown
     private float teleportTimer = 0f;
     private float nextTeleportDelay = 0f;
 
@@ -70,6 +71,25 @@ public class EnemyStateMachine : MonoBehaviour
     private EnemyCalm enemyCalm = new EnemyCalm();
     private EnemyDistracted enemyDistracted = new EnemyDistracted();
     private EnemyTeleporting enemyTeleporting = new EnemyTeleporting();
+
+    // Freeze state fields
+    private bool isFrozen = false;
+    private bool prevNavAgentStopped = false;
+    private float prevNavAgentSpeed = 0f;
+    private bool prevNavAgentEnabled = false;
+
+    // Registry to allow FreezeAll / UnfreezeAll calls
+    private static readonly HashSet<EnemyStateMachine> AllInstances = new HashSet<EnemyStateMachine>();
+
+    private void OnEnable()
+    {
+        AllInstances.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        AllInstances.Remove(this);
+    }
 
     private void Start()
     {
@@ -112,6 +132,10 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Update()
     {
+        // If frozen, suspend all state updates and timers; resume exactly where stopped
+        if (isFrozen)
+            return;
+
         // Only count down while Calm
         if (CurrentState == enemyCalm)
         {
@@ -186,6 +210,94 @@ public class EnemyStateMachine : MonoBehaviour
         {
             Gizmos.color = Color.magenta;
             Gizmos.DrawSphere(enemyChasing.LastHitPoint, 0.12f);
+        }
+    }
+
+    // ----- Freeze / Unfreeze API -----
+
+    public bool IsFrozen => isFrozen;
+
+    // Freeze this enemy. If duration > 0, will automatically unfreeze after that many seconds.
+    public void Freeze(float duration = 0f)
+    {
+        if (isFrozen)
+        {
+            // already frozen; if duration specified, reset timer
+            if (duration > 0f)
+            {
+                StopCoroutine(nameof(UnfreezeAfter));
+                StartCoroutine(UnfreezeAfter(duration));
+            }
+            return;
+        }
+
+        isFrozen = true;
+
+        if (navMeshAgent != null)
+        {
+            prevNavAgentStopped = navMeshAgent.isStopped;
+            prevNavAgentSpeed = navMeshAgent.speed;
+            prevNavAgentEnabled = navMeshAgent.enabled;
+
+            // Stop agent movement without disabling component (safer)
+            navMeshAgent.isStopped = true;
+            navMeshAgent.ResetPath();
+        }
+
+        if (duration > 0f)
+        {
+            StartCoroutine(UnfreezeAfter(duration));
+        }
+    }
+
+    // Immediately unfreeze and resume behavior
+    public void Unfreeze()
+    {
+        if (!isFrozen)
+            return;
+
+        isFrozen = false;
+
+        if (navMeshAgent != null)
+        {
+            // restore previous movement settings
+            try
+            {
+                navMeshAgent.speed = prevNavAgentSpeed;
+                navMeshAgent.isStopped = prevNavAgentStopped;
+            }
+            catch
+            {
+                // ignore restore errors
+            }
+        }
+
+        // Do not call EnterState() here: we want to continue from where the state left off.
+        // The Update loop will resume and the state will proceed.
+    }
+
+    private IEnumerator UnfreezeAfter(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        Unfreeze();
+    }
+
+    // Freeze/unfreeze all active enemies
+    public static void FreezeAll(float duration = 0f)
+    {
+        foreach (var e in AllInstances)
+        {
+            if (e != null)
+                e.Freeze(duration);
+        }
+    }
+
+    public static void UnfreezeAll()
+    {
+        foreach (var e in AllInstances)
+        {
+            if (e != null)
+                e.Unfreeze();
         }
     }
 }
