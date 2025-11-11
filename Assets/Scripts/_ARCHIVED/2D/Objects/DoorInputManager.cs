@@ -7,6 +7,7 @@ public class DoorInputManager : MonoBehaviour
 {
     private bool _isCutsceneActive = false;
     private GameObject _player;
+    private PlayerMovement _playerMovement;
 
     private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
     private EnemyStateMachine enemy => FindFirstObjectByType<EnemyStateMachine>();
@@ -15,15 +16,9 @@ public class DoorInputManager : MonoBehaviour
     {
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
-    }
 
-    private void OnEnable()
-    {
-    }
-
-    private void Start()
-    {
         _player = GameObject.FindGameObjectWithTag("Player");
+        _playerMovement = FindFirstObjectByType<PlayerMovement>();
     }
 
     private void Update()
@@ -40,7 +35,7 @@ public class DoorInputManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("[DoorInputManager] No valid door found.");
+                //Debug.LogWarning("[DoorInputManager] No valid door found.");
             }
         }
     }
@@ -54,6 +49,7 @@ public class DoorInputManager : MonoBehaviour
             yield break;
         }
 
+        _playerMovement.SetCanMove(false);
         enemy.Freeze();
         yield return StartCoroutine(screenFader.FadeOutSequence());
 
@@ -64,5 +60,6 @@ public class DoorInputManager : MonoBehaviour
 
         yield return StartCoroutine(screenFader.FadeInSequence());
         enemy.Unfreeze();
+        _playerMovement.SetCanMove(true);
     }
 }

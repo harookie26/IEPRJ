@@ -46,7 +46,7 @@ public class LevelCameraDefault : MonoBehaviour
 
     public void RefreshRoomsCache()
     {
-        roomsCache = Object.FindObjectsByType<RoomComponent>(FindObjectsSortMode.None);
+        roomsCache = FindObjectsByType<RoomComponent>(FindObjectsSortMode.None);
     }
 
     private void LateUpdate()
@@ -98,13 +98,8 @@ public class LevelCameraDefault : MonoBehaviour
             Vector3 smoothedPos = Vector3.Lerp(transform.position, targetPos, smoothSpeed);
             transform.position = smoothedPos;
 
-            float tilt = CalculateTilt(player.position.z, smoothedPos.z);
-
-            // Focus assist (only when player is touching walls, if enabled)
-            Quaternion baseRotation = Quaternion.Euler(tilt, 0, 0);
-            Quaternion finalRotation = ApplyFocusAssist(baseRotation, smoothedPos);
-
-            transform.rotation = finalRotation;
+            // Always rotate to keep the player centered in view (placement unchanged)
+            transform.rotation = ComputeCenterLookRotation(smoothedPos);
             return;
         }
 
@@ -134,49 +129,29 @@ public class LevelCameraDefault : MonoBehaviour
         Vector3 smoothed = Vector3.Lerp(transform.position, clampedTarget, smoothSpeed);
         transform.position = smoothed;
 
-        // Camera tilt based on player Z distance
-        float tiltAngle = CalculateTilt(player.position.z, smoothed.z);
-        Quaternion baseRot = Quaternion.Euler(tiltAngle, 0, 0);
-        Quaternion finalRot = ApplyFocusAssist(baseRot, smoothed);
-
-        transform.rotation = finalRot;
+        // Always rotate to keep the player centered in view (placement unchanged)
+        transform.rotation = ComputeCenterLookRotation(smoothed);
     }
 
-    // Apply focus assist by slerping from the base tilt rotation toward a look-at(player) rotation,
-    // only when conditions are met (e.g., player touching walls).
-    private Quaternion ApplyFocusAssist(Quaternion baseRotation, Vector3 cameraPosition)
+    // New: Always center the player in the camera's POV with smooth rotation.
+    private Quaternion ComputeCenterLookRotation(Vector3 cameraPosition)
     {
-        if (!keepTargetInView) return baseRotation;
+        Vector3 toTarget = player != null ? (player.position - cameraPosition) : Vector3.forward;
+        if (toTarget.sqrMagnitude < 0.0001f)
+            return transform.rotation;
 
-        bool touchingWallsRequired = focusOnlyWhenPlayerTouchingWalls;
-        bool playerTouchingWalls = playerMovement != null && playerMovement.IsTouchingWalls;
+        Quaternion desired = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
 
-        bool assistActive = !touchingWallsRequired || playerTouchingWalls;
-        if (!assistActive) return baseRotation;
+        // Clamp yaw (Y axis) to [-25, 25] degrees, keep pitch from desired and zero roll.
+        Vector3 desiredEuler = desired.eulerAngles;
+        float signedYaw = Mathf.DeltaAngle(0f, desiredEuler.y);
+        float clampedYaw = Mathf.Clamp(signedYaw, -25f, 25f);
+        Vector3 targetEuler = new Vector3(desiredEuler.x, clampedYaw, 0f);
+        Quaternion target = Quaternion.Euler(targetEuler);
 
-        Vector3 toTarget = player.position - cameraPosition;
-        if (toTarget.sqrMagnitude < 0.0001f) return baseRotation;
-
-        float angleFromForward = Vector3.Angle(baseRotation * Vector3.forward, toTarget);
-        if (angleFromForward <= deadZoneDegrees) return baseRotation;
-
-        Quaternion lookAt = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
-        return Quaternion.Slerp(baseRotation, lookAt, focusSlerpSpeed * Time.deltaTime);
+        float t = Mathf.Clamp01(focusSlerpSpeed * Time.deltaTime);
+        return Quaternion.Slerp(transform.rotation, target, t);
     }
-
-    // Helper to calculate tilt angle based on Z distance
-    private float CalculateTilt(float playerZ, float cameraZ)
-    {
-        // Parameters you can tweak:
-        float minTilt = 5f; // looking down when player is close
-        float maxTilt = 25f; // looking more forward when player is far
-        float minZ = 0f;     // closest Z
-        float maxZ = 20f;    // farthest Z
-
-        float t = Mathf.InverseLerp(minZ, maxZ, Mathf.Abs(playerZ - cameraZ));
-        return Mathf.Lerp(maxTilt, minTilt, t);
-    }
-
     public Vector3 GetOffset()
     {
         return offset;

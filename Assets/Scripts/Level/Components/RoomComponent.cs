@@ -1,5 +1,6 @@
 using UnityEngine;
 using Game.Level;
+using Unity.VisualScripting;
 
 [FoldableInspector]
 [ExecuteAlways]
@@ -10,7 +11,10 @@ public class RoomComponent : MonoBehaviour, IRoom
     // Explicit bounds collider (so adding another BoxCollider won't break bounds)
     [SerializeField] private BoxCollider boundsCollider;
 
+    [SerializeField] private GameObject particleStripGuide;
+
     private Vector3 center;
+    private PlayerStateMachine playerStateMachine;
 
     public int Id => id;
     public Vector3 Center => center;
@@ -37,6 +41,8 @@ public class RoomComponent : MonoBehaviour, IRoom
     {
         ResolveBoundsCollider();
         UpdateCenterFromCollider();
+
+        playerStateMachine = FindFirstObjectByType<PlayerStateMachine>();
     }
 
     private void ResolveBoundsCollider()
@@ -88,6 +94,17 @@ public class RoomComponent : MonoBehaviour, IRoom
     {
         if (boundsCollider != null)
             center = boundsCollider.bounds.center;
+    }
+
+    private void Update()
+    {
+        if (particleStripGuide == null) return;
+
+        bool isIdle = playerStateMachine != null && playerStateMachine.CurrentState == PlayerStateMachine.PlayerStateKind.Idle;
+        bool shouldBeActive = IsPlayerInside && isIdle;
+
+        if (particleStripGuide.activeSelf != shouldBeActive)
+            particleStripGuide.SetActive(shouldBeActive);
     }
 
     private void OnDrawGizmos()

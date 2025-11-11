@@ -60,6 +60,8 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("True when clamped on multiple lateral axes in the same frame (e.g., a corner).")]
     public bool IsAtRoomCorner { get; private set; }
 
+    private bool canMove;
+
     private void Awake()
     {
         playerInput = GetComponent<PlayerInput>();
@@ -69,6 +71,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (rb != null)
             rb.constraints |= RigidbodyConstraints.FreezeRotation;
+        canMove = true;
     }
 
     private void Start()
@@ -100,6 +103,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        if (!canMove) return;
+
         if (PBController.IsCompanionManualModeActive)
         {
             previousInput = Vector2.zero;
@@ -142,6 +147,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (!canMove) return;
+
         float effectiveSpeed = moveSpeed * (isInCorruptedRoom ? corruptedSpeedMultiplier : 1f);
         Vector3 delta = currentMoveDirection * effectiveSpeed * Time.fixedDeltaTime;
 
@@ -263,13 +270,12 @@ public class PlayerMovement : MonoBehaviour
     // Track the current room and detect doorway overlaps.
     private void OnTriggerEnter(Collider other)
     {
-        // 1) Room assignment and doorway detection for colliders on the same GameObject as the room
+
         var room = other.GetComponent<RoomComponent>();
         if (room != null)
         {
             currentRoom = room;
 
-            // If this trigger collider is NOT the bounds collider, treat as doorway
             var boundsCol = room.BoundsCollider;
             if (boundsCol != null && other != boundsCol)
             {
@@ -278,7 +284,6 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            // 2) Optional: doorway triggers on child objects tagged "Doorway"
             if (other.CompareTag(DoorwayTag))
             {
                 doorwayOverlapCount++;
@@ -341,5 +346,10 @@ public class PlayerMovement : MonoBehaviour
                 Mathf.Clamp(position.z, bounds.min.z, bounds.max.z)
             );
         }
+    }
+
+    public void SetCanMove(bool value)
+    {
+        canMove = value;
     }
 }

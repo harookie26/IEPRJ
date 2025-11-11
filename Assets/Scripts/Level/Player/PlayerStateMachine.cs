@@ -6,6 +6,18 @@ public class PlayerStateMachine : MonoBehaviour
 {
     IPlayerState _currentState;
 
+    // --- NEW: public helper for querying current state ---
+    public enum PlayerStateKind { Unknown, Default, Idle, Channel, Hiding }
+    public PlayerStateKind CurrentState { get; private set; } = PlayerStateKind.Unknown;
+
+    // expose runtime type / name if needed
+    public Type CurrentStateType => _currentState?.GetType();
+    public string CurrentStateName => _currentState?.GetType().Name ?? "None";
+
+    // generic helper
+    public bool IsState<T>() where T : IPlayerState => _currentState is T;
+    // ----------------------------------------------------
+
     public event Action HidingEntered;
     public event Action HidingExited;
 
@@ -127,7 +139,16 @@ public class PlayerStateMachine : MonoBehaviour
     public void SetState(IPlayerState newState)
     {
         _currentState?.Exit();
+
         _currentState = newState;
+
+        // update the public helper
+        if (newState is IdleState) CurrentState = PlayerStateKind.Idle;
+        else if (newState is ChannelState) CurrentState = PlayerStateKind.Channel;
+        else if (newState is PlayerHidingState) CurrentState = PlayerStateKind.Hiding;
+        else if (newState is DefaultState) CurrentState = PlayerStateKind.Default;
+        else CurrentState = PlayerStateKind.Unknown;
+
         _currentState?.Enter();
     }
 
@@ -297,7 +318,7 @@ public class PlayerStateMachine : MonoBehaviour
         }
 
         return false;
-    }
+    } 
 
     class DefaultState : IPlayerState
     {
