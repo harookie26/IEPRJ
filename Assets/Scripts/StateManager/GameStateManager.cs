@@ -15,6 +15,14 @@ public class GameStateManager : MonoBehaviour
 
     private PlayerChanneller playerChanneller;
 
+    public int currentLevelProgress = 0;
+
+    // currentLevelProgress = 0 - no paintings restored
+    // currentLevelProgress = 1 - 1 painting restored
+    // currentLevelProgress = 2 - 2 paintings restored
+    // currentLevelProgress = 3 - 3 paintings restored
+    // currentLevelProgress = 4 - 4 paintings restored
+
     private void Awake()
     {
         inputManager = InputManager.Instance;
@@ -59,6 +67,8 @@ public class GameStateManager : MonoBehaviour
             }
         }
 
+        UpdateLevelProgress();
+
         if (playerChanneller != null)
         {
             int channeledPaintings = playerChanneller.GetChannelledPaintingCount();
@@ -98,5 +108,18 @@ public class GameStateManager : MonoBehaviour
     {
         Debug.Log("You Win!");
         Time.timeScale = 0.00000001f;
+    }
+
+    private void UpdateLevelProgress()
+    {
+        if (playerChanneller != null)
+        {
+            currentLevelProgress = playerChanneller.GetChannelledPaintingCount();
+        }
+    }
+
+    public int GetCurrentLevelProgress()
+    {
+        return currentLevelProgress;
     }
 }

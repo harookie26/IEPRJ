@@ -25,6 +25,8 @@ public class LevelDebugger : MonoBehaviour
 
     private SceneLoader sceneLoader;
 
+    private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
+
     private bool suppressToggleEvents = false;
 
     private CursorLockMode previousLockState;
@@ -173,6 +175,19 @@ public class LevelDebugger : MonoBehaviour
             spawnEnemyButton.onClick.RemoveListener(SpawnEnemy);
         if (removeEnemyButton != null)
             removeEnemyButton.onClick.RemoveListener(RemoveEnemy);
+    }
+
+    private void Update()
+    {
+        if (Input.GetKey(KeyCode.P))
+        {
+            StartCoroutine(checkpoint.ReturnToCheckpoint());
+        }
+
+        if (Input.GetKey(KeyCode.Q))
+        {
+            checkpoint.SaveCheckpoint();
+        }
     }
 
     private void StartDebugMode()

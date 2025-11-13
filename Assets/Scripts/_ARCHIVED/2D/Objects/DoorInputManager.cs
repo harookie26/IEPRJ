@@ -51,14 +51,14 @@ public class DoorInputManager : MonoBehaviour
 
         _playerMovement.SetCanMove(false);
         enemy.Freeze();
-        yield return StartCoroutine(screenFader.FadeOutSequence());
+        yield return StartCoroutine(screenFader.FadeOutSequence(0.25f));
 
         if (postFadeDelaySeconds > 0f)
             yield return new WaitForSecondsRealtime(postFadeDelaySeconds);
 
         DoorsComponent.CurrentDoor.MoveToLinkedDoor();
 
-        yield return StartCoroutine(screenFader.FadeInSequence());
+        yield return StartCoroutine(screenFader.FadeInSequence(0.25f));
         enemy.Unfreeze();
         _playerMovement.SetCanMove(true);
     }

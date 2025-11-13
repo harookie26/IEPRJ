@@ -65,6 +65,39 @@ public class EnemyStateMachine : MonoBehaviour
     public EnemyDistracted EnemyDistracted => enemyDistracted;
     public EnemyTeleporting EnemyTeleporting => enemyTeleporting;
 
+    public enum EnemyStateType
+    {
+        Calm,
+        Chasing,
+        Distracted,
+        Teleporting,
+        Unknown
+    }
+
+    public EnemyStateType CurrentStateType
+    {
+        get
+        {
+            if (CurrentState == null) return EnemyStateType.Unknown;
+            if (CurrentState == enemyCalm) return EnemyStateType.Calm;
+            if (CurrentState == enemyChasing) return EnemyStateType.Chasing;
+            if (CurrentState == enemyDistracted) return EnemyStateType.Distracted;
+            if (CurrentState == enemyTeleporting) return EnemyStateType.Teleporting;
+            return EnemyStateType.Unknown;
+        }
+    }
+
+    public string CurrentStateName => CurrentState?.GetType().Name ?? "Null";
+
+    public Vector3? GetDistractedPaintingPosition()
+    {
+        if (CurrentState == enemyDistracted)
+        {
+            return enemyDistracted.PaintingPosition;
+        }
+        return null;
+    }
+
     [Header("Enemy States")]
     EnemyState CurrentState;
     private EnemyChasing enemyChasing = new EnemyChasing();
@@ -72,13 +105,11 @@ public class EnemyStateMachine : MonoBehaviour
     private EnemyDistracted enemyDistracted = new EnemyDistracted();
     private EnemyTeleporting enemyTeleporting = new EnemyTeleporting();
 
-    // Freeze state fields
     private bool isFrozen = false;
     private bool prevNavAgentStopped = false;
     private float prevNavAgentSpeed = 0f;
     private bool prevNavAgentEnabled = false;
 
-    // Registry to allow FreezeAll / UnfreezeAll calls
     private static readonly HashSet<EnemyStateMachine> AllInstances = new HashSet<EnemyStateMachine>();
 
     private void OnEnable()
@@ -132,11 +163,9 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Update()
     {
-        // If frozen, suspend all state updates and timers; resume exactly where stopped
         if (isFrozen)
             return;
 
-        // Only count down while Calm
         if (CurrentState == enemyCalm)
         {
             teleportTimer += Time.deltaTime;
@@ -144,7 +173,6 @@ public class EnemyStateMachine : MonoBehaviour
             {
                 teleportTimer = 0f;
                 RollNextTeleportDelay();
-                // Enter teleport state; it teleports immediately, then returns to Calm
                 Switchstate(enemyTeleporting);
             }
         }
@@ -154,7 +182,6 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void Switchstate(EnemyState state)
     {
-        // Reset Calm teleport timer when entering states that interrupt Calm behaviour
         if (state == enemyChasing || state == enemyDistracted)
         {
             teleportTimer = 0f;
@@ -162,7 +189,6 @@ public class EnemyStateMachine : MonoBehaviour
         }
         else if (state == enemyCalm)
         {
-            // Each time we come back to Calm, restart the countdown
             teleportTimer = 0f;
             RollNextTeleportDelay();
         }
@@ -176,7 +202,6 @@ public class EnemyStateMachine : MonoBehaviour
         var min = Mathf.Max(0f, Mathf.Min(teleportMinSeconds, teleportMaxSeconds));
         var max = Mathf.Max(min, Mathf.Max(teleportMinSeconds, teleportMaxSeconds));
         nextTeleportDelay = Random.Range(min, max);
-        // Debug.Log($"[EnemyStateMachine] Next Calm teleport in {nextTeleportDelay:0.00}s");
     }
 
     public void DistractAt(Vector3 paintingWorldPosition)
@@ -217,12 +242,10 @@ public class EnemyStateMachine : MonoBehaviour
 
     public bool IsFrozen => isFrozen;
 
-    // Freeze this enemy. If duration > 0, will automatically unfreeze after that many seconds.
     public void Freeze(float duration = 0f)
     {
         if (isFrozen)
         {
-            // already frozen; if duration specified, reset timer
             if (duration > 0f)
             {
                 StopCoroutine(nameof(UnfreezeAfter));
@@ -239,7 +262,6 @@ public class EnemyStateMachine : MonoBehaviour
             prevNavAgentSpeed = navMeshAgent.speed;
             prevNavAgentEnabled = navMeshAgent.enabled;
 
-            // Stop agent movement without disabling component (safer)
             navMeshAgent.isStopped = true;
             navMeshAgent.ResetPath();
         }
@@ -250,7 +272,6 @@ public class EnemyStateMachine : MonoBehaviour
         }
     }
 
-    // Immediately unfreeze and resume behavior
     public void Unfreeze()
     {
         if (!isFrozen)
@@ -260,7 +281,6 @@ public class EnemyStateMachine : MonoBehaviour
 
         if (navMeshAgent != null)
         {
-            // restore previous movement settings
             try
             {
                 navMeshAgent.speed = prevNavAgentSpeed;
@@ -272,8 +292,6 @@ public class EnemyStateMachine : MonoBehaviour
             }
         }
 
-        // Do not call EnterState() here: we want to continue from where the state left off.
-        // The Update loop will resume and the state will proceed.
     }
 
     private IEnumerator UnfreezeAfter(float seconds)
@@ -282,7 +300,6 @@ public class EnemyStateMachine : MonoBehaviour
         Unfreeze();
     }
 
-    // Freeze/unfreeze all active enemies
     public static void FreezeAll(float duration = 0f)
     {
         foreach (var e in AllInstances)

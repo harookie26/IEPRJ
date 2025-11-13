@@ -9,14 +9,8 @@ public class ScreenFader : MonoBehaviour
     [Tooltip("Image component used for fade effect")]
     [SerializeField] private Image fadeImage;
 
-    [Tooltip("Optional CanvasGroup to fade instead of the Image (set to fade entire canvas)")]
-    [SerializeField] private CanvasGroup fadeCanvasGroup;
-
     [Tooltip("Duration of the fade in/out effect in seconds")]
     [SerializeField] private float fadeDuration = 1f;
-
-    [Tooltip("Time to hold the black screen between fades in seconds")]
-    [SerializeField] private float blackScreenHoldTime = 1f;
 
     [Tooltip("Tween easing")]
     [SerializeField] private Ease ease = Ease.InOutSine;
@@ -31,10 +25,10 @@ public class ScreenFader : MonoBehaviour
 
     private void Start()
     {
-        StartCoroutine(FadeInSequence());
+        StartCoroutine(FadeInSequence(1.0f));
     }
 
-    public IEnumerator FadeInOutSequence()
+    public IEnumerator FadeInOutSequence(float blackScreenHoldTime)
     {
         ActivateFader(true);
         yield return FadeOut();
@@ -43,14 +37,16 @@ public class ScreenFader : MonoBehaviour
         ActivateFader(false);
     }
 
-    public IEnumerator FadeInSequence()
+    public IEnumerator FadeInSequence(float blackScreenHoldTime)
     {
+        ActivateFader(true);
+
         yield return Wait(blackScreenHoldTime);
         yield return FadeIn();
         ActivateFader(false);
     }
 
-    public IEnumerator FadeOutSequence()
+    public IEnumerator FadeOutSequence(float blackScreenHoldTime)
     {
         ActivateFader(true);
         yield return FadeOut();
@@ -61,8 +57,6 @@ public class ScreenFader : MonoBehaviour
     {
         if (fadeImage != null)
             fadeImage.gameObject.SetActive(active);
-        if (fadeCanvasGroup != null)
-            fadeCanvasGroup.gameObject.SetActive(active);
     }
 
     private IEnumerator Wait(float seconds)
@@ -79,15 +73,7 @@ public class ScreenFader : MonoBehaviour
 
         PrepareForFade(true);
 
-        if (fadeCanvasGroup != null)
-        {
-            fadeCanvasGroup.alpha = 0f;
-            currentTween = fadeCanvasGroup.DOFade(1f, fadeDuration)
-                .SetEase(ease)
-                .SetUpdate(useUnscaledTime)
-                .SetLink(gameObject);
-        }
-        else if (fadeImage != null)
+        if (fadeImage != null)
         {
             var col = fadeImage.color;
             col.a = 0f;
@@ -107,16 +93,8 @@ public class ScreenFader : MonoBehaviour
         KillCurrentTween();
 
         PrepareForFade(true);
-
-        if (fadeCanvasGroup != null)
-        {
-            fadeCanvasGroup.alpha = 1f;
-            currentTween = fadeCanvasGroup.DOFade(0f, fadeDuration)
-                .SetEase(ease)
-                .SetUpdate(useUnscaledTime)
-                .SetLink(gameObject);
-        }
-        else if (fadeImage != null)
+        
+        if (fadeImage != null)
         {
             var col = fadeImage.color;
             col.a = 1f;
@@ -137,12 +115,7 @@ public class ScreenFader : MonoBehaviour
     {
         if (blockInputDuringFade)
         {
-            if (fadeCanvasGroup != null)
-            {
-                fadeCanvasGroup.blocksRaycasts = starting;
-                fadeCanvasGroup.interactable = !starting ? true : false;
-            }
-            else if (fadeImage != null)
+            if (fadeImage != null)
             {
                 fadeImage.raycastTarget = starting;
             }
