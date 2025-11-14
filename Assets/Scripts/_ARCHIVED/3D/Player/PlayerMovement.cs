@@ -83,12 +83,17 @@ public class PlayerMovement : MonoBehaviour
     {
         EventBroadcaster.Instance.AddObserver(LevelEvents.ON_CORRUPTED_ROOM_TRUE, OnCorruptedEnter);
         EventBroadcaster.Instance.AddObserver(LevelEvents.ON_CORRUPTED_ROOM_FALSE, OnCorruptedExit);
+        EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, OnPlayerCaughtStart);
+        EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_GAME_RESTART, OnPlayerCaughtEnd);
     }
 
     private void OnDisable()
     {
         EventBroadcaster.Instance.RemoveActionAtObserver(LevelEvents.ON_CORRUPTED_ROOM_TRUE, OnCorruptedEnter);
         EventBroadcaster.Instance.RemoveActionAtObserver(LevelEvents.ON_CORRUPTED_ROOM_FALSE, OnCorruptedExit);
+        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_LEVEL_FAILED, OnPlayerCaughtStart);
+        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_GAME_RESTART, OnPlayerCaughtEnd);
+
     }
 
     private void OnCorruptedEnter()
@@ -99,6 +104,16 @@ public class PlayerMovement : MonoBehaviour
     private void OnCorruptedExit()
     {
         isInCorruptedRoom = false;
+    }
+
+    private void OnPlayerCaughtStart()
+    {
+        canMove = false;
+    }
+
+    private void OnPlayerCaughtEnd()
+    {
+        canMove = true;
     }
 
     private void Update()
