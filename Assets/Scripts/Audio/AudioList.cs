@@ -19,6 +19,9 @@ public class AudioList : MonoBehaviour
     [Header("Enemy Distracted SFX Clip")]
     [SerializeField] public AudioClip enemyDistractedSFX;
 
+    [Header("Player Collectible SFX Clip")]
+    [SerializeField] public AudioClip playerCollectibleSFX;
+
     [Header("Testing Clips")]
     [SerializeField] public AudioClip testMusic;
     [SerializeField] public AudioClip testSFX;

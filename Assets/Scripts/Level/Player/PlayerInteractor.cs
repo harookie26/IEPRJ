@@ -28,6 +28,10 @@ public class PlayerInteractor : MonoBehaviour
 
     private string currentHudKey;
 
+    private AudioSource sfxAudioSource;
+    private AudioSource musicAudioSource;
+    private AudioList audioList;
+
     // Reuse a static buffer to avoid GC from SphereCastAll/OverlapSphere allocations.
     private static readonly RaycastHit[] s_HitBuffer = new RaycastHit[16];
     private static readonly Collider[] s_ColliderBuffer = new Collider[16];
@@ -45,6 +49,19 @@ public class PlayerInteractor : MonoBehaviour
     {
         if (uIManager == null)
             uIManager = FindFirstObjectByType<UIManager>();
+
+        audioList = FindAnyObjectByType<AudioList>();
+        //Find the SFX audio source object in the scene by its tag
+        GameObject audioObject1 = GameObject.FindWithTag("SFXAudioSource");
+
+        if (audioObject1 != null)
+        {
+            sfxAudioSource = audioObject1.GetComponent<AudioSource>();
+        }
+        else
+        {
+            Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
+        }
     }
 
     private void OnEnable()
@@ -115,6 +132,7 @@ public class PlayerInteractor : MonoBehaviour
                 if (collectible != null)
                 {
                     collectible.Collect();
+                    sfxAudioSource?.PlayOneShot(audioList.playerCollectibleSFX);
                     return;
                 }
             }
