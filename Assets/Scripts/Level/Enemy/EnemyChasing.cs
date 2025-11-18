@@ -1,5 +1,7 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
+using static EventNames;
 
 public class EnemyChasing : EnemyState
 {
@@ -118,8 +120,9 @@ public class EnemyChasing : EnemyState
         {
             agent.isStopped = true;
             agent.ResetPath();
-            state.Switchstate(state.EnemyCalm);
+
             Debug.Log("BOOOOOOOO! (caught by NavMeshAgent)");
+            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_CATCHED);
             return;
         }
 

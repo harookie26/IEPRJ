@@ -47,6 +47,7 @@ public class EventNames {
         public const string ENEMY_SPOTTED_PLAYER = "ENEMY_SPOTTED_PLAYER";
         public const string ENEMY_LOST_PLAYER = "ENEMY_LOST_PLAYER";
         public const string ENEMY_SEARCHING = "ENEMY_SEARCHING";
+		public const string ENEMY_CATCHED = "ENEMY_CATCHED";
     }
 
     public static class UIEvents

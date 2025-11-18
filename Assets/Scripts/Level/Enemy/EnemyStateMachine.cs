@@ -1,7 +1,9 @@
+using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using static EventNames;
 
 [FoldableInspector(hideFieldHeaders: true)]
 public class EnemyStateMachine : MonoBehaviour
@@ -23,6 +25,9 @@ public class EnemyStateMachine : MonoBehaviour
     [Tooltip("Reference to the EnemyFOV component that determines line-of-sight / visibility.")]
     [SerializeField] private EnemyFOV enemyFOV;
     public EnemyFOV EnemyFOV => enemyFOV;
+
+    private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
+    private bool enemyCaught = false;
 
     private bool configWarned = false;
     private void WarnMissingConfig()
@@ -64,6 +69,7 @@ public class EnemyStateMachine : MonoBehaviour
     public NavMeshAgent NavAgent => navMeshAgent;
     public EnemyDistracted EnemyDistracted => enemyDistracted;
     public EnemyTeleporting EnemyTeleporting => enemyTeleporting;
+
 
     public enum EnemyStateType
     {
@@ -115,11 +121,13 @@ public class EnemyStateMachine : MonoBehaviour
     private void OnEnable()
     {
         AllInstances.Add(this);
+        EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
     }
 
     private void OnDisable()
     {
         AllInstances.Remove(this);
+        EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
     }
 
     private void Start()
@@ -316,5 +324,26 @@ public class EnemyStateMachine : MonoBehaviour
             if (e != null)
                 e.Unfreeze();
         }
+    }
+
+    private void PlayerCaught()
+    {
+        if (enemyCaught) return;
+        enemyCaught = true;
+
+        StartCoroutine(KillSequence());
+    }
+
+    private IEnumerator KillSequence()
+    {
+        ///Insert Kill Animations and calls here
+        
+        yield return new WaitForSeconds(3);
+        EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESTART);
+        
+        yield return StartCoroutine(checkpoint.ReturnToCheckpoint());
+
+        enemyCaught = false;
+
     }
 }
