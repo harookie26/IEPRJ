@@ -47,6 +47,9 @@ public class PlayerMovement : MonoBehaviour
     // store desired move direction from Update, applied with MovePosition in FixedUpdate
     private Vector3 currentMoveDirection = Vector3.zero;
 
+    // desired rotation computed from input in Update and applied in FixedUpdate via MoveRotation
+    private Quaternion desiredRotation = Quaternion.identity;
+
     // Count of overlapping doorway triggers; when > 0, allow leaving room bounds
     private int doorwayOverlapCount = 0;
 
@@ -69,8 +72,23 @@ public class PlayerMovement : MonoBehaviour
         jumpAction = playerInput.actions["Jump"];
         rb = GetComponent<Rigidbody>();
 
+        // Enforce a Rigidbody so physics-based movement/collision is always used.
+        if (rb == null)
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+        }
+
         if (rb != null)
+        {
+            // Prevent rotation from physics and enable better collision handling for fast movement
             rb.constraints |= RigidbodyConstraints.FreezeRotation;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.useGravity = true;
+        }
+
+        desiredRotation = transform.rotation;
+
         canMove = true;
     }
 
@@ -143,13 +161,10 @@ public class PlayerMovement : MonoBehaviour
         Vector3 moveDirection = new Vector3(input.x, 0f, input.y);
         currentMoveDirection = moveDirection;
 
-        if (rb != null)
-            rb.angularVelocity = Vector3.zero;
-
+        // compute desired rotation from move direction here but apply in FixedUpdate via MoveRotation
         if (moveDirection.sqrMagnitude > 0.0001f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            desiredRotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up);
         }
 
         if (jumpAction.triggered && isGrounded)
@@ -171,6 +186,7 @@ public class PlayerMovement : MonoBehaviour
         IsTouchingWalls = false;
         IsAtRoomCorner = false;
 
+        // Use Rigidbody-based movement only (we ensure rb exists in Awake)
         if (rb != null)
         {
             Vector3 basePos = rb.position;
@@ -203,10 +219,13 @@ public class PlayerMovement : MonoBehaviour
                 rb.MovePosition(targetPos);
             }
 
+            // apply rotation in sync with physics to avoid conflicts
+            rb.MoveRotation(Quaternion.Slerp(rb.rotation, desiredRotation, rotationSpeed * Time.fixedDeltaTime));
+
             // Jump & better jumping
             if (jumpRequested && isGrounded)
             {
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+                // Reset vertical velocity then apply jump impulse via velocity to avoid tunneling
                 rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
 
                 isGrounded = false;
@@ -232,53 +251,22 @@ public class PlayerMovement : MonoBehaviour
                 IsAtRoomCorner = (xClamped ? 1 : 0) + (zClamped ? 1 : 0) >= 2;
             }
         }
-        else
-        {
-            Vector3 basePos = transform.position;
-            Vector3 unclampedTarget = basePos + delta;
-            Vector3 targetPos = unclampedTarget;
-
-            bool shouldClampToRoom = restrictToRoomBounds && currentRoom != null && doorwayOverlapCount <= 0;
-
-            bool preXClamped = false, preYClamped = false, preZClamped = false;
-
-            if (shouldClampToRoom)
-            {
-                Vector3 clamped = ClampPositionToRoom(unclampedTarget, currentRoom.Bounds, clampYInsideRoomVolume);
-
-                preXClamped = !Mathf.Approximately(unclampedTarget.x, clamped.x);
-                preYClamped = clampYInsideRoomVolume && !Mathf.Approximately(unclampedTarget.y, clamped.y);
-                preZClamped = !Mathf.Approximately(unclampedTarget.z, clamped.z);
-
-                targetPos = clamped;
-            }
-            else if (currentRoom != null && clampYInsideRoomVolume)
-            {
-                targetPos.y = Mathf.Clamp(unclampedTarget.y, currentRoom.Bounds.min.y, currentRoom.Bounds.max.y);
-            }
-
-            if (delta.sqrMagnitude > 0f)
-            {
-                transform.position = targetPos;
-            }
-
-            // Update focus assist signal (only engage for lateral clamping; floors/ceilings excluded)
-            if (emitFocusAssistWhenTouchingWalls && shouldClampToRoom)
-            {
-                bool xClamped = preXClamped;
-                bool zClamped = preZClamped;
-
-                IsTouchingWalls = xClamped || zClamped;
-                IsAtRoomCorner = (xClamped ? 1 : 0) + (zClamped ? 1 : 0) >= 2;
-            }
-        }
     }
 
     private void OnCollisionEnter(Collision collision)
     {
+        // Only consider contacts that are roughly pointing up as grounding contacts
         if (collision.contacts.Length > 0)
         {
-            isGrounded = true;
+            for (int i = 0; i < collision.contacts.Length; i++)
+            {
+                ContactPoint c = collision.contacts[i];
+                if (Vector3.Dot(c.normal, Vector3.up) > 0.5f)
+                {
+                    isGrounded = true;
+                    break;
+                }
+            }
         }
     }
 

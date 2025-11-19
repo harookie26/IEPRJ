@@ -34,6 +34,16 @@ public class LevelCameraCompanion : MonoBehaviour
     [Tooltip("How fast the camera blends its rotation toward the paintbrush when active.")]
     [SerializeField] private float focusSlerpSpeed = 10f;
 
+    [Header("Ceiling Handling")]
+    [Tooltip("When the companion nears the ceiling, automatically lower the camera (in Y) so it doesn't get stuck on the ceiling.")]
+    [SerializeField] private bool autoLowerWhenNearCeiling = true;
+
+    [Tooltip("Minimum vertical distance to keep between the camera and the companion when auto-lowering is applied.")]
+    [SerializeField] private float minCameraHeightAboveTarget = 0.6f;
+
+    [Tooltip("How close (in meters) the companion must be to the room ceiling to trigger auto-lowering.")]
+    [SerializeField] private float ceilingProximityThreshold = 0.25f;
+
     private Transform target;
     private float rotationX = 0f;
     private float rotationY = 0f;
@@ -64,6 +74,11 @@ public class LevelCameraCompanion : MonoBehaviour
 
         ResolvePlayerRoomAtPosition();
 
+        // Initialize accumulators from current transform to avoid sudden jumps/automatic rotation
+        Vector3 e = transform.rotation.eulerAngles;
+        rotationX = NormalizeAngle(e.y);
+        rotationY = Mathf.Clamp(NormalizeAngle(e.x), minVerticalAngle, maxVerticalAngle);
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -73,21 +88,58 @@ public class LevelCameraCompanion : MonoBehaviour
         if (target == null)
             return;
 
+        // Keep the cached room up-to-date early so we can adapt thresholds before previewing input
+        ResolvePlayerRoomAtPosition();
+
+        // Effective ceiling proximity threshold: hallways are more generous
+        float effectiveCeilingThreshold = ceilingProximityThreshold;
+        if (restrictToPlayerRoomBounds && playerCurrentRoom != null && playerCurrentRoom.gameObject.CompareTag("Hallway"))
+        {
+            effectiveCeilingThreshold = 6.0f;
+        }
+
         // Mouse look
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        float rawMouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+        float rawMouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+
+        // Preview vertical change and cancel it if it would place the camera above the allowed height
+        float tentativeRotationY = rotationY + (invertY ? rawMouseY : -rawMouseY);
+        tentativeRotationY = Mathf.Clamp(tentativeRotationY, minVerticalAngle, maxVerticalAngle);
+        float tentativeRotationX = rotationX + rawMouseX;
+        tentativeRotationX = NormalizeAngle(tentativeRotationX);
+
+        Quaternion tentativeRotation = Quaternion.Euler(tentativeRotationY, tentativeRotationX, 0f);
+        Vector3 tentativeDesiredPos = target.position + tentativeRotation * offset;
+
+        bool cancelVerticalInput = false;
+        if (autoLowerWhenNearCeiling && restrictToPlayerRoomBounds && playerCurrentRoom != null)
+        {
+            Bounds b = playerCurrentRoom.Bounds;
+            float companionToCeiling = b.max.y - target.position.y;
+            bool companionNearCeiling = companionToCeiling <= effectiveCeilingThreshold;
+
+            float allowedY = target.position.y + Mathf.Max(minCameraHeightAboveTarget, 0.01f);
+
+            // If companion near ceiling and the tentative desired pos would put camera above allowedY,
+            // cancel the vertical input so player cannot push camera further up.
+            if (companionNearCeiling && tentativeDesiredPos.y > allowedY)
+            {
+                cancelVerticalInput = true;
+            }
+        }
+
+        float mouseX = rawMouseX;
+        float mouseY = cancelVerticalInput ? 0f : rawMouseY;
 
         rotationY += invertY ? mouseY : -mouseY;
         rotationY = Mathf.Clamp(rotationY, minVerticalAngle, maxVerticalAngle);
         rotationX += mouseX;
+        rotationX = NormalizeAngle(rotationX);
 
         Quaternion userRotation = Quaternion.Euler(rotationY, rotationX, 0);
 
         // Desired camera position from target and offset
         Vector3 desiredPosition = target.position + userRotation * offset;
-
-        // Keep the cached room up-to-date with the player's current position
-        ResolvePlayerRoomAtPosition();
 
         // Track pre-smooth clamping (camera tried to go outside right away)
         bool preXClamped = false, preYClamped = false, preZClamped = false;
@@ -102,6 +154,22 @@ public class LevelCameraCompanion : MonoBehaviour
             preZClamped = !Mathf.Approximately(unclampedDesired.z, clampedDesired.z);
 
             desiredPosition = clampedDesired;
+
+            // Try an early lowering when the companion is very close to the ceiling and the camera is above the companion.
+            if (autoLowerWhenNearCeiling)
+            {
+                Bounds b = playerCurrentRoom.Bounds;
+                float companionToCeiling = b.max.y - target.position.y;
+                bool companionNearCeiling = companionToCeiling <= effectiveCeilingThreshold;
+                bool cameraAboveTarget = unclampedDesired.y > target.position.y + 0.01f;
+
+                if (companionNearCeiling && cameraAboveTarget)
+                {
+                    float desiredY = target.position.y + Mathf.Max(minCameraHeightAboveTarget, 0.01f);
+                    desiredY = Mathf.Clamp(desiredY, b.min.y + 0.01f, b.max.y - 0.01f);
+                    desiredPosition.y = desiredY;
+                }
+            }
         }
 
         // Smooth toward the (possibly clamped) desired position
@@ -120,6 +188,37 @@ public class LevelCameraCompanion : MonoBehaviour
             postZClamped = !Mathf.Approximately(unclampedSmoothed.z, clampedSmoothed.z);
 
             smoothedPosition = clampedSmoothed;
+
+            // Repeat the auto-lowering for the smoothed position to avoid getting stuck after lerp.
+            if (autoLowerWhenNearCeiling)
+            {
+                Bounds b = playerCurrentRoom.Bounds;
+                float companionToCeiling = b.max.y - target.position.y;
+                bool companionNearCeiling = companionToCeiling <= effectiveCeilingThreshold;
+                bool cameraAboveTarget = unclampedSmoothed.y > target.position.y + 0.01f;
+
+                if (companionNearCeiling && cameraAboveTarget)
+                {
+                    float desiredY = target.position.y + Mathf.Max(minCameraHeightAboveTarget, 0.01f);
+                    desiredY = Mathf.Clamp(desiredY, b.min.y + 0.01f, b.max.y - 0.01f);
+                    smoothedPosition.y = desiredY;
+                }
+            }
+        }
+
+        // If the companion is near the ceiling and the camera is above the companion, suppress focus assist
+        // because assist would try to rotate the camera to keep the companion centered while the camera can't move.
+        bool suppressFocusAssistDueToCeiling = false;
+        if (autoLowerWhenNearCeiling && restrictToPlayerRoomBounds && playerCurrentRoom != null)
+        {
+            Bounds b = playerCurrentRoom.Bounds;
+            float companionToCeiling = b.max.y - target.position.y;
+            bool companionNearCeiling = companionToCeiling <= effectiveCeilingThreshold;
+            bool cameraAboveTarget = smoothedPosition.y > target.position.y + minCameraHeightAboveTarget - 0.001f;
+            if (companionNearCeiling && cameraAboveTarget)
+            {
+                suppressFocusAssistDueToCeiling = true;
+            }
         }
 
         // Aggregate clamp state for this frame
@@ -132,7 +231,7 @@ public class LevelCameraCompanion : MonoBehaviour
 
         // Focus assist: ONLY when the CAMERA is touching walls (i.e., clamped)
         Quaternion finalRotation = userRotation;
-        bool assistActive = keepTargetInView && cameraAgainstBoundary;
+        bool assistActive = keepTargetInView && cameraAgainstBoundary && !suppressFocusAssistDueToCeiling;
         if (assistActive)
         {
             Vector3 toTarget = target.position - smoothedPosition;
@@ -146,7 +245,7 @@ public class LevelCameraCompanion : MonoBehaviour
 
                     // Keep the yaw/pitch accumulators in sync so mouse look stays consistent after assist
                     Vector3 e = finalRotation.eulerAngles;
-                    rotationX = e.y;
+                    rotationX = NormalizeAngle(e.y);
                     rotationY = Mathf.Clamp(NormalizeAngle(e.x), minVerticalAngle, maxVerticalAngle);
                 }
             }
@@ -179,7 +278,7 @@ public class LevelCameraCompanion : MonoBehaviour
         // Ensure we look at the target immediately on snap
         Quaternion lookAt = Quaternion.LookRotation((target.position - position).normalized, Vector3.up);
         Vector3 e = lookAt.eulerAngles;
-        rotationX = e.y;
+        rotationX = NormalizeAngle(e.y);
         rotationY = Mathf.Clamp(NormalizeAngle(e.x), minVerticalAngle, maxVerticalAngle);
 
         transform.position = position;
