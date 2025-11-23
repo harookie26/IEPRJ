@@ -1,9 +1,109 @@
 fileFormatVersion: 2
-guid: 0bfa1ee552e31394e8fdc296360db26e
+guid: 756e095f0f5e8bc49965c81d6545fe31
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: cafeteria_DefaultMaterial_BaseColor
+    second: {fileID: 2800000, guid: a390dba9fc0d4f44fb556463780f8cf8, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: cafeteria_DefaultMaterial_Metallic
+    second: {fileID: 2800000, guid: 76c01d002027dd7499f3e883cc998a74, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: cafeteria_DefaultMaterial_Normal
+    second: {fileID: 2800000, guid: 1ba9de955eb5b824db6c694c453b85a7, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: cafeteria_DefaultMaterial_Roughness
+    second: {fileID: 2800000, guid: c8a80da300da0c0488fa9040b5c22aad, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-bottom_DefaultMaterial_BaseColor
+    second: {fileID: 2800000, guid: a047a98cd64ead7498482b76d193a66c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-bottom_DefaultMaterial_Metallic
+    second: {fileID: 2800000, guid: 4d7ca1e69af2da74083ec5fd0de54180, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-bottom_DefaultMaterial_Normal
+    second: {fileID: 2800000, guid: 470b8b103e173724d9c5d42f422e1f8d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-bottom_DefaultMaterial_Roughness
+    second: {fileID: 2800000, guid: 289b8ceac42928c438457084e24e94b4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-mid_DefaultMaterial_BaseColor
+    second: {fileID: 2800000, guid: a08e1347cb7e87c40aca05ca9a13b0a6, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-mid_DefaultMaterial_Metallic
+    second: {fileID: 2800000, guid: 1d795dc2672c83c4a823735fdd271ca4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-mid_DefaultMaterial_Normal
+    second: {fileID: 2800000, guid: ffff3e23279f888438f33c0a1488b430, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-mid_DefaultMaterial_Roughness
+    second: {fileID: 2800000, guid: 33b17eeb8c4da3543bfa6fe00da25408, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-top_DefaultMaterial_BaseColor
+    second: {fileID: 2800000, guid: b7b4c7916c636c8418f3060e3fc58608, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-top_DefaultMaterial_Metallic
+    second: {fileID: 2800000, guid: f57ece205fc44784384cc3bbd3ee04d5, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-top_DefaultMaterial_Normal
+    second: {fileID: 2800000, guid: ddd8b05fe294d9f4eb85d90e60bae00a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-top_DefaultMaterial_Roughness
+    second: {fileID: 2800000, guid: 72c81b9ddf2b2ba49818587f76fc638d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-upper_middle_ZenUV_Generic_Material.001_BaseColor
+    second: {fileID: 2800000, guid: 58e0cdd5beef2c344ad901d797fc8cc8, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-upper_middle_ZenUV_Generic_Material.001_Metallic
+    second: {fileID: 2800000, guid: d84d3d89039366d49a1c997af73714b2, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-upper_middle_ZenUV_Generic_Material.001_Normal
+    second: {fileID: 2800000, guid: 3bc2e027a43930b429f742b1e6a7cec1, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rooms-upper_middle_ZenUV_Generic_Material.001_Roughness
+    second: {fileID: 2800000, guid: 2834fc7e2898b744f8961be3b6e3c4f1, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
