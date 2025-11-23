@@ -50,6 +50,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     private LevelCameraDefault levelCamera; // cached main camera behaviour
     private VFXManager vfxManager; // cached VFX manager for vignette
+    private PlayerMovement playerMovement => FindFirstObjectByType<PlayerMovement>();
 
     private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
     private bool enemyCaught = false;
@@ -402,10 +403,18 @@ public class EnemyStateMachine : MonoBehaviour
             }
         }
 
+        Time.timeScale = 0.5f;
+        Freeze();
+        playerMovement.SetCanMove(false);
+
         // Hold focus for duration
         float wait = enableCameraFxOnDetect ? detectFocusDuration : 2f;
         if (wait > 0f)
             yield return new WaitForSeconds(wait);
+
+        Time.timeScale = 1f;
+        Unfreeze();
+        playerMovement.SetCanMove(true);
 
         // Revert FX
         if (enableCameraFxOnDetect)
