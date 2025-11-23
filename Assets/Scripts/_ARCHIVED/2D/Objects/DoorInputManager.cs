@@ -9,6 +9,12 @@ public class DoorInputManager : MonoBehaviour
     private GameObject _player;
     private PlayerMovement _playerMovement;
 
+    [Header("Door Cooldown")]
+    [Tooltip("Seconds after initiating a door transfer before another can be started.")] 
+    [SerializeField] private float doorUseCooldown = 3f;
+    private float _lastDoorUseTime = -Mathf.Infinity;
+    private bool _isTransferring = false;
+
     private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
     private EnemyStateMachine enemy => FindFirstObjectByType<EnemyStateMachine>();
 
@@ -26,11 +32,15 @@ public class DoorInputManager : MonoBehaviour
         if (_isCutsceneActive || _player == null)
             return;
 
+        if (_isTransferring || Time.unscaledTime < _lastDoorUseTime + doorUseCooldown)
+            return;
+
         if (InputManager.Instance.WasInteractPressed())
         {
 
             if (DoorsComponent.CurrentDoor?.IsReadyToUse() == true)
             {
+                _lastDoorUseTime = Time.unscaledTime;
                 StartCoroutine(TransferPlayer(0.05f));
             }
             else
@@ -42,10 +52,13 @@ public class DoorInputManager : MonoBehaviour
 
     private IEnumerator TransferPlayer(float postFadeDelaySeconds)
     {
+        _isTransferring = true;
+
         if (screenFader == null)
         {
             Debug.LogWarning("[DoorInputManager] ScreenFader not found. Moving immediately.");
             DoorsComponent.CurrentDoor.MoveToLinkedDoor();
+            _isTransferring = false;
             yield break;
         }
 
@@ -61,5 +74,6 @@ public class DoorInputManager : MonoBehaviour
         yield return StartCoroutine(screenFader.FadeInSequence(0.25f));
         enemy.Unfreeze();
         _playerMovement.SetCanMove(true);
+        _isTransferring = false;
     }
 }
