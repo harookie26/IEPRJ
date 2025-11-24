@@ -69,6 +69,8 @@ public class DialogueManager : MonoBehaviour
 
     public void ShowDialogue(Dialogue dialogue, Action onComplete = null)
     {
+        EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_START); 
+
         characterNameText.gameObject.SetActive(true);
         dialogueLineText.gameObject.SetActive(true);
 
@@ -80,8 +82,14 @@ public class DialogueManager : MonoBehaviour
             dialogueQueue.Enqueue(line);
         }
 
-        onDialogueComplete = onComplete;
+        onDialogueComplete = () =>
+        {
+            onComplete?.Invoke();
+            EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_END); 
+        };
+
         ShowNextLine();
+
     }
 
     private void ShowNextLine()
