@@ -26,6 +26,32 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private EnemyFOV enemyFOV;
     public EnemyFOV EnemyFOV => enemyFOV;
 
+    [Header("Teleporting")]
+    [Tooltip("Minimum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
+    [SerializeField] private float teleportMinSeconds = 5f;
+    [Tooltip("Maximum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
+    [SerializeField] private float teleportMaxSeconds = 10f;
+
+    [Header("Detection Camera/VFX")] [Tooltip("Enable camera zoom/focus and vignette during detection sequence.")]
+    [SerializeField] private bool enableCameraFxOnDetect = true;
+    [Tooltip("Seconds to keep camera focused on enemy when player detected (0 = manual revert externally).")]
+    [SerializeField] private float detectFocusDuration = 2.5f;
+    [Tooltip("Extra zoom-in steps after initial zoom (for dramatic punch).")]
+    [SerializeField] private int detectAdditionalZoomInSteps = 0;
+    [Tooltip("Delay between each extra zoom step.")]
+    [SerializeField] private float detectExtraZoomInterval = 0.3f;
+    [Tooltip("Apply vignette increase steps (0 = single step).")]
+    [SerializeField] private int detectAdditionalVignetteSteps = 0;
+    [Tooltip("Delay between each extra vignette step.")]
+    [SerializeField] private float detectExtraVignetteInterval = 0.25f;
+
+    private float teleportTimer = 0f;
+    private float nextTeleportDelay = 0f;
+
+    private LevelCameraDefault levelCamera; // cached main camera behaviour
+    private VFXManager vfxManager; // cached VFX manager for vignette
+    private PlayerMovement playerMovement => FindFirstObjectByType<PlayerMovement>();
+
     private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
     private bool enemyCaught = false;
 
@@ -53,20 +79,11 @@ public class EnemyStateMachine : MonoBehaviour
     public float DistractedCalmDuration;
     public float DistractedRushMultiplier;
 
-    [Header("Teleporting")]
-    [Tooltip("Minimum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
-    [SerializeField] private float teleportMinSeconds = 5f;
-    [Tooltip("Maximum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
-    [SerializeField] private float teleportMaxSeconds = 10f;
-
-    private float teleportTimer = 0f;
-    private float nextTeleportDelay = 0f;
-
     public GameObject TargetPlayer => targetPlayer;
     public GameObject Enemy => enemy;
+    public NavMeshAgent NavAgent => navMeshAgent; // restored property
     public EnemyChasing EnemyChasing => enemyChasing;
     public EnemyCalm EnemyCalm => enemyCalm;
-    public NavMeshAgent NavAgent => navMeshAgent;
     public EnemyDistracted EnemyDistracted => enemyDistracted;
     public EnemyTeleporting EnemyTeleporting => enemyTeleporting;
 
@@ -118,6 +135,9 @@ public class EnemyStateMachine : MonoBehaviour
 
     private static readonly HashSet<EnemyStateMachine> AllInstances = new HashSet<EnemyStateMachine>();
 
+    // Detection coroutine tracking
+    private Coroutine playerDetectedRoutine; // ensures we don't stack multiple detection FX
+
     private void OnEnable()
     {
         AllInstances.Add(this);
@@ -163,6 +183,10 @@ public class EnemyStateMachine : MonoBehaviour
             DistractedRushMultiplier = 1.5f;
         }
 
+        // Cache camera & VFX references
+        levelCamera = FindFirstObjectByType<LevelCameraDefault>();
+        vfxManager = FindFirstObjectByType<VFXManager>();
+
         RollNextTeleportDelay();
 
         CurrentState = enemyCalm;
@@ -203,6 +227,17 @@ public class EnemyStateMachine : MonoBehaviour
 
         CurrentState = state;
         state.EnterState(this);
+
+        // Trigger PlayerDetected FX when entering chasing state.
+        if (state == enemyChasing)
+        {
+            if (playerDetectedRoutine != null)
+            {
+                StopCoroutine(playerDetectedRoutine);
+                playerDetectedRoutine = null;
+            }
+            playerDetectedRoutine = StartCoroutine(PlayerDetected());
+        }
     }
 
     private void RollNextTeleportDelay()
@@ -222,13 +257,10 @@ public class EnemyStateMachine : MonoBehaviour
     {
         if (enemyChasing == null)
             return;
-
         if (CurrentState != enemyChasing)
             return;
-
         if (enemy == null || targetPlayer == null)
             return;
-
         if (!enemyChasing.HasLastLoS)
             return;
 
@@ -299,7 +331,6 @@ public class EnemyStateMachine : MonoBehaviour
                 // ignore restore errors
             }
         }
-
     }
 
     private IEnumerator UnfreezeAfter(float seconds)
@@ -345,5 +376,76 @@ public class EnemyStateMachine : MonoBehaviour
 
         enemyCaught = false;
 
+    }
+
+    // Detection coroutine now triggers camera focus / zoom / vignette.
+    private IEnumerator PlayerDetected()
+    {
+        if (enableCameraFxOnDetect)
+        {
+            if (levelCamera == null) levelCamera = FindFirstObjectByType<LevelCameraDefault>();
+            if (vfxManager == null) vfxManager = FindFirstObjectByType<VFXManager>();
+
+            Transform enemyTransform = enemy != null ? enemy.transform : transform;
+
+            if (levelCamera != null)
+            {
+                levelCamera.FocusOnEnemy(enemyTransform, detectFocusDuration);
+                levelCamera.ZoomIn();
+                if (detectAdditionalZoomInSteps > 0)
+                    StartCoroutine(ExtraZoomSteps(levelCamera, detectAdditionalZoomInSteps, detectExtraZoomInterval));
+            }
+            if (vfxManager != null)
+            {
+                vfxManager.IncreaseVignette();
+                if (detectAdditionalVignetteSteps > 0)
+                    StartCoroutine(ExtraVignetteSteps(vfxManager, detectAdditionalVignetteSteps, detectExtraVignetteInterval));
+            }
+        }
+
+        Time.timeScale = 0.5f;
+        Freeze();
+        playerMovement.SetCanMove(false);
+
+        // Hold focus for duration
+        float wait = enableCameraFxOnDetect ? detectFocusDuration : 2f;
+        if (wait > 0f)
+            yield return new WaitForSeconds(wait);
+
+        Time.timeScale = 1f;
+        Unfreeze();
+        playerMovement.SetCanMove(true);
+
+        // Revert FX
+        if (enableCameraFxOnDetect)
+        {
+            if (levelCamera != null)
+            {
+                levelCamera.RevertFocusToPlayer();
+                levelCamera.ZoomOut();
+            }
+            if (vfxManager != null)
+            {
+                vfxManager.DecreaseVignette();
+            }
+        }
+    }
+
+    private IEnumerator ExtraZoomSteps(LevelCameraDefault camRef, int steps, float interval)
+    {
+        while (steps-- > 0 && camRef != null)
+        {
+            yield return new WaitForSeconds(interval);
+            camRef.ZoomIn();
+        }
+    }
+
+    private IEnumerator ExtraVignetteSteps(VFXManager vfxRef, int steps, float interval)
+    {
+        while (steps-- > 0 && vfxRef != null)
+        {
+            yield return new WaitForSeconds(interval);
+            vfxRef.IncreaseVignette();
+        }
     }
 }

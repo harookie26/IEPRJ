@@ -1,0 +1,220 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3972779875154240643
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7844053116772737088}
+  - component: {fileID: 3367897232355021400}
+  - component: {fileID: 8000302674493026213}
+  - component: {fileID: 7484102567388825872}
+  - component: {fileID: 3950912431921256980}
+  - component: {fileID: 754279304723587359}
+  - component: {fileID: 1590913650118520997}
+  - component: {fileID: 1155761151236701987}
+  - component: {fileID: 8536231112318761419}
+  - component: {fileID: 187523999571152514}
+  - component: {fileID: 5025357318967649606}
+  m_Layer: 0
+  m_Name: Managers
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7844053116772737088
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 84.50949, y: 9.64317, z: 4.58136}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3367897232355021400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 361742ef68a1fa04c9cbe3326c7e5ce6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  paintingTag: InteractablePainting
+  includeInactive: 1
+  rescanInterval: 1
+  requireCollider: 1
+--- !u!114 &8000302674493026213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23bfaf83397cbbf4cb0ecba0c8c55b76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  paintingTag: ChannelablePainting
+  includeInactive: 1
+  rescanInterval: 1
+  requireCollider: 1
+  requiredChannelDuration: 10
+  pauseOnConsecutiveCompletions: 1
+  consecutiveCompletionsToPause: 2
+  applyToExistingComponents: 1
+--- !u!114 &7484102567388825872
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be91b68a54f8e98408cac0fb53401ed4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  levitationVelocity: 3
+  levitationSmooth: 5
+  rotationSpeed: 90
+  levitationHeightFraction: 0.6666667
+  usePerObjectRandomization: 1
+  upwardVelocityRange: {x: 2, y: 5}
+  rotationSpeedRange: {x: 40, y: 160}
+  smoothRange: {x: 3, y: 9}
+  heightFractionRange: {x: 0.55, y: 0.85}
+  verticalJitter: 0.15
+--- !u!114 &3950912431921256980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cddcf05496b3e4489a058ef39a3e685, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetPlayer: {fileID: 0}
+  enemy: {fileID: 0}
+  config: {fileID: 11400000, guid: f15c57560f8b2e44e8da46a2bba15eb8, type: 2}
+  navMeshAgent: {fileID: 0}
+  enemyFOV: {fileID: 0}
+  teleportMinSeconds: 15
+  teleportMaxSeconds: 30
+  enableCameraFxOnDetect: 1
+  detectFocusDuration: 2.5
+  detectAdditionalZoomInSteps: 0
+  detectExtraZoomInterval: 0.3
+  detectAdditionalVignetteSteps: 0
+  detectExtraVignetteInterval: 0.25
+  MoveSpeed: 0
+  PatrolSpeed: 0
+  TargetingBuffer: 0
+  EnemyAggroRadius: 0
+  EnemyKillRadius: 0
+  DistractedCalmDuration: 0
+  DistractedRushMultiplier: 0
+--- !u!114 &754279304723587359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c7da6c8be577c84aa1044c5586713a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIManager
+  interactHUD: {fileID: 0}
+  stairUpHUD: {fileID: 0}
+  stairDownHUD: {fileID: 0}
+  channelHUD: {fileID: 0}
+  fadePanel: {fileID: 0}
+  fadeDuration: 1
+  blackScreenHoldTime: 1
+--- !u!114 &1590913650118520997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e7024d5ac0110d4ea6b6a4c5a417607, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameStateManager
+  currentLevelProgress: 0
+--- !u!114 &1155761151236701987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7c7d4bdeb138f44a8c1765679ddba20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CheckpointManager
+--- !u!114 &8536231112318761419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6a1f44665bb66241b9598e083814c34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXManager
+  minVignetteIntensity: 0
+  maxVignetteIntensity: 0.3
+  vignetteStep: 0.5
+  vignetteLerpSpeed: 2
+  globalVolume: {fileID: 0}
+--- !u!114 &187523999571152514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15694984bf9ce8141a84ccdf2f08a107, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  doorUseCooldown: 3
+--- !u!114 &5025357318967649606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3972779875154240643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f82b12ea04ba9f4daf4d330bc0d2c1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  channelHoldThreshold: 0.18
