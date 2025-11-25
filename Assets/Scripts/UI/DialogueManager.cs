@@ -9,7 +9,8 @@ public class DialogueManager : MonoBehaviour
     public static DialogueManager Instance { get; private set; }
 
     [Header("UI Components")]
-    
+
+    [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private TextMeshProUGUI characterNameText;
     [SerializeField] private TextMeshProUGUI dialogueLineText;
 
@@ -69,8 +70,10 @@ public class DialogueManager : MonoBehaviour
 
     public void ShowDialogue(Dialogue dialogue, Action onComplete = null)
     {
-        EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_START); 
+        EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_START);
 
+        
+        dialoguePanel.gameObject.SetActive(true);
         characterNameText.gameObject.SetActive(true);
         dialogueLineText.gameObject.SetActive(true);
 
@@ -121,6 +124,7 @@ public class DialogueManager : MonoBehaviour
     {
         characterNameText.gameObject.SetActive(false);
         dialogueLineText.gameObject.SetActive(false);
+        dialoguePanel.gameObject.SetActive(false);
 
         onDialogueComplete?.Invoke();
     }
