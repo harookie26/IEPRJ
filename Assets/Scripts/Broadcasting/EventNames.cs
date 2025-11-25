@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Runtime.CompilerServices;
+using UnityEngine.UnityConsent;
 
 
 public class EventNames {
@@ -54,6 +55,9 @@ public class EventNames {
     {
         public const string HOVER_UI_SHOWN = "HOVER_UI_SHOWN";
         public const string HOVER_UI_HIDDEN = "HOVER_UI_HIDDEN";
+
+		public const string PLAY_DIALOGUE_START = "PLAY_DIALOGUE_START";
+		public const string PLAY_DIALOGUE_END = "PLAY_DIALOGUE_END";
     }
 
 	public static class CutsceneEvents

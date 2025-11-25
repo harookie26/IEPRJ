@@ -101,16 +101,21 @@ public class PlayerMovement : MonoBehaviour
     {
         EventBroadcaster.Instance.AddObserver(LevelEvents.ON_CORRUPTED_ROOM_TRUE, OnCorruptedEnter);
         EventBroadcaster.Instance.AddObserver(LevelEvents.ON_CORRUPTED_ROOM_FALSE, OnCorruptedExit);
-        EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, OnPlayerCaughtStart);
-        EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_GAME_RESTART, OnPlayerCaughtEnd);
+        EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
+        EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
+        EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
+        EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
     }
 
     private void OnDisable()
     {
         EventBroadcaster.Instance.RemoveActionAtObserver(LevelEvents.ON_CORRUPTED_ROOM_TRUE, OnCorruptedEnter);
         EventBroadcaster.Instance.RemoveActionAtObserver(LevelEvents.ON_CORRUPTED_ROOM_FALSE, OnCorruptedExit);
-        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_LEVEL_FAILED, OnPlayerCaughtStart);
-        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_GAME_RESTART, OnPlayerCaughtEnd);
+        EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
+        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
+        EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
+        EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
+
 
     }
 
@@ -124,12 +129,12 @@ public class PlayerMovement : MonoBehaviour
         isInCorruptedRoom = false;
     }
 
-    private void OnPlayerCaughtStart()
+    private void StopMoving()
     {
         canMove = false;
     }
 
-    private void OnPlayerCaughtEnd()
+    private void ContinueMoving()
     {
         canMove = true;
     }
