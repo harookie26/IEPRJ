@@ -6,11 +6,14 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private Button playButton;
     [SerializeField] private Button exitButton;
 
-
+    private ScreenFader screenFader;
     private SceneLoader sceneLoader;
 
     private void Start()
     {
+        screenFader = FindFirstObjectByType<ScreenFader>();
+        screenFader.StartCoroutine(screenFader.FadeInSequence(1.0f));
+
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 

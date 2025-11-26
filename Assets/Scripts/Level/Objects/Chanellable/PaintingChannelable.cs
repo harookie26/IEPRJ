@@ -1,11 +1,14 @@
+using System;
 using UnityEngine;
 using Game.ObjectTypes;
+using System.Collections;
 
 // Optional completion notification interface channelables can implement.
 public interface INotifiesChannelCompletion
 {
     event System.Action ChannelCompleted;
     bool IsCompleted { get; }
+    string PaintingId { get; }
 }
 
 [DisallowMultipleComponent]
@@ -28,6 +31,10 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [Tooltip("Optional child object that acts as a cover and should be disabled upon completion.")]
     [SerializeField] private GameObject coverObject;
 
+    [Header("Painting ID")]
+    [Tooltip("Unique string ID for this painting. Assign in inspector (e.g. 'paint1').")]
+    [SerializeField] private string paintingId = "";
+
     private AudioSource sfxAudioSource;
     private AudioSource musicAudioSource;
     private AudioList audioList;
@@ -42,6 +49,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     // Notify listeners (PlayerChanneller) when this target finishes.
     public event System.Action ChannelCompleted;
     public bool IsCompleted => isCompleted;
+    public string PaintingId => paintingId;
 
     void Awake()
     {
@@ -77,9 +85,16 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
 
     public void StartChannel()
     {
+        // Do not allow starting channel if already fully completed for this painting.
+        if (isCompleted)
+        {
+            Debug.Log($"[PaintingChannelable] Channeling already completed for painting ID '{paintingId}'. Cannot restart channeling.");
+            return;
+        }
+
         if (isChanneling) return;
         isChanneling = true;
-        isCompleted = false;
+        // keep isCompleted unchanged here (should remain false until completed)
         channelTimer = 0f;
         Debug.Log($"[PaintingChannelable] Channel START on '{gameObject.name}' (instance id {GetInstanceID()}).");
         if (musicAudioSource != null && audioList != null && audioList.paintingRestorationMusic != null)
@@ -104,7 +119,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         }
 
         isChanneling = false;
-        isCompleted = false;
+        // Do NOT reset isCompleted here; once completed the painting remains completed.
         channelTimer = 0f;
 
         Debug.Log($"[PaintingChannelable] Channel STOP on '{gameObject.name}' (instance id {GetInstanceID()}).");

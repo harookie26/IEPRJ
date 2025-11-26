@@ -2,6 +2,7 @@ using UnityEngine;
 using static EventNames.GameStateEvents;
 using UnityEngine.SceneManagement;
 using Unity.VisualScripting;
+using System.Collections;
 
 public class GameStateManager : MonoBehaviour
 {
@@ -15,6 +16,10 @@ public class GameStateManager : MonoBehaviour
 
     private PlayerChanneller playerChanneller;
 
+    private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
+
+    private SceneLoader sceneLoader => FindFirstObjectByType<SceneLoader>();
+
     public int currentLevelProgress = 0;
 
     // currentLevelProgress = 0 - no paintings restored
@@ -22,6 +27,9 @@ public class GameStateManager : MonoBehaviour
     // currentLevelProgress = 2 - 2 paintings restored
     // currentLevelProgress = 3 - 3 paintings restored
     // currentLevelProgress = 4 - 4 paintings restored
+
+    // Guard to ensure the win sequence only runs once
+    private bool isWinSequenceRunning = false;
 
     private void Awake()
     {
@@ -75,7 +83,11 @@ public class GameStateManager : MonoBehaviour
             
             if (channeledPaintings >= 5)
             {
-                WinGame();
+                // Start the win sequence only once
+                if (!isWinSequenceRunning)
+                {
+                    StartCoroutine(WinGameSequence());
+                }
             }
         }
     }
@@ -104,10 +116,45 @@ public class GameStateManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
-    private void WinGame()
+    private IEnumerator WinGameSequence()
     {
-        Debug.Log("You Win!");
-        Time.timeScale = 0.00000001f;
+        // Avoid re-entry
+        if (isWinSequenceRunning)
+            yield break;
+
+        isWinSequenceRunning = true;
+
+        // Ensure timeScale is normal so fade (if implemented with scaled time) can run
+        Time.timeScale = 1f;
+
+        Debug.Log("[GameStateManager] Starting WinGameSequence. screenFader=" + (screenFader != null) + ", sceneLoader=" + (sceneLoader != null));
+
+        // If there's a screen fader, run its fade out sequence and wait for it to finish
+        if (screenFader != null)
+        {
+            // Prefer yielding the IEnumerator directly so it's awaited here
+            yield return screenFader.FadeOutSequence(0.5f);
+        }
+        else
+        {
+            Debug.LogWarning("[GameStateManager] No ScreenFader found in scene. Skipping fade.");
+        }
+
+        // Optional extra delay after fade completes (use realtime so it's independent of Time.timeScale)
+        float postFadeDelay = 0.25f;
+        if (postFadeDelay > 0f)
+            yield return new WaitForSecondsRealtime(postFadeDelay);
+
+        // Finally load the main menu
+        if (sceneLoader != null)
+        {
+            sceneLoader.LoadSceneByName("MainMenu");
+        }
+        else
+        {
+            Debug.LogWarning("[GameStateManager] No SceneLoader found. Using SceneManager.LoadScene fallback.");
+            SceneManager.LoadScene("MainMenu");
+        }
     }
 
     private void UpdateLevelProgress()

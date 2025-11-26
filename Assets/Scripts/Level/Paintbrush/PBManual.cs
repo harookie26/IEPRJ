@@ -28,6 +28,14 @@ public class PBManual : MonoBehaviour
 
     private Rigidbody rb;
 
+    // --- Glue player state ---
+    private bool playerWasDisabledByPB = false;
+    private bool isGluingPlayer = false;
+    private Vector3 gluedPlayerPosition;
+    private Quaternion gluedPlayerRotation;
+    private Rigidbody playerRb;
+    private RigidbodyConstraints previousPlayerConstraints;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -41,6 +49,48 @@ public class PBManual : MonoBehaviour
             rb.constraints |= RigidbodyConstraints.FreezeRotation;
     }
 
+    private void OnEnable()
+    {
+        // When PBManual becomes active (manual mode), disable player movement and glue player in place.
+        if (playerMovement != null)
+        {
+            playerWasDisabledByPB = true;
+            playerMovement.SetCanMove(false);
+
+            // cache rigidbody and constraints
+            playerRb = playerMovement.GetComponent<Rigidbody>();
+            if (playerRb != null)
+            {
+                previousPlayerConstraints = playerRb.constraints;
+                playerRb.constraints = RigidbodyConstraints.FreezeAll;
+                playerRb.linearVelocity = Vector3.zero;
+                playerRb.angularVelocity = Vector3.zero;
+            }
+
+            gluedPlayerPosition = playerMovement.transform.position;
+            gluedPlayerRotation = playerMovement.transform.rotation;
+            isGluingPlayer = true;
+        }
+    }
+
+    private void OnDisable()
+    {
+        // Restore player movement and physics state when manual mode ends
+        if (playerWasDisabledByPB && playerMovement != null)
+        {
+            playerMovement.SetCanMove(true);
+            playerWasDisabledByPB = false;
+        }
+
+        if (playerRb != null)
+        {
+            playerRb.constraints = previousPlayerConstraints;
+            playerRb = null;
+        }
+
+        isGluingPlayer = false;
+    }
+
     private void Start()
     {
         ResolvePlayerRoomAtPosition();
@@ -49,6 +99,24 @@ public class PBManual : MonoBehaviour
     private void FixedUpdate()
     {
         if (cameraTransform == null) return;
+
+        // Keep player glued while PBManual is active
+        if (isGluingPlayer && playerMovement != null)
+        {
+            if (playerRb != null)
+            {
+                // Move the rigidbody to the cached position/rotation each physics step
+                playerRb.linearVelocity = Vector3.zero;
+                playerRb.angularVelocity = Vector3.zero;
+                playerRb.MovePosition(gluedPlayerPosition);
+                playerRb.MoveRotation(gluedPlayerRotation);
+            }
+            else
+            {
+                playerMovement.transform.position = gluedPlayerPosition;
+                playerMovement.transform.rotation = gluedPlayerRotation;
+            }
+        }
 
         rb.angularVelocity = Vector3.zero;
 

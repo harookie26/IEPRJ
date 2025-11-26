@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Game.ObjectTypes;
+using System.Collections.Generic;
 
 [DisallowMultipleComponent]
 [FoldableInspector]
@@ -45,7 +46,8 @@ public class PlayerChanneller : MonoBehaviour
     private bool holdGateActive;
     private float rechannelAvailableAt;
 
-    public int ChannelledPaintingCount = 0;
+    // Track completed painting IDs so each painting only completes once.
+    private HashSet<string> completedPaintingIds = new HashSet<string>();
 
     private void Awake()
     {
@@ -273,9 +275,29 @@ public class PlayerChanneller : MonoBehaviour
 
                     var mb = currentChannelTarget as MonoBehaviour;
                     currentCompletionNotifier = mb != null ? mb.GetComponent<INotifiesChannelCompletion>() : null;
+
+                    // If this painting is already completed, skip starting a channel on it.
                     if (currentCompletionNotifier != null)
                     {
+                        string pid = currentCompletionNotifier.PaintingId;
+                        if (currentCompletionNotifier.IsCompleted || (!string.IsNullOrEmpty(pid) && completedPaintingIds.Contains(pid)))
+                        {
+                            Debug.Log($"[PlayerChanneller] Painting (ID={pid}) already completed. Skipping channel.");
+                            currentChannelTarget = null;
+                            currentCompletionNotifier = null;
+                            if (stateMachine != null && stateMachine.IsChanneling)
+                                stateMachine.ExitChannelState();
+                            yield return null;
+                            continue;
+                        }
+
+                        // Subscribe to completion event
                         currentCompletionNotifier.ChannelCompleted += OnTargetCompleted;
+                    }
+                    else
+                    {
+                        // No completion notifier available on the target. Start channeling but it won't notify completion.
+                        Debug.LogWarning($"[PlayerChanneller] Target '{mb?.gameObject.name}' does not implement INotifiesChannelCompletion. Channeling may not complete properly.");
                     }
 
                     Debug.Log($"[PlayerChanneller] Gained focus on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}' -> StartChannel().");
@@ -340,11 +362,31 @@ public class PlayerChanneller : MonoBehaviour
 
     private void OnTargetCompleted()
     {
+        string completedId = null;
+        if (currentCompletionNotifier != null)
+        {
+            completedId = currentCompletionNotifier.PaintingId;
+        }
+
         if (currentChannelTarget != null)
         {
             Debug.Log($"[PlayerChanneller] Target completed -> StopChannel on '{(currentChannelTarget as MonoBehaviour)?.gameObject.name}'.");
             currentChannelTarget.StopChannel();
             currentChannelTarget = null;
+        }
+
+        // Record completion ID before unsubscribing
+        if (!string.IsNullOrEmpty(completedId))
+        {
+            if (!completedPaintingIds.Contains(completedId))
+            {
+                completedPaintingIds.Add(completedId);
+                Debug.Log($"[PlayerChanneller] Recorded completed painting ID {completedId}. Total completed: {completedPaintingIds.Count}");
+            }
+            else
+            {
+                Debug.Log($"[PlayerChanneller] Painting ID {completedId} was already recorded as completed.");
+            }
         }
 
         UnsubscribeFromCompletion();
@@ -358,7 +400,7 @@ public class PlayerChanneller : MonoBehaviour
         if (stateMachine != null && stateMachine.IsChanneling)
             stateMachine.ExitChannelState();
 
-        ChannelledPaintingCount++;
+        // ChannelledPaintingCount is now derived from completedPaintingIds.Count, so nothing else to increment here.
     }
 
     private void UnsubscribeFromCompletion()
@@ -372,7 +414,12 @@ public class PlayerChanneller : MonoBehaviour
 
     public int GetChannelledPaintingCount()
     {
-        return ChannelledPaintingCount;
+        return completedPaintingIds.Count;
+    }
+
+    public bool HasCompletedPainting(string id)
+    {
+        return !string.IsNullOrEmpty(id) && completedPaintingIds.Contains(id);
     }
 
     private void OnDrawGizmos()
