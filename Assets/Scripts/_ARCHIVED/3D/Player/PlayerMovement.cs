@@ -32,7 +32,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private RoomComponent currentRoom;
 
     // Optional: support doorway triggers placed on child GOs with tag "Doorway"
-    private const string DoorwayTag = "Doorway";
+    private const string StairwayTag = "Stairway";
 
     private bool isInCorruptedRoom = false;
 
@@ -292,7 +292,7 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            if (other.CompareTag(DoorwayTag))
+            if (other.CompareTag(StairwayTag))
             {
                 doorwayOverlapCount++;
             }
@@ -312,7 +312,7 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            if (other.CompareTag(DoorwayTag))
+            if (other.CompareTag(StairwayTag))
             {
                 doorwayOverlapCount = Mathf.Max(0, doorwayOverlapCount - 1);
             }

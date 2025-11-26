@@ -11,9 +11,12 @@ public class DoorInputManager : MonoBehaviour
 
     [Header("Door Cooldown")]
     [Tooltip("Seconds after initiating a door transfer before another can be started.")] 
-    [SerializeField] private float doorUseCooldown = 3f;
+    public float doorUseCooldown = 3f; // made public for other components
     private float _lastDoorUseTime = -Mathf.Infinity;
     private bool _isTransferring = false;
+
+    // Public read-only access to last use time
+    public float LastDoorUseTime => _lastDoorUseTime;
 
     private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
     private EnemyStateMachine enemy => FindFirstObjectByType<EnemyStateMachine>();

@@ -54,6 +54,10 @@ public class LevelCameraDefault : MonoBehaviour
     [SerializeField] private float enemyFocusDurationOnZoomIn = 2f;
     private Transform lastEnemyFocus; // cache last targeted enemy
 
+    [Header("Enemy Focus Offset")]
+    [Tooltip("Offset applied to camera position while focusing on an enemy. If zero, falls back to normal offset.")]
+    [SerializeField] private Vector3 enemyFocusOffset = Vector3.zero;
+
     // --- CURRENT ROOM (cached) ---
     [Header("Room Tracking")]
     [Tooltip("Cached reference to the room the PLAYER is currently inside.")]
@@ -183,6 +187,19 @@ public class LevelCameraDefault : MonoBehaviour
         Vector3 subjectPos = subject.position;
         Vector3 targetPos = new Vector3(subjectPos.x, subjectPos.y, 0) + offset;
 
+        // If we are focusing on an enemy (not the player) use enemy-specific offset (if provided) and bypass room clamping.
+        if (!IsFocusingOnPlayer() && focusTarget == lastEnemyFocus && lastEnemyFocus != null)
+        {
+            Vector3 effectiveEnemyOffset = enemyFocusOffset == Vector3.zero ? offset : enemyFocusOffset;
+            Vector3 enemyTargetPos = new Vector3(subjectPos.x, subjectPos.y, 0) + effectiveEnemyOffset;
+            Vector3 smoothedEnemy = Vector3.Lerp(transform.position, enemyTargetPos, smoothSpeed);
+            transform.position = smoothedEnemy;
+            transform.rotation = ComputeCenterLookRotation(smoothedEnemy, subject);
+            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFov, Mathf.Clamp01(fovLerpSpeed * Time.deltaTime));
+            UpdateBlackoutMaterial(); // blackout still based on player's current room
+            return;
+        }
+
         if (currentRoom == null)
         {
             Vector3 smoothedPos = Vector3.Lerp(transform.position, targetPos, smoothSpeed);
@@ -203,14 +220,11 @@ public class LevelCameraDefault : MonoBehaviour
         float frustumHeight = 2.0f * camToPlaneDist * Mathf.Tan(halfFovRad);
         float frustumWidth = frustumHeight * cam.aspect;
 
-        // Compute allowed camera center range in world space (do not add offset again here).
         float minX = bounds.min.x + frustumWidth * 0.5f;
         float maxX = bounds.max.x - frustumWidth * 0.5f;
         float minY = bounds.min.y + frustumHeight * 0.5f;
         float maxY = bounds.max.y - frustumHeight * 0.5f;
 
-        // If the frustum is larger than the room on an axis, collapse to the room center
-        // to avoid corner snapping when min > max.
         if (minX > maxX)
         {
             minX = maxX = bounds.center.x;
@@ -426,4 +440,10 @@ public class LevelCameraDefault : MonoBehaviour
         if (enabled && cam != null)
             cam.depthTextureMode |= DepthTextureMode.Depth;
     }
+
+    public void SetEnemyFocusOffset(Vector3 newOffset)
+    {
+        enemyFocusOffset = newOffset;
+    }
+    public Vector3 GetEnemyFocusOffset() => enemyFocusOffset;
 }

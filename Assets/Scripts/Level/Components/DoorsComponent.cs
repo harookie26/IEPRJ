@@ -3,6 +3,13 @@ using System.Linq;
 using Game.ObjectTypes;
 using Game.Level;
 
+public enum VerticalDoorDirection
+{
+    None,
+    Up,
+    Down
+}
+
 [FoldableInspector]
 public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
 {
@@ -17,6 +24,11 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
 
     [SerializeField] private Collider triggerZone;
     private GameObject _player;
+
+    // Vertical direction setting (Up/Down/None)
+    [Header("Vertical Teleport Settings")]
+    [SerializeField] private VerticalDoorDirection verticalDirection = VerticalDoorDirection.None;
+    public VerticalDoorDirection VerticalDirection => verticalDirection;
 
     private static float _entryCooldown = 0.5f;
     private static float _lastEntryTime = -1f;
@@ -33,6 +45,8 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
     [SerializeField] private float weight = 1f;
     public float Weight => weight;
 
+    private UIManager uiManager;
+
     private void Awake()
     {
         if (string.IsNullOrEmpty(linkID))
@@ -42,6 +56,7 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
         }
 
         _player = GameObject.FindGameObjectWithTag("Player");
+        uiManager = FindFirstObjectByType<UIManager>();
         LinkRegistry.Register(this);
 
         triggerZone = GetComponent<Collider>() ?? triggerZone;
@@ -66,6 +81,7 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
         {
             _playerInZone = true;
             CurrentDoor = this;
+            ShowDoorHUD();
         }
     }
     void OnTriggerExit(Collider other)
@@ -74,6 +90,35 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
         {
             _playerInZone = false;
             CurrentDoor = null;
+            uiManager?.ClearForcedHUD();
+        }
+    }
+
+    private void ShowDoorHUD()
+    {
+        if (uiManager == null) return;
+        var doorInput = FindFirstObjectByType<DoorInputManager>();
+        if (doorInput != null)
+        {
+            bool cooldownActive = Time.unscaledTime < doorInput.LastDoorUseTime + doorInput.doorUseCooldown;
+            if (cooldownActive)
+            {
+                uiManager.ClearForcedHUD();
+                return;
+            }
+        }
+        switch (verticalDirection)
+        {
+            case VerticalDoorDirection.Up:
+                uiManager.ShowHUDForce(UIManager.Keys.StairUp);
+                break;
+            case VerticalDoorDirection.Down:
+                uiManager.ShowHUDForce(UIManager.Keys.StairDown);
+                break;
+            case VerticalDoorDirection.None:
+            default:
+                uiManager.ClearForcedHUD();
+                break;
         }
     }
 

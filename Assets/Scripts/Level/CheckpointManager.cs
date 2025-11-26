@@ -32,6 +32,7 @@ public class CheckpointManager : MonoBehaviour
     private void Start()
     {
         _currentCheckpointIndex = 0;
+        SaveCheckpoint();
     }
 
     public void SaveCheckpoint()

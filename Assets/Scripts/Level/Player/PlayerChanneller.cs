@@ -54,6 +54,12 @@ public class PlayerChanneller : MonoBehaviour
         {
             Debug.LogWarning("[PlayerChanneller] PlayerStateMachine not found on the same GameObject. ChannelState transitions will be skipped.");
         }
+        // Find collectibles manager
+        collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
+        if (collectibles == null)
+        {
+            Debug.LogWarning("[PlayerChanneller] PlayerCollectibleManager not found. Channeling will be disabled until present.");
+        }
     }
 
     private void Reset()
@@ -159,6 +165,13 @@ public class PlayerChanneller : MonoBehaviour
     {
         consecutiveMisses = 0;
 
+        // Block channeling unless Paintbucket collected
+        if (collectibles == null || !collectibles.HasCollected("Paintbucket"))
+        {
+            Debug.Log("[PlayerChanneller] Channel blocked: Paintbucket not collected.");
+            return;
+        }
+
         if (rayOrigin == null)
         {
             Debug.LogWarning("PlayerChanneller: rayOrigin not set. Targeting disabled.");
@@ -208,6 +221,10 @@ public class PlayerChanneller : MonoBehaviour
 
             holdGateActive = false;
         }
+
+        // Require collectible for starting new channel
+        if (collectibles == null || !collectibles.HasCollected("Paintbucket"))
+            return false;
 
         return true;
     }

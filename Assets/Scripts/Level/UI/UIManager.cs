@@ -28,6 +28,7 @@ public class UIManager : MonoBehaviour
     private PlayerStateMachine playerStateMachine;
 
     private string pendingHudKey;
+    private string forceHudKey; // HUD shown regardless of idle state
 
     private void Awake()
     {
@@ -65,7 +66,8 @@ public class UIManager : MonoBehaviour
     private void OnPlayerIdleExited()
     {
         pendingHudKey = null;
-        HideAllHUDs();
+        if (string.IsNullOrEmpty(forceHudKey))
+            HideAllHUDs();
     }
 
     private void InitializeHudMap()
@@ -97,6 +99,20 @@ public class UIManager : MonoBehaviour
             return;
         }
 
+        HideAllHUDs();
+    }
+
+    // Force show a HUD immediately ignoring idle state. Used for door stair indicators.
+    public void ShowHUDForce(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return;
+        forceHudKey = key;
+        ShowHUDImmediate(key);
+    }
+
+    public void ClearForcedHUD()
+    {
+        forceHudKey = null;
         HideAllHUDs();
     }
 
@@ -147,6 +163,7 @@ public class UIManager : MonoBehaviour
     public void HideAll()
     {
         pendingHudKey = null;
+        forceHudKey = null;
         HideAllHUDs();
     }
 

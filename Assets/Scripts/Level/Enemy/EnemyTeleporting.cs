@@ -3,6 +3,9 @@ using UnityEngine.AI;
 
 public class EnemyTeleporting : EnemyState
 {
+    // Static forced room for next teleport. Set by EnemyStateMachine on key press.
+    public static RoomComponent ForcedRoom;
+
     public override void EnterState(EnemyStateMachine state)
     {
         DoTeleport(state);
@@ -32,6 +35,15 @@ public class EnemyTeleporting : EnemyState
         var agent = state.NavAgent;
         var enemyGO = state.Enemy != null ? state.Enemy : state.gameObject;
         var currentPos = enemyGO.transform.position;
+
+        // If a forced target room was set, use it and clear the request.
+        var targetRoom = ForcedRoom;
+        if (targetRoom != null)
+        {
+            ForcedRoom = null; // consume request
+            TryTeleportIntoRoom(agent, enemyGO, targetRoom);
+            return;
+        }
 
         // Identify current room (if any) to prefer a different one
         RoomComponent currentRoom = null;
@@ -83,5 +95,50 @@ public class EnemyTeleporting : EnemyState
         }
 
         Debug.LogWarning("[EnemyTeleporting] Failed to find a valid teleport point after several attempts.");
+    }
+
+    private void TryTeleportIntoRoom(NavMeshAgent agent, GameObject enemyGO, RoomComponent room)
+    {
+        var bounds = room.Bounds;
+        if (bounds.size.sqrMagnitude <= Mathf.Epsilon)
+        {
+            Debug.LogWarning($"[EnemyTeleporting] Target room '{room.name}' bounds invalid. Falling back to random.");
+            // Fallback: treat as normal
+            var state = enemyGO.GetComponent<EnemyStateMachine>();
+            if (state != null)
+            {
+                DoTeleport(state);
+            }
+            return;
+        }
+
+        // Try several points inside the target room
+        const int attempts = 8;
+        for (int i = 0; i < attempts; i++)
+        {
+            var randomPoint = new Vector3(
+                Random.Range(bounds.min.x, bounds.max.x),
+                Random.Range(bounds.min.y, bounds.max.y),
+                Random.Range(bounds.min.z, bounds.max.z)
+            );
+
+            if (agent != null && agent.isOnNavMesh)
+            {
+                if (NavMesh.SamplePosition(randomPoint, out var hit, 2.0f, NavMesh.AllAreas))
+                {
+                    if (agent.Warp(hit.position))
+                    {
+                        Debug.Log($"[EnemyTeleporting] Forced teleport via NavMesh to {hit.position} in room '{room.name}' (Id={room.Id}).");
+                        return;
+                    }
+                }
+            }
+
+            enemyGO.transform.position = randomPoint;
+            Debug.Log($"[EnemyTeleporting] Forced teleport (direct) to {randomPoint} in room '{room.name}' (Id={room.Id}).");
+            return;
+        }
+
+        Debug.LogWarning($"[EnemyTeleporting] Failed to teleport into target room '{room.name}'.");
     }
 }

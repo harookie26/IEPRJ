@@ -24,9 +24,15 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [Tooltip("Number of consecutive completions required to trigger pause.")]
     [SerializeField] private int consecutiveCompletionsToPause = 2;
 
+    [Header("Cover Object")]
+    [Tooltip("Optional child object that acts as a cover and should be disabled upon completion.")]
+    [SerializeField] private GameObject coverObject;
+
     private AudioSource sfxAudioSource;
     private AudioSource musicAudioSource;
     private AudioList audioList;
+
+    private CheckpointManager checkpointManager => FindFirstObjectByType<CheckpointManager>();
 
     private float channelTimer = 0f;
     private bool isCompleted = false;
@@ -60,6 +66,12 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         else
         {
             Debug.LogWarning("No GameObject with tag 'MusicAudioSource' found in scene.");
+        }
+
+        // Auto-assign first child as cover if not explicitly set.
+        if (coverObject == null && transform.childCount > 0)
+        {
+            coverObject = transform.GetChild(0).gameObject;
         }
     }
 
@@ -122,6 +134,13 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         if (musicAudioSource != null)
             musicAudioSource.Stop(); // stop the restoration music if still playing
 
+        // Disable the cover child object upon completion.
+        if (coverObject != null && coverObject.activeSelf)
+        {
+            coverObject.SetActive(false);
+            Debug.Log($"[PaintingChannelable] Cover object '{coverObject.name}' deactivated for '{gameObject.name}'.");
+        }
+
         consecutiveCompletions++;
         Debug.Log($"[PaintingChannelable] Channel COMPLETE on '{gameObject.name}'. Consecutive completions = {consecutiveCompletions}.");
 
@@ -143,5 +162,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         // Additional completion effects can be added here.
         if (sfxAudioSource != null && audioList != null && audioList.paintingRestorationCompleteSFX != null)
             sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
+
+        checkpointManager.SaveCheckpoint();
     }
 }
