@@ -58,6 +58,10 @@ public class PlayerStateMachine : MonoBehaviour
     [Tooltip("Draw the channel ground ray while channeling")]
     public bool channelDrawGroundRay = true;
 
+    [Header("VFX")]
+    [Tooltip("Optional trail object to enable when player enters Idle state")]
+    public TrailFollowDynamic idleTrail;
+
     private float hideCooldown = 0.2f;
     private float hideCooldownTimer = 0f;
 
@@ -353,6 +357,27 @@ public class PlayerStateMachine : MonoBehaviour
             // Notify listeners that player is idle
             _owner.NotifyIdleEntered();
             // Add any idle-specific setup here (e.g. play idle animation)
+
+            // Activate trail VFX if assigned; try to find it if null
+            if (_owner.idleTrail == null)
+            {
+                var found = GameObject.FindObjectOfType<TrailFollowDynamic>();
+                if (found != null)
+                {
+                    _owner.idleTrail = found;
+                }
+            }
+
+            if (_owner.idleTrail != null)
+            {
+                // ensure trail GameObject active then restart
+                _owner.idleTrail.gameObject.SetActive(true);
+                _owner.idleTrail.Restart();
+            }
+            else
+            {
+                Debug.Log("PlayerStateMachine: idleTrail not assigned or found in scene.");
+            }
         }
 
         public void Exit()
@@ -361,6 +386,13 @@ public class PlayerStateMachine : MonoBehaviour
             // Notify listeners that player left idle
             _owner.NotifyIdleExited();
             // Cleanup idle-specific state
+
+            // Disable trail VFX if assigned
+            if (_owner.idleTrail != null)
+            {
+                _owner.idleTrail.Stop();
+                _owner.idleTrail.gameObject.SetActive(false);
+            }
         }
 
         public void HandleInput()
