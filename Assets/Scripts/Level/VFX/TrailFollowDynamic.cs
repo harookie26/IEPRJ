@@ -1,25 +1,39 @@
 using UnityEngine;
 
-// Attach this to the trail (the GameObject that has the TrailRenderer).
-// Behavior: when enabled the trail starts at the player's position, then moves toward the referenced target,
-// leaving a trail behind. You can configure speed, start delay, and whether to destroy the trail on reach.
 public class TrailFollowDynamic : MonoBehaviour
 {
-    public Transform player; // the source the trail starts from
-    public Transform target; // the object the trail should point / move to
+    [SerializeField] private Transform player;
 
-    public float moveSpeed = 10f;
-    public float delay = 0f; // delay before launching from the player
-    public bool startAttached = true; // keep trail at player position until launch
-    public bool destroyOnReach = true; // kept for compatibility but we won't call Destroy so it can be restarted
-    public float stopDistance = 0.1f;
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private float delay = 0f;
+    [SerializeField] private bool startAttached = true;
+    [SerializeField] private bool destroyOnReach = true;
+    [SerializeField] private float stopDistance = 0.1f;
+
+    // Lifetime settings: trail will disappear when this time elapses after launch
+    [SerializeField] private bool useLifetime = true;
+    [SerializeField] private float maxLifetime = 5f;
+
+    [SerializeField] private Transform target1;
+    [SerializeField] private Transform target2;
+    [SerializeField] private Transform target3;
+    [SerializeField] private Transform target4;
 
     bool launched = false;
     float timer = 0f;
+    private Transform target;
+
+    // lifetime timer (counts only while launched)
+    private float lifeTimer = 0f;
+
+    private TrailRenderer trailRenderer;
 
     void Start()
     {
-        // If player isn't assigned try to find an object tagged "Player"
+        target = target1;
+
+        trailRenderer = GetComponent<TrailRenderer>();
+
         if (player == null)
         {
             var p = GameObject.FindWithTag("Player");
@@ -30,6 +44,16 @@ public class TrailFollowDynamic : MonoBehaviour
         {
             transform.position = player.position;
         }
+
+        // Do NOT emit at startup to avoid the trail following the player while walking.
+        if (trailRenderer != null)
+            trailRenderer.emitting = false;
+
+        // Disable updates until explicitly started via Restart()/Launch()
+        launched = false;
+        timer = 0f;
+        lifeTimer = 0f;
+        enabled = false;
 
         // Do NOT auto-launch at Start so the trail can be controlled by external scripts (Restart/Launch)
         // if (delay <= 0f) Launch();
@@ -50,6 +74,18 @@ public class TrailFollowDynamic : MonoBehaviour
             return;
         }
 
+        // count lifetime while launched
+        if (useLifetime)
+        {
+            lifeTimer += Time.deltaTime;
+            if (lifeTimer >= maxLifetime)
+            {
+                // Instead of destroying, stop emitting and stop movement so the trail can be reused.
+                StopEmittingAndStop();
+                return;
+            }
+        }
+
         if (target == null) return;
 
         Vector3 dir = target.position - transform.position;
@@ -57,6 +93,13 @@ public class TrailFollowDynamic : MonoBehaviour
 
         if (dist <= stopDistance)
         {
+            if (destroyOnReach)
+            {
+                // Previously destroyed here; now stop emitting and stop movement so the object persists.
+                StopEmittingAndStop();
+                return;
+            }
+
             // Instead of destroying the GameObject, stop movement and let external code restart it.
             launched = false;
             timer = 0f;
@@ -78,6 +121,11 @@ public class TrailFollowDynamic : MonoBehaviour
     {
         launched = true;
         enabled = true;
+        // reset lifetime counter
+        lifeTimer = 0f;
+
+        if (trailRenderer != null)
+            trailRenderer.emitting = true;
     }
 
     // Reset state and optionally reposition to player so the trail can be restarted multiple times
@@ -85,6 +133,7 @@ public class TrailFollowDynamic : MonoBehaviour
     {
         launched = false;
         timer = 0f;
+        lifeTimer = 0f;
 
         if (player == null)
         {
@@ -98,6 +147,9 @@ public class TrailFollowDynamic : MonoBehaviour
         // Ensure component is enabled so Update runs
         enabled = true;
 
+        if (trailRenderer != null)
+            trailRenderer.emitting = true;
+
         if (delay <= 0f)
             Launch();
     }
@@ -107,7 +159,48 @@ public class TrailFollowDynamic : MonoBehaviour
     {
         launched = false;
         timer = 0f;
+        lifeTimer = 0f;
         // leave transform as-is; component can be disabled if desired
+        enabled = false;
+
+        if (trailRenderer != null)
+            trailRenderer.emitting = false;
+    }
+
+    public void ChangeTarget(int targetIndex)
+    {
+        switch (targetIndex)
+        {
+            case 1:
+                target = target1;
+                break;
+            case 2:
+                target = target2;
+                break;
+            case 3:
+                target = target3;
+                break;
+            case 4:
+                target = target4;
+                break;
+            default:
+                Debug.LogWarning("Invalid target index: " + targetIndex);
+                break;
+        }
+    }
+
+    // Stop emission and disable movement so the trail GameObject never gets destroyed and can be reused.
+    private void StopEmittingAndStop()
+    {
+        if (trailRenderer != null)
+        {
+            trailRenderer.emitting = false;
+        }
+
+        // Reset movement state so the object can be restarted later
+        launched = false;
+        lifeTimer = 0f;
+        timer = 0f;
         enabled = false;
     }
 }

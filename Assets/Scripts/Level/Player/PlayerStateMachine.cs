@@ -40,6 +40,10 @@ public class PlayerStateMachine : MonoBehaviour
     [Tooltip("Seconds of no input before entering Idle state")]
     public float idleDelay = 3f;
 
+    // If > 0, while the player remains idle, periodically restart the idle trail VFX every this many seconds
+    [Tooltip("Seconds between automatic restarts of the idle trail while player remains idle. Set to 0 to disable.")]
+    public float idleTrailRestartInterval = 5f;
+
     [Header("Channel")]
     [Tooltip("Hover height above ground while channeling")]
     public float channelHoverHeight = 0.3f;
@@ -349,6 +353,9 @@ public class PlayerStateMachine : MonoBehaviour
     class IdleState : IPlayerState
     {
         readonly PlayerStateMachine _owner;
+        // timer used to periodically restart the idle trail while still idle
+        float _restartTimer;
+
         public IdleState(PlayerStateMachine owner) => _owner = owner;
 
         public void Enter()
@@ -373,6 +380,7 @@ public class PlayerStateMachine : MonoBehaviour
                 // ensure trail GameObject active then restart
                 _owner.idleTrail.gameObject.SetActive(true);
                 _owner.idleTrail.Restart();
+                _restartTimer = 0f; // reset periodic restart timer
             }
             else
             {
@@ -409,7 +417,21 @@ public class PlayerStateMachine : MonoBehaviour
             }
         }
 
-        public void Tick() { }
+        public void Tick()
+        {
+            // Periodically restart the idle trail if configured
+            if (_owner.idleTrail != null && _owner.idleTrailRestartInterval > 0f)
+            {
+                _restartTimer += Time.deltaTime;
+                if (_restartTimer >= _owner.idleTrailRestartInterval)
+                {
+                    // ensure active
+                    _owner.idleTrail.gameObject.SetActive(true);
+                    _owner.idleTrail.Restart();
+                    _restartTimer = 0f;
+                }
+            }
+        }
     }
 
     class ChannelState : IPlayerState

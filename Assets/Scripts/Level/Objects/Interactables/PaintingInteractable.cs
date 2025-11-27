@@ -48,7 +48,26 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
             return;
         }
 
-        sfxAudioSource.PlayOneShot(audioList.enemyDistractedSFX); //Play the needed SFX clip from the AudioList component
+        // Ensure audio references are available before trying to play
+        if (audioList == null)
+            audioList = FindAnyObjectByType<AudioList>();
+
+        if (sfxAudioSource == null)
+        {
+            var audioObject = GameObject.FindWithTag("SFXAudioSource");
+            if (audioObject != null)
+                sfxAudioSource = audioObject.GetComponent<AudioSource>();
+        }
+
+        if (sfxAudioSource != null && audioList != null && audioList.enemyDistractedSFX != null)
+        {
+            sfxAudioSource.PlayOneShot(audioList.enemyDistractedSFX);
+        }
+        else
+        {
+            Debug.LogWarning("PaintingInteractable.Interact: Missing audio source, AudioList, or clip. Skipping SFX playback.");
+        }
+
         enemyStateMachine.DistractAt(transform.position);
     }
 }

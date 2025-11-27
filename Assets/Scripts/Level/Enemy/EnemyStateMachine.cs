@@ -325,6 +325,97 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void DistractAt(Vector3 paintingWorldPosition)
     {
+        // Find the room containing the painting position
+        RoomComponent paintingRoom = null;
+        var rooms = FindObjectsOfType<RoomComponent>();
+        if (rooms != null && rooms.Length > 0)
+        {
+            foreach (var r in rooms)
+            {
+                if (r == null) continue;
+                var b = r.Bounds;
+                if (b.size.sqrMagnitude > Mathf.Epsilon && b.Contains(paintingWorldPosition))
+                {
+                    paintingRoom = r;
+                    break;
+                }
+            }
+        }
+
+        // If painting is in a different room than the enemy, teleport the enemy into that room
+        if (paintingRoom != null && paintingRoom != currentEnemyRoom)
+        {
+            // Determine a teleport target position somewhere inside the room bounds (randomized)
+            var b = paintingRoom.Bounds;
+            Vector3 randomPointInRoom = b.center;
+            if (b.size.sqrMagnitude > Mathf.Epsilon)
+            {
+                var ext = b.extents;
+                randomPointInRoom = new Vector3(
+                    b.center.x + Random.Range(-ext.x, ext.x),
+                    b.center.y,
+                    b.center.z + Random.Range(-ext.z, ext.z)
+                );
+            }
+
+            // Keep enemy's original Y to avoid teleporting into ceiling/floor; try to sample NavMesh near chosen point
+            var enemyTransform = (enemy != null ? enemy.transform : transform);
+            float desiredY = enemyTransform.position.y;
+            randomPointInRoom.y = desiredY;
+
+            Vector3 teleportTarget = randomPointInRoom;
+
+            // Try to find a nearest point on NavMesh within a reasonable radius
+            NavMeshHit hit;
+            bool foundOnNav = false;
+            float sampleRadius = Mathf.Max(1f, Mathf.Max(b.extents.x, b.extents.z));
+
+            if (NavMesh.SamplePosition(randomPointInRoom, out hit, sampleRadius, NavMesh.AllAreas))
+            {
+                teleportTarget = hit.position;
+                foundOnNav = true;
+            }
+            else if (navMeshAgent != null && navMeshAgent.isOnNavMesh)
+            {
+                // As a fallback, try sampling at painting position's XZ with enemy Y
+                Vector3 fallback = new Vector3(paintingWorldPosition.x, desiredY, paintingWorldPosition.z);
+                if (NavMesh.SamplePosition(fallback, out hit, sampleRadius, NavMesh.AllAreas))
+                {
+                    teleportTarget = hit.position;
+                    foundOnNav = true;
+                }
+            }
+
+            try
+            {
+                if (navMeshAgent != null && navMeshAgent.isOnNavMesh && foundOnNav)
+                {
+                    // Warp the NavMeshAgent to the target position so navigation internals are updated
+                    navMeshAgent.Warp(teleportTarget);
+                    // Reset path to avoid stale destinations
+                    navMeshAgent.ResetPath();
+                }
+                else
+                {
+                    // Fallback: move transform directly
+                    enemyTransform.position = teleportTarget;
+                }
+
+                // Update current room and reset detection latch so detection can retrigger in the new room
+                currentEnemyRoom = paintingRoom;
+                detectionTriggeredForRoomPresence = false;
+                lastDetectionRoom = null;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"EnemyStateMachine: Teleport failed: {ex.Message}");
+                // Fallback to direct positioning
+                if (enemy != null)
+                    enemy.transform.position = teleportTarget;
+            }
+        }
+
+        // Set painting and switch to distracted behavior
         enemyDistracted.PaintingPosition = paintingWorldPosition;
         Switchstate(enemyDistracted);
     }
