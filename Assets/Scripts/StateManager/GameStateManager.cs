@@ -80,7 +80,7 @@ public class GameStateManager : MonoBehaviour
         //if (playerChanneller != null)
         //{
         //    int channeledPaintings = playerChanneller.GetChannelledPaintingCount();
-            
+        //
         //    if (channeledPaintings >= 5)
         //    {
         //        // Start the win sequence only once
@@ -155,6 +155,18 @@ public class GameStateManager : MonoBehaviour
             Debug.LogWarning("[GameStateManager] No SceneLoader found. Using SceneManager.LoadScene fallback.");
             SceneManager.LoadScene("MainMenu");
         }
+    }
+
+    // Public wrapper so other objects can trigger the win sequence
+    public void TriggerWinSequence()
+    {
+        if (isWinSequenceRunning)
+        {
+            Debug.Log("[GameStateManager] Win sequence already running. Ignoring TriggerWinSequence call.");
+            return;
+        }
+
+        StartCoroutine(WinGameSequence());
     }
 
     private void UpdateLevelProgress()

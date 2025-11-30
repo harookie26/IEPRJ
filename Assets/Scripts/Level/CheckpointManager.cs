@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using UnityEngine.AI;
+using System;
 
 public class CheckpointManager : MonoBehaviour
 {
@@ -22,7 +23,7 @@ public class CheckpointManager : MonoBehaviour
     private EnemyStateMachine _enemyStateMachine => FindFirstObjectByType<EnemyStateMachine>();
 
     private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
-
+    private UIManager uiManager => FindFirstObjectByType<UIManager>();
 
     private void Awake()
     {
@@ -78,14 +79,27 @@ public class CheckpointManager : MonoBehaviour
         _playerMovement.SetCanMove(false);
         yield return StartCoroutine(screenFader.FadeOutSequence(0.5f));
 
+        // Show respawn HUD while waiting for player input
+        if (uiManager != null)
+        {
+            uiManager.ShowRespawnHUD();
+        }
+
         _player.transform.position = _playerSavedPosition;
         _player.transform.eulerAngles = _playerSavedRotation;
 
         if (_enemy == null)
+        {
+            // Hide all HUDs if no enemy or when aborting
+            if (uiManager != null) uiManager.HideAll();
             yield break;
+        }
 
         if (_enemyStateMachine == null)
+        {
+            if (uiManager != null) uiManager.HideAll();
             yield break;
+        }
 
         _enemy.transform.position = _enemySavedPosition;
 
@@ -147,7 +161,21 @@ public class CheckpointManager : MonoBehaviour
                 break;
         }
 
-        yield return new WaitForSecondsRealtime(0.05f);
+        // Wait for player input before fading back in
+        if (InputManager.Instance != null)
+        {
+            bool gotInput = false;
+            yield return StartCoroutine(InputManager.Instance.WaitForInputCoroutine(() => gotInput = true));
+
+            // hide all HUDs once input is received
+            if (uiManager != null) uiManager.HideAll();
+        }
+        else
+        {
+            // fallback small delay if no InputManager
+            yield return new WaitForSecondsRealtime(0.05f);
+            if (uiManager != null) uiManager.HideAll();
+        }
 
         yield return StartCoroutine(screenFader.FadeInSequence(0.5f));
         _playerMovement.SetCanMove(true);
