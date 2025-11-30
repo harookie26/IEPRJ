@@ -25680,6 +25680,69 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4380012160256553706, guid: efea8c502a767804f8933d33ea5f57c4, type: 3}
+--- !u!1001 &1416124764
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5060160195064216872, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5415439728503869291, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ToggleSettings
+      objectReference: {fileID: 0}
+    - target: {fileID: 6769614426125021450, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+      propertyPath: m_Name
+      value: Setting With Audio Manager Container
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects:
+    - {fileID: 5500761897896060126, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+    - {fileID: 708428975370389540, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 967793d81f47f1a4abaf83dea14e7015, type: 3}
 --- !u!1001 &1435707608
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -39505,3 +39568,4 @@ SceneRoots:
   - {fileID: 1488677192}
   - {fileID: 1979788544}
   - {fileID: 294213431}
+  - {fileID: 1416124764}
