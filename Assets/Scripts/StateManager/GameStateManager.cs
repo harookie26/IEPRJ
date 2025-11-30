@@ -77,19 +77,19 @@ public class GameStateManager : MonoBehaviour
 
         UpdateLevelProgress();
 
-        if (playerChanneller != null)
-        {
-            int channeledPaintings = playerChanneller.GetChannelledPaintingCount();
+        //if (playerChanneller != null)
+        //{
+        //    int channeledPaintings = playerChanneller.GetChannelledPaintingCount();
             
-            if (channeledPaintings >= 5)
-            {
-                // Start the win sequence only once
-                if (!isWinSequenceRunning)
-                {
-                    StartCoroutine(WinGameSequence());
-                }
-            }
-        }
+        //    if (channeledPaintings >= 5)
+        //    {
+        //        // Start the win sequence only once
+        //        if (!isWinSequenceRunning)
+        //        {
+        //            StartCoroutine(WinGameSequence());
+        //        }
+        //    }
+        //}
     }
 
     private void PauseGame()

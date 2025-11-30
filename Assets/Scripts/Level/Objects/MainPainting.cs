@@ -7,6 +7,13 @@ public class MainPainting : MonoBehaviour
     [SerializeField] private GameObject cover3;
     [SerializeField] private GameObject cover4;
 
+    [SerializeField] private BoxCollider winCollider;
+
+    private void Start()
+    {
+        winCollider.enabled = false;
+    }
+
     private void Update()
     {
         UpdatePaintingCovers();

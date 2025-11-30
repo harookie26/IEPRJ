@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Level.UI;
@@ -92,6 +93,14 @@ public class UIManager : MonoBehaviour
 
         pendingHudKey = key;
 
+        // Interact HUD should display immediately regardless of idle state
+        if (string.Equals(key, Keys.Interact, StringComparison.OrdinalIgnoreCase))
+        {
+            ShowHUDImmediate(key);
+            pendingHudKey = null;
+            return;
+        }
+
         if (playerStateMachine != null && playerStateMachine.IsIdle)
         {
             ShowHUDImmediate(key);
@@ -122,6 +131,15 @@ public class UIManager : MonoBehaviour
         {
             pendingHudKey = null;
             HideAllHUDs();
+            return;
+        }
+
+        // If this is the interact HUD, allow it to show immediately regardless of idle state
+        if (hud == interactHUD)
+        {
+            HideAllHUDs();
+            hud.SetActive(true);
+            AnimateHUD(hud);
             return;
         }
 
