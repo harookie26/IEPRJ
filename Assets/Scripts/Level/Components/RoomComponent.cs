@@ -23,6 +23,8 @@ public class RoomComponent : MonoBehaviour, IRoom
     public Bounds Bounds => boundsCollider != null ? boundsCollider.bounds : new Bounds();
     public BoxCollider BoundsCollider => boundsCollider;
 
+    public bool isCorrupted = false; 
+
     public bool IsPlayerInside { get; private set; }
 
     private void OnValidate()

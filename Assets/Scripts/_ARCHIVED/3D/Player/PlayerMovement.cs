@@ -65,6 +65,9 @@ public class PlayerMovement : MonoBehaviour
 
     private bool canMove;
 
+    // Reference to the player's collectible manager for checking powerups like the Mop
+    private PlayerCollectibleManager collectibleManager;
+
     private void Awake()
     {
         playerInput = GetComponent<PlayerInput>();
@@ -90,6 +93,9 @@ public class PlayerMovement : MonoBehaviour
         desiredRotation = transform.rotation;
 
         canMove = true;
+
+        // Cache the collectible manager if present
+        collectibleManager = FindFirstObjectByType<PlayerCollectibleManager>();
     }
 
     private void Start()
@@ -184,7 +190,14 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!canMove) return;
 
-        float effectiveSpeed = moveSpeed * (isInCorruptedRoom ? corruptedSpeedMultiplier : 1f);
+        // Use room's isCorrupted flag when available to compute effective speed
+        bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
+
+        // If player has collected the "Mop" powerup, ignore corrupted speed debuff
+        bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
+
+        float effectiveSpeed = moveSpeed * ((roomCorrupted && !hasMop) ? corruptedSpeedMultiplier : 1f);
+
         Vector3 delta = currentMoveDirection * effectiveSpeed * Time.fixedDeltaTime;
 
         // Reset focus assist signal each physics step; recompute below

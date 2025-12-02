@@ -82,6 +82,7 @@ public class CheckpointManager : MonoBehaviour
         // Show respawn HUD while waiting for player input
         if (uiManager != null)
         {
+            uiManager.HideAll();
             uiManager.ShowRespawnHUD();
         }
 
