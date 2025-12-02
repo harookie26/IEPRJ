@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using static EventNames;
 
 public class DialogueManager : MonoBehaviour
@@ -9,10 +11,12 @@ public class DialogueManager : MonoBehaviour
     public static DialogueManager Instance { get; private set; }
 
     [Header("UI Components")]
-
     [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private TextMeshProUGUI characterNameText;
     [SerializeField] private TextMeshProUGUI dialogueLineText;
+
+    [Header("Dialogue Settings")]
+    [SerializeField] private float dialogueSpeed = 0.05f;
 
     private Queue<string> dialogueQueue = new();
     private Action onDialogueComplete;
@@ -40,25 +44,16 @@ public class DialogueManager : MonoBehaviour
         int index = dialogueIndices[objectKey];
 
         if (index >= dialogueIDs.Length)
-        {
-            Debug.Log($"All dialogues for '{objectKey}' have been completed.");
             return;
-        }
 
         string dialogueID = dialogueIDs[index];
 
         if (HasCompletedDialogue(dialogueID))
-        {
-            Debug.Log($"Dialogue '{dialogueID}' already completed.");
             return;
-        }
 
         Dialogue dialogue = fetchDialogue(dialogueID);
         if (dialogue == null)
-        {
-            Debug.LogWarning($"Dialogue '{dialogueID}' not found.");
             return;
-        }
 
         ShowDialogue(dialogue, () =>
         {
@@ -72,8 +67,7 @@ public class DialogueManager : MonoBehaviour
     {
         EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_START);
 
-        
-        dialoguePanel.gameObject.SetActive(true);
+        dialoguePanel.SetActive(true);
         characterNameText.gameObject.SetActive(true);
         dialogueLineText.gameObject.SetActive(true);
 
@@ -81,18 +75,15 @@ public class DialogueManager : MonoBehaviour
         dialogueQueue.Clear();
 
         foreach (string line in dialogue.dialogueLines)
-        {
             dialogueQueue.Enqueue(line);
-        }
 
         onDialogueComplete = () =>
         {
             onComplete?.Invoke();
-            EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_END); 
+            EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_END);
         };
 
         ShowNextLine();
-
     }
 
     private void ShowNextLine()
@@ -104,20 +95,31 @@ public class DialogueManager : MonoBehaviour
         }
 
         string nextLine = dialogueQueue.Dequeue();
-        dialogueLineText.text = nextLine;
 
-        if (InputManager.Instance != null)
+        StopAllCoroutines();
+        StartCoroutine(ShowLineRoutine(nextLine));
+    }
+
+    private IEnumerator ShowLineRoutine(string line)
+    {
+        dialogueLineText.text = "";
+        foreach (char c in line)
         {
-            InputManager.Instance.StartCoroutine(InputManager.Instance.WaitForInputCoroutine(() =>
-            {
-                ShowNextLine();
-            }));
+            dialogueLineText.text += c;
+            yield return new WaitForSeconds(dialogueSpeed);
         }
-        else
+
+        // Explicitly wait until input is detected
+        yield return new WaitUntil(() =>
         {
-            Debug.LogWarning("InputManager not found. Skipping input wait.");
-            ShowNextLine();
-        }
+            // Use InputManager if available, otherwise raw InputSystem
+            if (InputManager.Instance != null)
+                return InputManager.Instance.WasInteractPressed() || InputManager.Instance.WasAnyKeyExceptChannelPressed();
+
+            return Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
+        });
+
+        ShowNextLine();
     }
 
     private void EndDialogue()
@@ -133,5 +135,4 @@ public class DialogueManager : MonoBehaviour
     {
         return completedDialogues.Contains(dialogueID);
     }
-
 }
