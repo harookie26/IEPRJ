@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Level.UI;
+using TMPro;
 
 public class UIManager : MonoBehaviour
 {
@@ -10,6 +11,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject stairDownHUD;
     [SerializeField] private GameObject channelHUD;
     [SerializeField] private GameObject respawnHUD;
+    [SerializeField] private GameObject collectibleHUD;
+
+    public TMP_Text collectibleText;
 
     [Header("Fade Transition Settings")]
     [SerializeField] private GameObject fadePanel;
@@ -23,6 +27,8 @@ public class UIManager : MonoBehaviour
         public const string StairUp = "stair_up";
         public const string StairDown = "stair_down";
         public const string Channel = "channel";
+        public const string Respawn = "respawn";
+        public const string Collectible = "collectible";
     }
 
     private Dictionary<string, GameObject> hudMap;
@@ -31,6 +37,9 @@ public class UIManager : MonoBehaviour
 
     private string pendingHudKey;
     private string forceHudKey; // HUD shown regardless of idle state
+
+    // Track collectible HUD coroutine so repeated collections reset the timer
+    private Coroutine collectibleHudCoroutine;
 
     private void Awake()
     {
@@ -100,7 +109,9 @@ public class UIManager : MonoBehaviour
             { Keys.Interact, interactHUD },
             { Keys.StairUp, stairUpHUD },
             { Keys.StairDown, stairDownHUD },
-            { Keys.Channel, channelHUD }
+            { Keys.Channel, channelHUD },
+            { Keys.Respawn, respawnHUD },
+            { Keys.Collectible, collectibleHUD }
         };
     }
 
@@ -213,11 +224,21 @@ public class UIManager : MonoBehaviour
 
         foreach (var kv in hudMap)
         {
-            if (kv.Value != null) kv.Value.SetActive(false);
+            if (kv.Value == null) continue;
+
+            // If a HUD is being forced/shown (forceHudKey), don't hide it here.
+            if (!string.IsNullOrEmpty(forceHudKey) &&
+                string.Equals(kv.Key, forceHudKey, System.StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            kv.Value.SetActive(false);
         }
 
-        // Also ensure respawn HUD is hidden when hiding all
-        if (respawnHUD != null) respawnHUD.SetActive(false);
+        // Also ensure respawn HUD is hidden when hiding all (unless forced)
+        if (respawnHUD != null && (string.IsNullOrEmpty(forceHudKey) || !string.Equals(forceHudKey, Keys.Respawn, System.StringComparison.OrdinalIgnoreCase)))
+            respawnHUD.SetActive(false);
     }
 
     private void AnimateHUD(GameObject hud)
@@ -263,6 +284,59 @@ public class UIManager : MonoBehaviour
     {
         if (respawnHUD == null) return;
         respawnHUD.SetActive(false);
+    }
+
+    // Public helper to show the collectible HUD with text and auto-hide after a duration
+    public void ShowCollectibleHUD(string collectibleId, float displaySeconds = 3f)
+    {
+        if (string.IsNullOrEmpty(collectibleId)) return;
+
+        // Stop any previous collectible HUD hide coroutine so repeated collects reset timer
+        if (collectibleHudCoroutine != null)
+        {
+            StopCoroutine(collectibleHudCoroutine);
+            collectibleHudCoroutine = null;
+        }
+
+        // Mark collectible as forced so other hide calls don't immediately hide it
+        forceHudKey = Keys.Collectible;
+
+        // Update text
+        if (collectibleText != null)
+        {
+            collectibleText.text = collectibleId + "!";
+        }
+
+        // Activate HUD
+        if (collectibleHUD != null)
+        {
+            try
+            {
+                if (collectibleHUD.transform.parent != null)
+                    collectibleHUD.transform.SetAsLastSibling();
+            }
+            catch { }
+
+            collectibleHUD.SetActive(true);
+            AnimateHUD(collectibleHUD);
+        }
+
+        // Start auto-hide coroutine
+        collectibleHudCoroutine = StartCoroutine(HideCollectibleHUDAfter(displaySeconds));
+    }
+
+    private System.Collections.IEnumerator HideCollectibleHUDAfter(float seconds)
+    {
+        if (seconds <= 0f) seconds = 0.1f;
+        yield return new WaitForSeconds(seconds);
+
+        // Clear reference before hiding
+        collectibleHudCoroutine = null;
+        // Clear forced key so HideAllHUDs will hide collectible HUD
+        if (string.Equals(forceHudKey, Keys.Collectible, System.StringComparison.OrdinalIgnoreCase))
+            forceHudKey = null;
+
+        HideAllHUDs();
     }
 
     // Hide a specific HUD by key

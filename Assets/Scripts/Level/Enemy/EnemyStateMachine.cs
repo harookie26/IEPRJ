@@ -334,10 +334,17 @@ public class EnemyStateMachine : MonoBehaviour
             {
                 if (r == null) continue;
                 var b = r.Bounds;
-                if (b.size.sqrMagnitude > Mathf.Epsilon && b.Contains(paintingWorldPosition))
+                // Some paintings are mounted on walls and may have a Y outside the room bounds.
+                // Normalize the test position Y to the room center Y so XZ containment is used.
+                if (b.size.sqrMagnitude > Mathf.Epsilon)
                 {
-                    paintingRoom = r;
-                    break;
+                    var testPos = paintingWorldPosition;
+                    testPos.y = b.center.y;
+                    if (b.Contains(testPos))
+                    {
+                        paintingRoom = r;
+                        break;
+                    }
                 }
             }
         }
