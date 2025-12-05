@@ -11,7 +11,7 @@ public class SettingsScript : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape) && (SceneManager.GetActiveScene().name == "Main"))
         {
             ToggleSettings();
-            
+
         }
     }
 
@@ -32,8 +32,17 @@ public class SettingsScript : MonoBehaviour
         }
         else
         {
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
+            if (SceneManager.GetActiveScene().name == "MainMenu")
+            {
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+            }
+            else
+            {
+                Cursor.visible = false;
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+
         }
     }
 }

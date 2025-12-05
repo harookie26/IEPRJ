@@ -48,8 +48,8 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: 7833122117494664109}
   - {fileID: -132092769556455022}
-  - {fileID: 1724017859045675053}
-  m_RendererFeatureMap: ad6b866f10d7b46c92a1307153b62afe2dd0d8ca1bf1ec17
+  - {fileID: 7594550730182945728}
+  m_RendererFeatureMap: ad6b866f10d7b46c92a1307153b62afec0eb3cc5a6436569
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -78,7 +78,7 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
---- !u!114 &1724017859045675053
+--- !u!114 &7594550730182945728
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -93,7 +93,7 @@ MonoBehaviour:
   m_Active: 1
   settings:
     blackoutMaterial: {fileID: 2100000, guid: b7b4fa5f1e4f0c04b9dbce5c76cd3782, type: 2}
-    injectionPoint: 1000
+    injectionPoint: 600
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0
