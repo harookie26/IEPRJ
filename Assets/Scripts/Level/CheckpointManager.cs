@@ -70,8 +70,13 @@ public class CheckpointManager : MonoBehaviour
             _enemySavedDistractedPaintingPosition = Vector3.zero;
             _enemySavedStateName = "NoEnemyStateMachine";
         }
-        
+
         Debug.Log($"[CheckpointManager] Checkpoint saved at index {_currentCheckpointIndex}. PlayerPos: {_playerSavedPosition}, EnemyPos: {_enemySavedPosition}, EnemyState: {_enemySavedStateName}");
+    }
+
+    public void StartReturnToCheckpoint()
+    {
+        StartCoroutine(ReturnToCheckpoint());
     }
 
     public IEnumerator ReturnToCheckpoint()

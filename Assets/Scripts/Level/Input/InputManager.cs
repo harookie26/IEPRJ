@@ -179,7 +179,7 @@ public class InputManager : MonoBehaviour
             corruptedRoomPressed = Keyboard.current != null && Keyboard.current.zKey.wasPressedThisFrame;
 
             // New stealth key detection (F)
-            stealthPressed = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
+            //stealthPressed = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
 
             // Debug mode toggle (F12)
             debugModePressed = Keyboard.current != null && Keyboard.current.f12Key.wasPressedThisFrame;

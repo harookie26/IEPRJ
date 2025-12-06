@@ -6,22 +6,17 @@ public class PlayerStateMachine : MonoBehaviour
 {
     IPlayerState _currentState;
 
-    // --- NEW: public helper for querying current state ---
     public enum PlayerStateKind { Unknown, Default, Idle, Channel, Hiding }
     public PlayerStateKind CurrentState { get; private set; } = PlayerStateKind.Unknown;
 
-    // expose runtime type / name if needed
     public Type CurrentStateType => _currentState?.GetType();
     public string CurrentStateName => _currentState?.GetType().Name ?? "None";
 
-    // generic helper
     public bool IsState<T>() where T : IPlayerState => _currentState is T;
-    // ----------------------------------------------------
 
     public event Action HidingEntered;
     public event Action HidingExited;
 
-    // New idle events
     public event Action IdleEntered;
     public event Action IdleExited;
 
@@ -40,7 +35,6 @@ public class PlayerStateMachine : MonoBehaviour
     [Tooltip("Seconds of no input before entering Idle state")]
     public float idleDelay = 3f;
 
-    // If > 0, while the player remains idle, periodically restart the idle trail VFX every this many seconds
     [Tooltip("Seconds between automatic restarts of the idle trail while player remains idle. Set to 0 to disable.")]
     public float idleTrailRestartInterval = 5f;
 
@@ -69,7 +63,6 @@ public class PlayerStateMachine : MonoBehaviour
     private float hideCooldown = 0.2f;
     private float hideCooldownTimer = 0f;
 
-    // idle timer
     private float idleTimer = 0f;
 
     void Start()

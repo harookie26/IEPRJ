@@ -22,12 +22,6 @@ public class GameStateManager : MonoBehaviour
 
     public int currentLevelProgress = 0;
 
-    // currentLevelProgress = 0 - no paintings restored
-    // currentLevelProgress = 1 - 1 painting restored
-    // currentLevelProgress = 2 - 2 paintings restored
-    // currentLevelProgress = 3 - 3 paintings restored
-    // currentLevelProgress = 4 - 4 paintings restored
-
     // Guard to ensure the win sequence only runs once
     private bool isWinSequenceRunning = false;
 
@@ -76,41 +70,36 @@ public class GameStateManager : MonoBehaviour
         }
 
         UpdateLevelProgress();
-
-        //if (playerChanneller != null)
-        //{
-        //    int channeledPaintings = playerChanneller.GetChannelledPaintingCount();
-        //
-        //    if (channeledPaintings >= 5)
-        //    {
-        //        // Start the win sequence only once
-        //        if (!isWinSequenceRunning)
-        //        {
-        //            StartCoroutine(WinGameSequence());
-        //        }
-        //    }
-        //}
     }
 
-    private void PauseGame()
+    public void PauseGame()
     {
-        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
-        Time.timeScale = 0.00000001f;
+        // Avoid re-entry: this method is the handler for ON_GAME_PAUSE.
+        // The event should be posted by the caller (UI / other systems).
+        if (isGamePaused) return;
+
+        isGamePaused = true;
+
+        // Use a firm pause. Previously a tiny non-zero value was used; using 0f is clearer.
+        Time.timeScale = 0f;
 
         if (enemy != null)
             enemy.Freeze();
     }
 
-    private void ResumeGame()
+    public void ResumeGame()
     {
-        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
+        if (!isGamePaused) return;
+
+        isGamePaused = false;
+
         Time.timeScale = 1f;
 
         if (enemy != null)
             enemy.Unfreeze();
     }
 
-    private void OnApplicationQuit()
+    public void OnApplicationQuit()
     {
         PlayerPrefs.DeleteKey("Hub");
         PlayerPrefs.Save();
