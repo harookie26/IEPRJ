@@ -1361,7 +1361,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
         /// </summary>
         /// <remarks>
-        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no _side-effects.
         /// </remarks>
         /// <seealso cref="PlayerActions" />
         private void UnregisterCallbacks(IPlayerActions instance)
@@ -1553,7 +1553,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
         /// </summary>
         /// <remarks>
-        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no _side-effects.
         /// </remarks>
         /// <seealso cref="UIActions" />
         private void UnregisterCallbacks(IUIActions instance)

@@ -37,7 +37,7 @@ public class PlayerHidingState : IPlayerState
     // Rotation while hiding
     float _rotationLerpSpeed = 10f;
     bool _rotateTowardMovementAlongWall = true;
-    bool _maintainUpright = true; // NEW: ensure player stays vertically upright
+    bool _maintainUpright = true; // NEW: ensure _player stays vertically upright
 
     bool _ignoreInteractThisFrame = true;
 
@@ -103,7 +103,7 @@ public class PlayerHidingState : IPlayerState
                 Vector3 tentative = Vector3.Cross(Vector3.up, _basisNormal);
                 if (tentative.sqrMagnitude < 1e-4f)
                 {
-                    // Normal is (almost) vertical; fallback: use player's right or any horizontal axis
+                    // Normal is (almost) vertical; fallback: use _player's right or any horizontal axis
                     tentative = Vector3.Cross(_owner.transform.right, _basisNormal);
                 }
                 _basisTangent = tentative.normalized;
@@ -115,7 +115,7 @@ public class PlayerHidingState : IPlayerState
             // 3. Outward for positioning & rotation
             Vector3 outwardForOffset = _basisNormal;
 
-            // Keep player upright for visual rotation if requested
+            // Keep _player upright for visual rotation if requested
             Vector3 outwardForRotation = outwardForOffset;
             if (_maintainUpright)
             {

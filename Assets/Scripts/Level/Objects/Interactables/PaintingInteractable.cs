@@ -40,7 +40,7 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        // Find the enemy state machine in the scene and tell it to distract at this painting.
+        // Find the _enemy state machine in the scene and tell it to distract at this painting.
         var enemyStateMachine = FindFirstObjectByType<EnemyStateMachine>();
         if (enemyStateMachine == null)
         {
@@ -80,7 +80,7 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
             if (gameState != null)
             {
                 gameState.TriggerWinSequence();
-                // No need to distract enemy if win sequence will start
+                // No need to distract _enemy if win sequence will start
                 return;
             }
             else

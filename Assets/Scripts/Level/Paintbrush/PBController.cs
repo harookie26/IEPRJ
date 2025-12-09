@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[FoldableInspector]
 public class PBController : MonoBehaviour
 {
     public enum Mode { Follow, Manual }

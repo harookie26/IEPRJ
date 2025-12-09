@@ -88,7 +88,7 @@ public class PlayerStateMachine : MonoBehaviour
         if (hideCooldownTimer > 0f)
             hideCooldownTimer -= Time.deltaTime;
 
-        // Detect any player input / activity this frame
+        // Detect any _player input / activity this frame
         bool inputDetected = DetectInput();
 
         if (inputDetected)
@@ -354,7 +354,7 @@ public class PlayerStateMachine : MonoBehaviour
         public void Enter()
         {
             Debug.Log("PlayerStateMachine: Enter IdleState");
-            // Notify listeners that player is idle
+            // Notify listeners that _player is idle
             _owner.NotifyIdleEntered();
             // Add any idle-specific setup here (e.g. play idle animation)
 
@@ -384,7 +384,7 @@ public class PlayerStateMachine : MonoBehaviour
         public void Exit()
         {
             Debug.Log("PlayerStateMachine: Exit IdleState");
-            // Notify listeners that player left idle
+            // Notify listeners that _player left idle
             _owner.NotifyIdleExited();
             // Cleanup idle-specific state
 
@@ -475,7 +475,7 @@ public class PlayerStateMachine : MonoBehaviour
         {
             _time += Time.deltaTime;
 
-            // Follow ground height under player
+            // Follow ground height under _player
             float groundY = SampleGroundY(_owner.transform.position);
             if (!float.IsNaN(groundY))
                 _lastGroundY = groundY;

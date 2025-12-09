@@ -115,7 +115,7 @@ public class LevelDebugger : MonoBehaviour
         if (spawnEnemyButton != null)
         {
             spawnEnemyButton.onClick.AddListener(SpawnEnemy);
-            // set initial interactable state based on enemy presence
+            // set initial interactable state based on _enemy presence
             if (enemy != null)
                 spawnEnemyButton.interactable = !enemy.activeSelf;
             else
@@ -196,7 +196,7 @@ public class LevelDebugger : MonoBehaviour
         if (debugPanel != null)
             debugPanel.SetActive(true);
 
-        // save and show/unlock cursor so player can interact with UI
+        // save and show/unlock cursor so _player can interact with UI
         previousCursorVisible = Cursor.visible;
         previousLockState = Cursor.lockState;
         Cursor.visible = true;
@@ -239,7 +239,7 @@ public class LevelDebugger : MonoBehaviour
     {
         if (player == null || playerToggle == null) return;
 
-        // flip player, then update toggle without firing the listener
+        // flip _player, then update toggle without firing the listener
         player.SetActive(!player.activeSelf);
         suppressToggleEvents = true;
         playerToggle.isOn = player.activeSelf;

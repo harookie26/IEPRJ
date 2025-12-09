@@ -65,7 +65,7 @@ public class PlayerMovement : MonoBehaviour
 
     private bool canMove;
 
-    // Reference to the player's collectible manager for checking powerups like the Mop
+    // Reference to the _player's collectible manager for checking powerups like the Mop
     private PlayerCollectibleManager collectibleManager;
 
     private void Awake()
@@ -193,7 +193,7 @@ public class PlayerMovement : MonoBehaviour
         // Use room's isCorrupted flag when available to compute effective speed
         bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
 
-        // If player has collected the "Mop" powerup, ignore corrupted speed debuff
+        // If _player has collected the "Mop" powerup, ignore corrupted speed debuff
         bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
 
         float effectiveSpeed = moveSpeed * ((roomCorrupted && !hasMop) ? corruptedSpeedMultiplier : 1f);
@@ -204,7 +204,7 @@ public class PlayerMovement : MonoBehaviour
         IsTouchingWalls = false;
         IsAtRoomCorner = false;
 
-        // Use Rigidbody-based movement only (we ensure rb exists in Awake)
+        // Use Rigidbody-based movement only (we ensure _rb exists in Awake)
         if (rb != null)
         {
             Vector3 basePos = rb.position;

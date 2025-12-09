@@ -5,7 +5,7 @@ using System.Collections;
 public class LevelCameraDefault : MonoBehaviour
 {
     [SerializeField] private float smoothSpeed = 0.125f;
-    public Vector3 offset; // current active offset (auto switches based on room tag)
+    public Vector3 offset;
 
     [Header("Dynamic Offsets")]
     [Tooltip("Base offset used for normal rooms.")]
@@ -19,7 +19,7 @@ public class LevelCameraDefault : MonoBehaviour
     private Camera cam;
 
     private RoomComponent[] roomsCache;
-    private RoomComponent previousRoom; // track changes
+    private RoomComponent previousRoom;
 
     [Header("Focus Assist")]
     [Tooltip("Rotate toward the player to keep them centered.")]
@@ -46,13 +46,13 @@ public class LevelCameraDefault : MonoBehaviour
     private float targetFov; // Desired FOV we lerp toward
 
     // --- TEMP FOCUS OVERRIDE ---
-    private Transform focusTarget; // current subject camera centers on (defaults to player)
+    private Transform focusTarget; // current subject camera centers on (defaults to _player)
     private Coroutine focusOverrideRoutine;
     [Header("Enemy Focus Settings")]
     [SerializeField] private string enemyTag = "Enemy";
     [Tooltip("Duration (seconds) to stay focused on enemy after zoom in. 0 = until manually reverted.")]
     [SerializeField] private float enemyFocusDurationOnZoomIn = 2f;
-    private Transform lastEnemyFocus; // cache last targeted enemy
+    private Transform lastEnemyFocus; // cache last targeted _enemy
 
     [Header("Enemy Focus Offset")]
     [Tooltip("Offset applied to camera position while focusing on an enemy. If zero, falls back to normal offset.")]
@@ -137,7 +137,7 @@ public class LevelCameraDefault : MonoBehaviour
         if (player == null || cam == null)
             return;
 
-        // Resolve current room from player position (fast overlap) similar to companion camera.
+        // Resolve current room from _player position (fast overlap) similar to companion camera.
         ResolvePlayerRoomAtPosition();
 
         if (roomsCache == null || roomsCache.Length == 0)
@@ -187,7 +187,7 @@ public class LevelCameraDefault : MonoBehaviour
         Vector3 subjectPos = subject.position;
         Vector3 targetPos = new Vector3(subjectPos.x, subjectPos.y, 0) + offset;
 
-        // If we are focusing on an enemy (not the player) use enemy-specific offset (if provided) and bypass room clamping.
+        // If we are focusing on an _enemy (not the _player) use _enemy-specific offset (if provided) and bypass room clamping.
         if (!IsFocusingOnPlayer() && focusTarget == lastEnemyFocus && lastEnemyFocus != null)
         {
             Vector3 effectiveEnemyOffset = enemyFocusOffset == Vector3.zero ? offset : enemyFocusOffset;
@@ -196,7 +196,6 @@ public class LevelCameraDefault : MonoBehaviour
             transform.position = smoothedEnemy;
             transform.rotation = ComputeCenterLookRotation(smoothedEnemy, subject);
             cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFov, Mathf.Clamp01(fovLerpSpeed * Time.deltaTime));
-            UpdateBlackoutMaterial(); // blackout still based on player's current room
             return;
         }
 
@@ -206,7 +205,6 @@ public class LevelCameraDefault : MonoBehaviour
             transform.position = smoothedPos;
             transform.rotation = ComputeCenterLookRotation(smoothedPos, subject);
             cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFov, Mathf.Clamp01(fovLerpSpeed * Time.deltaTime));
-            UpdateBlackoutMaterial();
             return;
         }
 
@@ -245,8 +243,6 @@ public class LevelCameraDefault : MonoBehaviour
         transform.rotation = ComputeCenterLookRotation(smoothed, subject);
 
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFov, Mathf.Clamp01(fovLerpSpeed * Time.deltaTime));
-
-        UpdateBlackoutMaterial();
     }
 
     private void OnRoomChanged(RoomComponent previous, RoomComponent current)
@@ -267,40 +263,11 @@ public class LevelCameraDefault : MonoBehaviour
         }
     }
 
-    private void UpdateBlackoutMaterial()
-    {
-        // Enable context for renderer feature regardless of local blackoutMaterial (feature owns its material)
-        if (!blackoutOutsideRoom || currentRoom == null)
-        {
-            RoomBoundsBlackoutContext.Enabled = false;
-            return;
-        }
-        Bounds b = currentRoom.Bounds;
-        if (shrinkVerticalToPlayerLevel && player != null)
-        {
-            float thick = Mathf.Max(0.1f, verticalThickness);
-            float centerY = player.position.y;
-            b.min = new Vector3(b.min.x, centerY - thick * 0.5f, b.min.z);
-            b.max = new Vector3(b.max.x, centerY + thick * 0.5f, b.max.z);
-        }
-        RoomBoundsBlackoutContext.Enabled = true;
-        RoomBoundsBlackoutContext.RoomMin = b.min;
-        RoomBoundsBlackoutContext.RoomMax = b.max;
-        RoomBoundsBlackoutContext.SoftMargin = Mathf.Max(0f, blackoutSoftMargin);
-        // If a local material is assigned (OnRenderImage fallback) still update it.
-        if (blackoutMaterial != null)
-        {
-            blackoutMaterial.SetVector("_RoomMin", b.min);
-            blackoutMaterial.SetVector("_RoomMax", b.max);
-            blackoutMaterial.SetFloat("_SoftMargin", Mathf.Max(0f, blackoutSoftMargin));
-        }
-    }
-
     private void ResolvePlayerRoomAtPosition()
     {
         if (playerMovement == null) return;
         Vector3 playerPos = playerMovement.transform.position;
-        // Small overlap sphere to find room colliders quickly.
+        // Small overlap sphere to find room _colliders quickly.
         Collider[] hits = Physics.OverlapSphere(playerPos, 0.05f, ~0, QueryTriggerInteraction.Collide);
         for (int i = 0; i < hits.Length; i++)
         {

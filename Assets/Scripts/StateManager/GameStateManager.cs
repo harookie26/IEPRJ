@@ -1,34 +1,33 @@
 using UnityEngine;
 using static EventNames.GameStateEvents;
 using UnityEngine.SceneManagement;
-using Unity.VisualScripting;
 using System.Collections;
 
+[FoldableInspector]
 public class GameStateManager : MonoBehaviour
 {
-    private bool isGamePaused;
+    private bool _isGamePaused;
 
-    private InputManager inputManager;
+    private InputManager _inputManager;
 
-    private bool debugMode = false;
+    private bool _debugMode = false;
 
-    private EnemyStateMachine enemy;
+    private EnemyStateMachine _enemy;
 
     private PlayerChanneller playerChanneller;
 
-    private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
+    private ScreenFader _screenFader => FindFirstObjectByType<ScreenFader>();
 
-    private SceneLoader sceneLoader => FindFirstObjectByType<SceneLoader>();
+    private SceneLoader _sceneLoader => FindFirstObjectByType<SceneLoader>();
 
     public int currentLevelProgress = 0;
 
-    // Guard to ensure the win sequence only runs once
-    private bool isWinSequenceRunning = false;
+    private bool _isWinSequenceRunning = false;
 
     private void Awake()
     {
-        inputManager = InputManager.Instance;
-        enemy = FindFirstObjectByType<EnemyStateMachine>();
+        _inputManager = InputManager.Instance;
+        _enemy = FindFirstObjectByType<EnemyStateMachine>();
         playerChanneller = FindFirstObjectByType<PlayerChanneller>();
     }
 
@@ -46,18 +45,18 @@ public class GameStateManager : MonoBehaviour
 
     void Start()
     {
-        isGamePaused = false;
+        _isGamePaused = false;
     }
 
     void Update()
     {
-        if (inputManager == null)
-            inputManager = InputManager.Instance;
+        if (_inputManager == null)
+            _inputManager = InputManager.Instance;
 
-        if (inputManager != null && inputManager.WasDebugModePressed())
+        if (_inputManager != null && _inputManager.WasDebugModePressed())
         {
-            debugMode = !debugMode;
-            if (debugMode)
+            _debugMode = !_debugMode;
+            if (_debugMode)
             {
                 EventBroadcaster.Instance.PostEvent(ON_DEBUG_MODE_ON);
                 Debug.Log("[GameStateManager] Debug mode ON");
@@ -74,29 +73,26 @@ public class GameStateManager : MonoBehaviour
 
     public void PauseGame()
     {
-        // Avoid re-entry: this method is the handler for ON_GAME_PAUSE.
-        // The event should be posted by the caller (UI / other systems).
-        if (isGamePaused) return;
+        if (_isGamePaused) return;
 
-        isGamePaused = true;
+        _isGamePaused = true;
 
-        // Use a firm pause. Previously a tiny non-zero value was used; using 0f is clearer.
         Time.timeScale = 0f;
 
-        if (enemy != null)
-            enemy.Freeze();
+        if (_enemy != null)
+            _enemy.Freeze();
     }
 
     public void ResumeGame()
     {
-        if (!isGamePaused) return;
+        if (!_isGamePaused) return;
 
-        isGamePaused = false;
+        _isGamePaused = false;
 
         Time.timeScale = 1f;
 
-        if (enemy != null)
-            enemy.Unfreeze();
+        if (_enemy != null)
+            _enemy.Unfreeze();
     }
 
     public void OnApplicationQuit()
@@ -107,37 +103,31 @@ public class GameStateManager : MonoBehaviour
 
     private IEnumerator WinGameSequence()
     {
-        // Avoid re-entry
-        if (isWinSequenceRunning)
+        if (_isWinSequenceRunning)
             yield break;
 
-        isWinSequenceRunning = true;
+        _isWinSequenceRunning = true;
 
-        // Ensure timeScale is normal so fade (if implemented with scaled time) can run
         Time.timeScale = 1f;
 
-        Debug.Log("[GameStateManager] Starting WinGameSequence. screenFader=" + (screenFader != null) + ", sceneLoader=" + (sceneLoader != null));
+        Debug.Log("[GameStateManager] Starting WinGameSequence. screenFader=" + (_screenFader != null) + ", sceneLoader=" + (_sceneLoader != null));
 
-        // If there's a screen fader, run its fade out sequence and wait for it to finish
-        if (screenFader != null)
+        if (_screenFader != null)
         {
-            // Prefer yielding the IEnumerator directly so it's awaited here
-            yield return screenFader.FadeOutSequence(0.5f);
+            yield return _screenFader.FadeOutSequence(0.5f);
         }
         else
         {
             Debug.LogWarning("[GameStateManager] No ScreenFader found in scene. Skipping fade.");
         }
 
-        // Optional extra delay after fade completes (use realtime so it's independent of Time.timeScale)
         float postFadeDelay = 0.25f;
         if (postFadeDelay > 0f)
             yield return new WaitForSecondsRealtime(postFadeDelay);
 
-        // Finally load the main menu
-        if (sceneLoader != null)
+        if (_sceneLoader != null)
         {
-            sceneLoader.LoadSceneByName("MainMenu");
+            _sceneLoader.LoadSceneByName("MainMenu");
         }
         else
         {
@@ -146,10 +136,9 @@ public class GameStateManager : MonoBehaviour
         }
     }
 
-    // Public wrapper so other objects can trigger the win sequence
     public void TriggerWinSequence()
     {
-        if (isWinSequenceRunning)
+        if (_isWinSequenceRunning)
         {
             Debug.Log("[GameStateManager] Win sequence already running. Ignoring TriggerWinSequence call.");
             return;

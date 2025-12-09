@@ -3,17 +3,17 @@ using UnityEngine;
 public class FollowPlayer : MonoBehaviour
 {
     /// <summary>
-    /// The player's transform to follow.
+    /// The _player's transform to follow.
     /// </summary>
     public Transform player;
 
     /// <summary>
-    /// The speed at which the camera follows the player.
+    /// The speed at which the camera follows the _player.
     /// </summary>
     public float smoothSpeed = 0.125f;
 
     /// <summary>
-    /// The offset from the player.
+    /// The offset from the _player.
     /// </summary>
     public Vector3 offset;
 

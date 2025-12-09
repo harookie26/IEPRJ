@@ -56,7 +56,7 @@ public class TrailFollowDynamic : MonoBehaviour
             transform.position = player.position;
         }
 
-        // Do NOT emit at startup to avoid the trail following the player while walking.
+        // Do NOT emit at startup to avoid the trail following the _player while walking.
         if (trailRenderer != null)
             trailRenderer.emitting = false;
 
@@ -211,7 +211,7 @@ public class TrailFollowDynamic : MonoBehaviour
             transform.rotation = Quaternion.LookRotation(dir);
     }
 
-    // call this to start the trail moving from the player toward the target
+    // call this to start the trail moving from the _player toward the target
     public void Launch()
     {
         launched = true;
@@ -225,7 +225,7 @@ public class TrailFollowDynamic : MonoBehaviour
         if (enableDebugLogs) Debug.Log($"[TrailFollowDynamic] Launch called. launched={launched}, target='{(target!=null?target.name:"<null>")}', pos={transform.position}");
     }
 
-    // Reset state and optionally reposition to player so the trail can be restarted multiple times
+    // Reset state and optionally reposition to _player so the trail can be restarted multiple times
     public void Restart()
     {
         launched = false;

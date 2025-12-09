@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Attach to wall GameObjects. Provides a dynamically computed hide anchor (position + normal)
-// nearest to the player when requested. Useful when you don't want to place manual child anchors.
+// nearest to the _player when requested. Useful when you don't want to place manual child anchors.
 [DisallowMultipleComponent]
 public class WallHideAnchor : MonoBehaviour
 {
@@ -22,7 +22,7 @@ public class WallHideAnchor : MonoBehaviour
             Debug.LogWarning($"WallHideAnchor on '{name}' has no Collider. It won't provide anchors.");
     }
 
-    // Try to compute a good anchor point & normal for a given player position.
+    // Try to compute a good anchor point & normal for a given _player position.
     // Returns false if no collider is present.
     public bool TryGetAnchor(Vector3 playerPosition, out Vector3 anchorPosition, out Vector3 anchorNormal)
     {
@@ -35,11 +35,11 @@ public class WallHideAnchor : MonoBehaviour
         // Closest point on collider surface (handles all collider types)
         Vector3 closest = _collider.ClosestPoint(playerPosition);
 
-        // Direction from player to the surface point
+        // Direction from _player to the surface point
         Vector3 dir = closest - playerPosition;
         float dist = dir.magnitude;
 
-        // If the player is exactly on/inside the collider, fallback to a direction away from collider center
+        // If the _player is exactly on/inside the collider, fallback to a direction away from collider center
         if (dist <= 0.001f)
         {
             dir = (playerPosition - _collider.bounds.center).normalized;
@@ -48,7 +48,7 @@ public class WallHideAnchor : MonoBehaviour
             dist = 0.01f;
         }
 
-        // Raycast from the player toward the surface to get an accurate hit.normal and exact hit point if possible
+        // Raycast from the _player toward the surface to get an accurate hit.normal and exact hit point if possible
         RaycastHit hit;
         if (Physics.Raycast(playerPosition, dir.normalized, out hit, dist + 0.25f, ~0, QueryTriggerInteraction.Ignore))
         {
@@ -61,7 +61,7 @@ public class WallHideAnchor : MonoBehaviour
             }
         }
 
-        // Fallback: use closest point and approximate normal as direction from surface toward player (so snapping away moves player outward)
+        // Fallback: use closest point and approximate normal as direction from surface toward _player (so snapping away moves _player outward)
         anchorPosition = closest + ((closest - playerPosition).normalized * snapOffset);
         anchorNormal = (closest - playerPosition).normalized;
         if (anchorNormal.sqrMagnitude <= 0.0001f)
@@ -115,7 +115,7 @@ public class WallHideAnchor : MonoBehaviour
         // 2. Specialized handling for BoxCollider: closest face normal
         if (_collider is BoxCollider box)
         {
-            // Transform player into local space of the box
+            // Transform _player into local space of the box
             Vector3 local = transform.InverseTransformPoint(playerPos);
             Vector3 half = box.size * 0.5f;
 
@@ -141,7 +141,7 @@ public class WallHideAnchor : MonoBehaviour
             // Avoid using vertical normals (ceiling/floor) for hiding
             if (Mathf.Abs(normal.y) > 0.95f)
             {
-                // Force a horizontal side normal fallback
+                // Force a horizontal _side normal fallback
                 normal = transform.forward;
                 if (Mathf.Abs(normal.y) > 0.95f)
                     normal = transform.right;
@@ -155,7 +155,7 @@ public class WallHideAnchor : MonoBehaviour
             return true;
         }
 
-        // 3. Generic fallback: ray from player to closest point
+        // 3. Generic fallback: ray from _player to closest point
         Vector3 closest = _collider.ClosestPoint(playerPos);
         Vector3 dir = (closest - playerPos);
         if (dir.sqrMagnitude < 1e-4f) dir = transform.forward;

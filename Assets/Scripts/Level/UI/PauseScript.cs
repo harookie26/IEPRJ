@@ -2,17 +2,18 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using static EventNames.GameStateEvents;
 
+[FoldableInspector]
 public class PauseScript : MonoBehaviour
 {
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject settingsPanel;
 
-    private GameStateManager gameState => FindFirstObjectByType<GameStateManager>();
+    private GameStateManager _gameState => FindFirstObjectByType<GameStateManager>();
 
-    private SceneLoader sceneLoader => FindFirstObjectByType<SceneLoader>();
+    private SceneLoader _sceneLoader => FindFirstObjectByType<SceneLoader>();
 
-    private bool pauseOpen = false;
-    private bool settingsOpen = false;
+    private bool _pauseOpen = false;
+    private bool _settingsOpen = false;
 
     private void Start()
     {
@@ -25,19 +26,16 @@ public class PauseScript : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape) &&
             (SceneManager.GetActiveScene().name == "Main"))
         {
-            if (settingsOpen)
+            if (_settingsOpen)
             {
-                // If in settings, ESC returns to pause menu
                 CloseSettings();
             }
-            else if (pauseOpen)
+            else if (_pauseOpen)
             {
-                // If in pause (and not settings), ESC resumes game
                 ClosePause();
             }
             else
             {
-                // If neither open, ESC opens pause menu
                 OpenPause();
             }
         }
@@ -45,13 +43,12 @@ public class PauseScript : MonoBehaviour
 
     public void ReturnToMainMenu()
     {
-        sceneLoader.LoadSceneByName(SceneNames.MainMenu);
+        _sceneLoader.LoadSceneByName(SceneNames.MainMenu);
     }
 
-    // Public for inspector buttons to toggle pause
     public void TogglePause()
     {
-        if (pauseOpen)
+        if (_pauseOpen)
             ClosePause();
         else
             OpenPause();
@@ -59,14 +56,13 @@ public class PauseScript : MonoBehaviour
 
     private void OpenPause()
     {
-        pauseOpen = true;
+        _pauseOpen = true;
         if (pausePanel != null) pausePanel.SetActive(true);
 
-        // Ensure settings panel is not visible when pause is shown
-        settingsOpen = false;
+        _settingsOpen = false;
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
-        gameState.PauseGame();
+        _gameState.PauseGame();
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
 
         UpdateCursorVisibility();
@@ -74,34 +70,30 @@ public class PauseScript : MonoBehaviour
 
     private void ClosePause()
     {
-        pauseOpen = false;
+        _pauseOpen = false;
         if (pausePanel != null) pausePanel.SetActive(false);
 
-        // Only resume game if no UI panels remain open
-        if (!settingsOpen)
+        if (!_settingsOpen)
         {
-            gameState.ResumeGame();
+            _gameState.ResumeGame();
             EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
         }
         else
         {
-            // If settingsOpen true, keep game paused and show settings (defensive)
             if (settingsPanel != null) settingsPanel.SetActive(true);
         }
 
         UpdateCursorVisibility();
     }
 
-    // Called by a button on the pause panel. Only allowed when pause is open.
     public void ToggleSettings()
     {
-        if (!pauseOpen && !settingsOpen)
+        if (!_pauseOpen && !_settingsOpen)
         {
-            // settings may only be opened from pause menu; guard in case
             return;
         }
 
-        if (settingsOpen)
+        if (_settingsOpen)
             CloseSettings();
         else
             OpenSettings();
@@ -109,14 +101,13 @@ public class PauseScript : MonoBehaviour
 
     private void OpenSettings()
     {
-        // Open settings and hide pause visually but keep game paused
-        settingsOpen = true;
+        _settingsOpen = true;
         if (settingsPanel != null) settingsPanel.SetActive(true);
 
-        pauseOpen = false;
+        _pauseOpen = false;
         if (pausePanel != null) pausePanel.SetActive(false);
 
-        gameState.PauseGame();
+        _gameState.PauseGame();
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
 
         UpdateCursorVisibility();
@@ -124,15 +115,13 @@ public class PauseScript : MonoBehaviour
 
     private void CloseSettings()
     {
-        settingsOpen = false;
+        _settingsOpen = false;
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
-        // Return to pause menu
-        pauseOpen = true;
+        _pauseOpen = true;
         if (pausePanel != null) pausePanel.SetActive(true);
 
-        // Keep game paused while back on pause menu
-        gameState.PauseGame();
+        _gameState.PauseGame();
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
 
         UpdateCursorVisibility();
@@ -140,7 +129,7 @@ public class PauseScript : MonoBehaviour
 
     private void UpdateCursorVisibility()
     {
-        if (settingsOpen || pauseOpen || SceneManager.GetActiveScene().name == "MainMenu")
+        if (_settingsOpen || _pauseOpen || SceneManager.GetActiveScene().name == "MainMenu")
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;

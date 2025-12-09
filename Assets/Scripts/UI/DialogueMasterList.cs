@@ -57,7 +57,7 @@ public class DialogueMasterList
             "Guide",
             new string[]
             {
-            "Breathe and ease your step — we must not startle the frames.",
+            "Breathe and ease your step ï¿½ we must not startle the frames.",
             "Slow your pace. Small sounds keep secrets safe.",
             "Tread lightly. Some memories crack under heavy feet."
             }
@@ -94,7 +94,7 @@ public class DialogueMasterList
             new string[]
             {
             "Find shadow. Fold into it and hold your breath.",
-            "Slip behind the darkness—stay still and let me work.",
+            "Slip behind the darknessï¿½stay still and let me work.",
             "Bury yourself in a corner of night. I will watch the light."
             }
         );
@@ -111,13 +111,13 @@ public class DialogueMasterList
             }
         );
 
-        // Trigger: While player hidden and Guide operating -> objective progress lines (Guide finishes mechanics)
+        // Trigger: While _player hidden and Guide operating -> objective progress lines (Guide finishes mechanics)
         public static Dialogue GUIDE_OPERATE_CINEMATIC = new Dialogue(
             "MECHC_GUIDE_OPERATE",
             "Guide",
             new string[]
             {
-            "A smear right there… I’ll pry it loose.",
+            "A smear right thereï¿½ Iï¿½ll pry it loose.",
             "I brush away the rust of memory... watch the frame soften.",
             "One stroke more and the piece relaxes. Stay hidden."
             }
@@ -159,7 +159,7 @@ public class DialogueMasterList
             }
         );
 
-        // Trigger: Ghost proximity while player hidden or moving -> cinematic warning
+        // Trigger: Ghost proximity while _player hidden or moving -> cinematic warning
         public static Dialogue GHOST_NEAR_CINEMATIC = new Dialogue(
             "MECHC_GHOST_NEAR",
             "Guide",
@@ -171,13 +171,13 @@ public class DialogueMasterList
             }
         );
 
-        // Trigger: Quick accessibility variant (optional) — still cinematic but includes key
+        // Trigger: Quick accessibility variant (optional) ï¿½ still cinematic but includes key
         public static Dialogue ACCESSIBLE_CINEMATIC = new Dialogue(
             "MECHC_ACCESS",
             "Guide",
             new string[]
             {
-            "To examine, press E — but move gently when you do.",
+            "To examine, press E ï¿½ but move gently when you do.",
             "Press Tab to send me forward. Hide with F and I will continue.",
             "W/A/S/D to move; Z to walk. Tread lightly."
             }

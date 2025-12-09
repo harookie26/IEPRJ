@@ -142,7 +142,7 @@ public class EnemyStateMachine : MonoBehaviour
     // Detection coroutine tracking
     private Coroutine playerDetectedRoutine; // ensures we don't stack multiple detection FX
 
-    // Track the room the enemy is currently inside
+    // Track the room the _enemy is currently inside
     private RoomComponent currentEnemyRoom;
 
     // Latch to avoid re-triggering detection repeatedly while both stay in same room
@@ -219,12 +219,12 @@ public class EnemyStateMachine : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.V))
         {
-            // Force enemy to teleport into the player's current room
+            // Force _enemy to teleport into the _player's current room
             var rooms = FindObjectsOfType<RoomComponent>();
             RoomComponent playerRoom = null;
             if (rooms != null && rooms.Length > 0)
             {
-                // 1) Prefer rooms reporting the player inside via trigger
+                // 1) Prefer rooms reporting the _player inside via trigger
                 foreach (var r in rooms)
                 {
                     if (r != null && r.IsPlayerInside)
@@ -234,7 +234,7 @@ public class EnemyStateMachine : MonoBehaviour
                     }
                 }
 
-                // 2) Fallback: resolve by player position against room bounds
+                // 2) Fallback: resolve by _player position against room bounds
                 if (playerRoom == null && targetPlayer != null)
                 {
                     var playerPos = targetPlayer.transform.position;
@@ -263,10 +263,10 @@ public class EnemyStateMachine : MonoBehaviour
             }
         }
 
-        // Resolve enemy room every frame from its current position so tracking stays accurate (teleports may skip triggers)
+        // Resolve _enemy room every frame from its current position so tracking stays accurate (teleports may skip triggers)
         ResolveEnemyRoomAtPosition();
 
-        // If the enemy is currently in a room and the player is inside the same room, trigger detection FX
+        // If the _enemy is currently in a room and the _player is inside the same room, trigger detection FX
         TryTriggerEnemyInRoomIfPlayerInSameRoom();
 
         CurrentState?.UpdateState(this);
@@ -349,7 +349,7 @@ public class EnemyStateMachine : MonoBehaviour
             }
         }
 
-        // If painting is in a different room than the enemy, teleport the enemy into that room
+        // If painting is in a different room than the _enemy, teleport the _enemy into that room
         if (paintingRoom != null && paintingRoom != currentEnemyRoom)
         {
             // Determine a teleport target position somewhere inside the room bounds (randomized)
@@ -365,7 +365,7 @@ public class EnemyStateMachine : MonoBehaviour
                 );
             }
 
-            // Keep enemy's original Y to avoid teleporting into ceiling/floor; try to sample NavMesh near chosen point
+            // Keep _enemy's original Y to avoid teleporting into ceiling/floor; try to sample NavMesh near chosen point
             var enemyTransform = (enemy != null ? enemy.transform : transform);
             float desiredY = enemyTransform.position.y;
             randomPointInRoom.y = desiredY;
@@ -384,7 +384,7 @@ public class EnemyStateMachine : MonoBehaviour
             }
             else if (navMeshAgent != null && navMeshAgent.isOnNavMesh)
             {
-                // As a fallback, try sampling at painting position's XZ with enemy Y
+                // As a fallback, try sampling at painting position's XZ with _enemy Y
                 Vector3 fallback = new Vector3(paintingWorldPosition.x, desiredY, paintingWorldPosition.z);
                 if (NavMesh.SamplePosition(fallback, out hit, sampleRadius, NavMesh.AllAreas))
                 {
@@ -636,7 +636,7 @@ public class EnemyStateMachine : MonoBehaviour
         if (room != null)
         {
             currentEnemyRoom = room;
-            // If player already inside this room, trigger now
+            // If _player already inside this room, trigger now
             TryTriggerEnemyInRoomIfPlayerInSameRoom();
         }
     }
@@ -669,7 +669,7 @@ public class EnemyStateMachine : MonoBehaviour
             lastDetectionRoom = null;
         }
 
-        // Determine if player is inside the same room
+        // Determine if _player is inside the same room
         bool playerInside = currentEnemyRoom.IsPlayerInside;
         if (!playerInside && targetPlayer != null)
         {
@@ -678,7 +678,7 @@ public class EnemyStateMachine : MonoBehaviour
             playerInside = b.size.sqrMagnitude > Mathf.Epsilon && b.Contains(playerPos);
         }
 
-        // If player is not inside, clear latch for this room and return
+        // If _player is not inside, clear latch for this room and return
         if (!playerInside)
         {
             if (lastDetectionRoom == currentEnemyRoom)

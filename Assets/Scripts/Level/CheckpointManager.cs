@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine.AI;
 using System;
 
+[FoldableInspector]
 public class CheckpointManager : MonoBehaviour
 {
     private int _currentCheckpointIndex;
@@ -22,8 +23,8 @@ public class CheckpointManager : MonoBehaviour
     private string _enemySavedStateName;
     private EnemyStateMachine _enemyStateMachine => FindFirstObjectByType<EnemyStateMachine>();
 
-    private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
-    private UIManager uiManager => FindFirstObjectByType<UIManager>();
+    private ScreenFader _screenFader => FindFirstObjectByType<ScreenFader>();
+    private UIManager _uiManager => FindFirstObjectByType<UIManager>();
 
     private void Awake()
     {
@@ -82,13 +83,13 @@ public class CheckpointManager : MonoBehaviour
     public IEnumerator ReturnToCheckpoint()
     {
         _playerMovement.SetCanMove(false);
-        yield return StartCoroutine(screenFader.FadeOutSequence(0.5f));
+        yield return StartCoroutine(_screenFader.FadeOutSequence(0.5f));
 
-        // Show respawn HUD while waiting for player input
-        if (uiManager != null)
+        // Show respawn HUD while waiting for _player input
+        if (_uiManager != null)
         {
-            uiManager.HideAll();
-            uiManager.ShowRespawnHUD();
+            _uiManager.HideAll();
+            _uiManager.ShowRespawnHUD();
         }
 
         _player.transform.position = _playerSavedPosition;
@@ -96,14 +97,14 @@ public class CheckpointManager : MonoBehaviour
 
         if (_enemy == null)
         {
-            // Hide all HUDs if no enemy or when aborting
-            if (uiManager != null) uiManager.HideAll();
+            // Hide all HUDs if no _enemy or when aborting
+            if (_uiManager != null) _uiManager.HideAll();
             yield break;
         }
 
         if (_enemyStateMachine == null)
         {
-            if (uiManager != null) uiManager.HideAll();
+            if (_uiManager != null) _uiManager.HideAll();
             yield break;
         }
 
@@ -167,23 +168,23 @@ public class CheckpointManager : MonoBehaviour
                 break;
         }
 
-        // Wait for player input before fading back in
+        // Wait for _player input before fading back in
         if (InputManager.Instance != null)
         {
             bool gotInput = false;
             yield return StartCoroutine(InputManager.Instance.WaitForInputCoroutine(() => gotInput = true));
 
             // hide all HUDs once input is received
-            if (uiManager != null) uiManager.HideAll();
+            if (_uiManager != null) _uiManager.HideAll();
         }
         else
         {
             // fallback small delay if no InputManager
             yield return new WaitForSecondsRealtime(0.05f);
-            if (uiManager != null) uiManager.HideAll();
+            if (_uiManager != null) _uiManager.HideAll();
         }
 
-        yield return StartCoroutine(screenFader.FadeInSequence(0.5f));
+        yield return StartCoroutine(_screenFader.FadeInSequence(0.5f));
         _playerMovement.SetCanMove(true);
 
         Debug.Log($"[CheckpointManager] Returned to checkpoint at index {_currentCheckpointIndex}. PlayerPos: {_playerSavedPosition}, EnemyPos: {_enemySavedPosition}, EnemyState: {_enemySavedStateName}");

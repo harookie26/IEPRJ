@@ -135,7 +135,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             {
                 isCompleted = true;
 
-                // Notify listeners FIRST so the player can exit ChannelState immediately.
+                // Notify listeners FIRST so the _player can exit ChannelState immediately.
                 ChannelCompleted?.Invoke();
 
                 HandleCompletion();

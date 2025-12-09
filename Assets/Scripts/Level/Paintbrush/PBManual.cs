@@ -1,6 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
+[FoldableInspector]
 public class PBManual : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
@@ -26,69 +27,68 @@ public class PBManual : MonoBehaviour
     [Tooltip("True when the paintbrush push attempt is clamped along any axis.")]
     public bool IsAgainstBoundary { get; private set; }
 
-    private Rigidbody rb;
+    private Rigidbody _rb;
 
-    // --- Glue player state ---
-    private bool playerWasDisabledByPB = false;
-    private bool isGluingPlayer = false;
-    private Vector3 gluedPlayerPosition;
-    private Quaternion gluedPlayerRotation;
-    private Rigidbody playerRb;
-    private RigidbodyConstraints previousPlayerConstraints;
+    private bool _playerWasDisabledByPB = false;
+    private bool _isGluingPlayer = false;
+    private Vector3 _gluedPlayerPosition;
+    private Quaternion _gluedPlayerRotation;
+    private Rigidbody _playerRb;
+    private RigidbodyConstraints _previousPlayerConstraints;
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        _rb = GetComponent<Rigidbody>();
         if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
 
         if (playerMovement == null)
             playerMovement = FindFirstObjectByType<PlayerMovement>();
 
-        if (rb != null)
-            rb.constraints |= RigidbodyConstraints.FreezeRotation;
+        if (_rb != null)
+            _rb.constraints |= RigidbodyConstraints.FreezeRotation;
     }
 
     private void OnEnable()
     {
-        // When PBManual becomes active (manual mode), disable player movement and glue player in place.
+        // When PBManual becomes active (manual mode), disable _player movement and glue _player in place.
         if (playerMovement != null)
         {
-            playerWasDisabledByPB = true;
+            _playerWasDisabledByPB = true;
             playerMovement.SetCanMove(false);
 
             // cache rigidbody and constraints
-            playerRb = playerMovement.GetComponent<Rigidbody>();
-            if (playerRb != null)
+            _playerRb = playerMovement.GetComponent<Rigidbody>();
+            if (_playerRb != null)
             {
-                previousPlayerConstraints = playerRb.constraints;
-                playerRb.constraints = RigidbodyConstraints.FreezeAll;
-                playerRb.linearVelocity = Vector3.zero;
-                playerRb.angularVelocity = Vector3.zero;
+                _previousPlayerConstraints = _playerRb.constraints;
+                _playerRb.constraints = RigidbodyConstraints.FreezeAll;
+                _playerRb.linearVelocity = Vector3.zero;
+                _playerRb.angularVelocity = Vector3.zero;
             }
 
-            gluedPlayerPosition = playerMovement.transform.position;
-            gluedPlayerRotation = playerMovement.transform.rotation;
-            isGluingPlayer = true;
+            _gluedPlayerPosition = playerMovement.transform.position;
+            _gluedPlayerRotation = playerMovement.transform.rotation;
+            _isGluingPlayer = true;
         }
     }
 
     private void OnDisable()
     {
-        // Restore player movement and physics state when manual mode ends
-        if (playerWasDisabledByPB && playerMovement != null)
+        // Restore _player movement and physics state when manual mode ends
+        if (_playerWasDisabledByPB && playerMovement != null)
         {
             playerMovement.SetCanMove(true);
-            playerWasDisabledByPB = false;
+            _playerWasDisabledByPB = false;
         }
 
-        if (playerRb != null)
+        if (_playerRb != null)
         {
-            playerRb.constraints = previousPlayerConstraints;
-            playerRb = null;
+            _playerRb.constraints = _previousPlayerConstraints;
+            _playerRb = null;
         }
 
-        isGluingPlayer = false;
+        _isGluingPlayer = false;
     }
 
     private void Start()
@@ -100,25 +100,25 @@ public class PBManual : MonoBehaviour
     {
         if (cameraTransform == null) return;
 
-        // Keep player glued while PBManual is active
-        if (isGluingPlayer && playerMovement != null)
+        // Keep _player glued while PBManual is active
+        if (_isGluingPlayer && playerMovement != null)
         {
-            if (playerRb != null)
+            if (_playerRb != null)
             {
                 // Move the rigidbody to the cached position/rotation each physics step
-                playerRb.linearVelocity = Vector3.zero;
-                playerRb.angularVelocity = Vector3.zero;
-                playerRb.MovePosition(gluedPlayerPosition);
-                playerRb.MoveRotation(gluedPlayerRotation);
+                _playerRb.linearVelocity = Vector3.zero;
+                _playerRb.angularVelocity = Vector3.zero;
+                _playerRb.MovePosition(_gluedPlayerPosition);
+                _playerRb.MoveRotation(_gluedPlayerRotation);
             }
             else
             {
-                playerMovement.transform.position = gluedPlayerPosition;
-                playerMovement.transform.rotation = gluedPlayerRotation;
+                playerMovement.transform.position = _gluedPlayerPosition;
+                playerMovement.transform.rotation = _gluedPlayerRotation;
             }
         }
 
-        rb.angularVelocity = Vector3.zero;
+        _rb.angularVelocity = Vector3.zero;
 
         float moveInput = (Input.GetKey(KeyCode.W) ? 1f : 0f) + (Input.GetKey(KeyCode.S) ? -1f : 0f);
         float strafeInput = Input.GetKey(KeyCode.D) ? 1f : Input.GetKey(KeyCode.A) ? -1f : 0f;
@@ -143,7 +143,7 @@ public class PBManual : MonoBehaviour
         ResolvePlayerRoomAtPosition();
 
         float dt = Time.fixedDeltaTime;
-        Vector3 unclampedTargetPos = rb.position + desiredVelocity * dt;
+        Vector3 unclampedTargetPos = _rb.position + desiredVelocity * dt;
         Vector3 targetPos = unclampedTargetPos;
 
         bool shouldClampToRoom = restrictToPlayerRoomBounds && playerCurrentRoom != null;
@@ -165,8 +165,8 @@ public class PBManual : MonoBehaviour
             IsAtCorner = false;
         }
 
-        Vector3 correctedVelocity = (targetPos - rb.position) / Mathf.Max(dt, 0.0001f);
-        rb.linearVelocity = correctedVelocity;
+        Vector3 correctedVelocity = (targetPos - _rb.position) / Mathf.Max(dt, 0.0001f);
+        _rb.linearVelocity = correctedVelocity;
 
         Vector3 lookDir = cameraTransform.forward;
         if (lookDir.sqrMagnitude < 0.0001f)

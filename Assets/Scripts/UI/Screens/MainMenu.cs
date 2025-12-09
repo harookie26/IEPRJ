@@ -3,31 +3,33 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static EventNames.GameStateEvents;
 
+[FoldableInspector]
 public class MainMenu : MonoBehaviour
 {
     [SerializeField] private Button playButton;
     [SerializeField] private Button exitButton;
     [SerializeField] private GameObject settingsPanel;
 
-    private ScreenFader screenFader;
-    private SceneLoader sceneLoader;
+    private ScreenFader _screenFader;
+    private SceneLoader _sceneLoader;
 
-    private GameStateManager gameState => FindFirstObjectByType<GameStateManager>();
+    private GameStateManager _gameState => FindFirstObjectByType<GameStateManager>();
 
-    private bool settingsOpen = false;
+    private bool _settingsOpen = false;
+
     private void Start()
     {
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
-        screenFader = FindFirstObjectByType<ScreenFader>();
-        screenFader.StartCoroutine(screenFader.FadeInSequence(1.0f));
+        _screenFader = FindFirstObjectByType<ScreenFader>();
+        _screenFader.StartCoroutine(_screenFader.FadeInSequence(1.0f));
 
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
         if (playButton != null)
         {
-            playButton.onClick.AddListener(() => sceneLoader.LoadSceneByName(SceneNames.GameScene));
+            playButton.onClick.AddListener(() => _sceneLoader.LoadSceneByName(SceneNames.GameScene));
         }
         else
         {
@@ -42,8 +44,8 @@ public class MainMenu : MonoBehaviour
             Debug.LogError("No button is not assigned in the inspector.");
         }
 
-        sceneLoader = FindFirstObjectByType<SceneLoader>();
-        if (sceneLoader == null)
+        _sceneLoader = FindFirstObjectByType<SceneLoader>();
+        if (_sceneLoader == null)
         {
             Debug.LogError("SceneLoader not found in the scene. Please add one and assign it.");
         }
@@ -51,7 +53,7 @@ public class MainMenu : MonoBehaviour
 
     public void ToggleSettings()
     {
-        if (settingsOpen)
+        if (_settingsOpen)
             CloseSettings();
         else
             OpenSettings();
@@ -60,11 +62,11 @@ public class MainMenu : MonoBehaviour
     private void OpenSettings()
     {
         // Open settings and hide pause visually but keep game paused
-        settingsOpen = true;
+        _settingsOpen = true;
         if (settingsPanel != null) settingsPanel.SetActive(true);
 
 
-        gameState.PauseGame();
+        _gameState.PauseGame();
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
 
         UpdateCursorVisibility();
@@ -72,11 +74,11 @@ public class MainMenu : MonoBehaviour
 
     private void CloseSettings()
     {
-        settingsOpen = false;
+        _settingsOpen = false;
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
         // Keep game paused while back on pause menu
-        gameState.PauseGame();
+        _gameState.PauseGame();
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
 
         UpdateCursorVisibility();
@@ -84,7 +86,7 @@ public class MainMenu : MonoBehaviour
 
     private void UpdateCursorVisibility()
     {
-        if (settingsOpen || SceneManager.GetActiveScene().name == "MainMenu")
+        if (_settingsOpen || SceneManager.GetActiveScene().name == "MainMenu")
         {
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;

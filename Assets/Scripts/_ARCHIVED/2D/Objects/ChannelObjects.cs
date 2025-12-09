@@ -21,14 +21,14 @@
 //    {
 //        if (isComplete) return;
 
-//        GameObject player = GameObject.FindGameObjectWithTag("Player");
-//        if (player == null) return;
+//        GameObject _player = GameObject.FindGameObjectWithTag("Player");
+//        if (_player == null) return;
 
-//        bool playerNearby = CanChannel(player);
+//        bool playerNearby = CanChannel(_player);
 
 //        if (playerNearby && !isChanneling)
 //        {
-//            StartChannel(player);
+//            StartChannel(_player);
 //        }
 //        else if (isChanneling)
 //        {
@@ -48,18 +48,18 @@
 //        }
 //    }
 
-//    public bool CanChannel(GameObject player)
+//    public bool CanChannel(GameObject _player)
 //    {
 //        if (isComplete) return false;
-//        if (player == null) return false;
-//        return Mathf.Abs(player.transform.position.x - transform.position.x) <= graceDistance;
+//        if (_player == null) return false;
+//        return Mathf.Abs(_player.transform.position.x - transform.position.x) <= graceDistance;
 //    }
 
-//    public void StartChannel(GameObject player)
+//    public void StartChannel(GameObject _player)
 //    {
-//        if (!CanChannel(player)) return;
+//        if (!CanChannel(_player)) return;
 //        isChanneling = true;
-//        currentPlayer = player;
+//        currentPlayer = _player;
 //    }
 
 //    public void StopChannel()
@@ -73,10 +73,10 @@
 //    {
 //        if (!isChanneling || isComplete) return;
 
-//        if (TryGetComponent<Rigidbody2D>(out var rb) && rb != null)
+//        if (TryGetComponent<Rigidbody2D>(out var _rb) && _rb != null)
 //        {
-//            Vector2 targetPosition = rb.position + Vector2.up * raiseSpeed * deltaTime;
-//            rb.MovePosition(targetPosition);
+//            Vector2 targetPosition = _rb.position + Vector2.up * raiseSpeed * deltaTime;
+//            _rb.MovePosition(targetPosition);
 //        }
 //        else
 //        {

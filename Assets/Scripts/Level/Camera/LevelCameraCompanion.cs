@@ -121,7 +121,7 @@ public class LevelCameraCompanion : MonoBehaviour
             float allowedY = target.position.y + Mathf.Max(minCameraHeightAboveTarget, 0.01f);
 
             // If companion near ceiling and the tentative desired pos would put camera above allowedY,
-            // cancel the vertical input so player cannot push camera further up.
+            // cancel the vertical input so _player cannot push camera further up.
             if (companionNearCeiling && tentativeDesiredPos.y > allowedY)
             {
                 cancelVerticalInput = true;
