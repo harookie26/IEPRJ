@@ -174,6 +174,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &5741290819575314272
 GameObject:
@@ -191,7 +192,6 @@ GameObject:
   - component: {fileID: 5195265188184142072}
   - component: {fileID: 426842848226839614}
   - component: {fileID: 1562824913301178948}
-  - component: {fileID: 2117527929817537536}
   - component: {fileID: 5565890832922417008}
   - component: {fileID: 6843192690115179874}
   m_Layer: 3
@@ -274,6 +274,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!54 &1938054373330018028
 Rigidbody:
@@ -344,16 +345,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 590b57b79c0f2154e962389344cd3aa6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerInput: {fileID: 0}
+  playerCamera: {fileID: 0}
   moveSpeed: 5
   jumpForce: 5
-  rotationSpeed: 10
+  mouseSensitivity: 0.1
   corruptedSpeedMultiplier: 0.45
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
   restrictToRoomBounds: 1
   clampYInsideRoomVolume: 1
   currentRoom: {fileID: 0}
-  emitFocusAssistWhenTouchingWalls: 1
 --- !u!114 &426842848226839614
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -366,22 +368,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d26342d08b9d743479a9b92e6faa415d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  stealthRadius: 5
-  stealthMask:
-    serializedVersion: 2
-    m_Bits: 131072
-  stealthRayExtra: 0.1
-  preferWallComponents: 1
   idleDelay: 3
-  channelHoverHeight: 2
-  channelBobAmplitude: 0.8
-  channelBobFrequency: 2
-  channelRiseLerpSpeed: 0.7
-  channelGroundRayDistance: 5
-  channelGroundMask:
-    serializedVersion: 2
-    m_Bits: 128
-  channelDrawGroundRay: 1
+  idleTrailRestartInterval: 5
+  idleTrail: {fileID: 0}
 --- !u!114 &1562824913301178948
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -404,28 +393,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 262144
   uIManager: {fileID: 0}
---- !u!114 &2117527929817537536
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5741290819575314272}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b36fe0a9b65677445aa42a65cc880a4f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rayOrigin: {fileID: 4543057180834165993}
-  maxDistance: 1.5
-  channelMask:
-    serializedVersion: 2
-    m_Bits: 65536
-  aimSphereRadius: 0.08
-  missGraceFrames: 5
-  requireReleaseAfterCompletion: 1
-  rechannelCooldown: 0.35
-  ChannelledPaintingCount: 0
 --- !u!114 &5565890832922417008
 MonoBehaviour:
   m_ObjectHideFlags: 0

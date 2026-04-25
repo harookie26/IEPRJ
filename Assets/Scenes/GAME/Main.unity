@@ -5249,14 +5249,14 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 318340454}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 10
   m_Range: 17.2762
   m_SpotAngle: 56.97862
   m_InnerSpotAngle: 21.80208
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
     m_Type: 0
     m_Resolution: -1
@@ -10213,6 +10213,10 @@ PrefabInstance:
       value: Untagged
       objectReference: {fileID: 0}
     - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: moveSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       propertyPath: playerInput
       value: 
       objectReference: {fileID: 1614538804}
@@ -10220,10 +10224,6 @@ PrefabInstance:
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 2095731259}
-    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
-      propertyPath: moveSpeed
-      value: 3
-      objectReference: {fileID: 0}
     - target: {fileID: 5341513443896240152, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       propertyPath: m_Height
       value: 1.5
@@ -15449,6 +15449,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!33 &808703921
 MeshFilter:
@@ -26691,6 +26692,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: efea8c502a767804f8933d33ea5f57c4, type: 3}
   m_PrefabInstance: {fileID: 1328936977}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1338498454 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8558968373898407569, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+  m_PrefabInstance: {fileID: 1915125442}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1338498464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1338498454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57dc8d78cc0cd3649b62865126effa76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Assets.Scripts.Level.Paintbrush.PaintbrushStateMachine
+  channelHoverHeight: 0.3
+  channelBobAmplitude: 0.05
+  channelBobFrequency: 2
+  channelRiseLerpSpeed: 6
+  channelGroundRayDistance: 5
+  channelGroundMask:
+    serializedVersion: 2
+    m_Bits: 65536
+  channelDrawGroundRay: 1
+--- !u!114 &1338498465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1338498454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b36fe0a9b65677445aa42a65cc880a4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PaintbrushChanneller
+  rayOrigin: {fileID: 1597781657}
+  maxDistance: 3
+  channelMask:
+    serializedVersion: 2
+    m_Bits: 65536
+  aimSphereRadius: 0.08
+  missGraceFrames: 5
+  requireReleaseAfterCompletion: 1
+  rechannelCooldown: 0.35
 --- !u!1 &1341130238 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 02ec266795a1d844f80473406eb009ea, type: 3}
@@ -31010,6 +31058,11 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -1550514412580984892, guid: 5d06cc33130c29d49a09463dda25fca8, type: 3}
+--- !u!4 &1597781657 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2557223099785117280, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+  m_PrefabInstance: {fileID: 1915125442}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1600973627 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8125755044377317816, guid: 097b4dfba467b654a907db2341d5b640, type: 3}
@@ -36795,7 +36848,13 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8558968373898407569, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1338498465}
+    - targetCorrespondingSourceObject: {fileID: 8558968373898407569, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1338498464}
   m_SourcePrefab: {fileID: 100100000, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
 --- !u!43 &1918542633
 Mesh:

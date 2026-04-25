@@ -14,7 +14,7 @@ public class GameStateManager : MonoBehaviour
 
     private EnemyStateMachine _enemy;
 
-    private PlayerChanneller playerChanneller;
+    private PaintbrushChanneller paintbrushChanneller;
 
     private ScreenFader _screenFader => FindFirstObjectByType<ScreenFader>();
 
@@ -28,7 +28,7 @@ public class GameStateManager : MonoBehaviour
     {
         _inputManager = InputManager.Instance;
         _enemy = FindFirstObjectByType<EnemyStateMachine>();
-        playerChanneller = FindFirstObjectByType<PlayerChanneller>();
+        paintbrushChanneller = FindFirstObjectByType<PaintbrushChanneller>();
     }
 
     private void OnEnable()
@@ -149,9 +149,9 @@ public class GameStateManager : MonoBehaviour
 
     private void UpdateLevelProgress()
     {
-        if (playerChanneller != null)
+        if (paintbrushChanneller != null)
         {
-            currentLevelProgress = playerChanneller.GetChannelledPaintingCount();
+            currentLevelProgress = paintbrushChanneller.GetChannelledPaintingCount();
         }
     }
 
