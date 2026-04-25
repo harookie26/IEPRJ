@@ -2,186 +2,112 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using static EventNames;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
-    PlayerInput playerInput;
-    InputAction moveAction;
-    InputAction jumpAction;
+    [Header("Input References")]
+    [SerializeField] private PlayerInput playerInput;
+    [SerializeField] private Camera playerCamera;
 
+    private InputAction moveAction;
+    private InputAction jumpAction;
+    private InputAction lookAction;
+
+    [Header("Movement Settings")]
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float jumpForce = 5f;
-    [SerializeField] float rotationSpeed = 10f;
+    [SerializeField] float mouseSensitivity = 0.1f;
 
     [Header("Corruption Effects")]
-    [Tooltip("Multiplier applied to movement speed while in a corrupted room.")]
     [SerializeField] private float corruptedSpeedMultiplier = 0.6f;
 
-    [Header("Better Jumping (tune to taste)")]
-    [Tooltip("Multiplier for gravity when falling (makes falls snappier).")]
+    [Header("Better Jumping")]
     [SerializeField] private float fallMultiplier = 2.5f;
-    [Tooltip("Multiplier for gravity when jump is released early (variable jump height).")]
     [SerializeField] private float lowJumpMultiplier = 2f;
 
     [Header("Room Constraint")]
-    [Tooltip("If enabled, player movement is clamped to the current RoomComponent bounds.")]
     [SerializeField] private bool restrictToRoomBounds = true;
-    [Tooltip("Also clamp Y to keep the player fully inside the room volume (including ceiling/floor).")]
     [SerializeField] private bool clampYInsideRoomVolume = false;
-
-    [Tooltip("The room whose bounds restrict movement. Auto-detected at runtime when entering a room trigger.")]
     [SerializeField] private RoomComponent currentRoom;
 
-    // Optional: support doorway triggers placed on child GOs with tag "Doorway"
-    private const string StairwayTag = "Stairway";
-
-    private bool isInCorruptedRoom = false;
-
-    private Vector2 previousInput = Vector2.zero;
     private Rigidbody rb;
     private bool isGrounded = true;
-
-    // jump request / hold tracking (handle physics in FixedUpdate)
+    private bool canMove = true;
     private bool jumpRequested = false;
     private bool jumpHeld = false;
 
-    // store desired move direction from Update, applied with MovePosition in FixedUpdate
-    private Vector3 currentMoveDirection = Vector3.zero;
+    private Vector2 moveInput;
+    private Vector2 lookInput;
 
-    // desired rotation computed from input in Update and applied in FixedUpdate via MoveRotation
-    private Quaternion desiredRotation = Quaternion.identity;
+    private float cameraPitch = 0f;
+    private float bodyYaw = 0f;
 
-    // Count of overlapping doorway triggers; when > 0, allow leaving room bounds
     private int doorwayOverlapCount = 0;
 
-    [Header("Focus Assist (signal for cameras)")]
-    [Tooltip("If true, exposes IsTouchingWalls/IsAtRoomCorner so cameras can focus on the player only when the PLAYER is against room walls.")]
-    [SerializeField] private bool emitFocusAssistWhenTouchingWalls = true;
+    private PlayerCollectibleManager collectibleManager;
+    private const string StairwayTag = "Stairway";
 
-    [Tooltip("True when movement this frame was clamped by room bounds on the X or Z axis (doorways ignored).")]
+    private Vector3 cachedMoveDirection = Vector3.zero;
+
     public bool IsTouchingWalls { get; private set; }
-
-    [Tooltip("True when clamped on multiple lateral axes in the same frame (e.g., a corner).")]
     public bool IsAtRoomCorner { get; private set; }
 
-    private bool canMove;
-
-    // Reference to the _player's collectible manager for checking powerups like the Mop
-    private PlayerCollectibleManager collectibleManager;
+    // 
 
     private void Awake()
     {
-        playerInput = GetComponent<PlayerInput>();
-        moveAction = playerInput.actions["Movement"];
-        jumpAction = playerInput.actions["Jump"];
         rb = GetComponent<Rigidbody>();
 
-        // Enforce a Rigidbody so physics-based movement/collision is always used.
-        if (rb == null)
-        {
-            rb = gameObject.AddComponent<Rigidbody>();
-        }
+        moveAction = playerInput.actions["Movement"];
+        jumpAction = playerInput.actions["Jump"];
+        lookAction = playerInput.actions["Look"];
 
-        if (rb != null)
-        {
-            // Prevent rotation from physics and enable better collision handling for fast movement
-            rb.constraints |= RigidbodyConstraints.FreezeRotation;
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-            rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.useGravity = true;
-        }
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-        desiredRotation = transform.rotation;
-
-        canMove = true;
-
-        // Cache the collectible manager if present
         collectibleManager = FindFirstObjectByType<PlayerCollectibleManager>();
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        bodyYaw = transform.eulerAngles.y;
     }
 
-    private void Start()
-    {
-        ResolveCurrentRoomAtPosition();
-    }
+    private void Start() => ResolveCurrentRoomAtPosition();
 
     private void OnEnable()
     {
-        EventBroadcaster.Instance.AddObserver(LevelEvents.ON_CORRUPTED_ROOM_TRUE, OnCorruptedEnter);
-        EventBroadcaster.Instance.AddObserver(LevelEvents.ON_CORRUPTED_ROOM_FALSE, OnCorruptedExit);
         EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
         EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
         EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
         EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
     }
 
-    private void OnDisable()
-    {
-        EventBroadcaster.Instance.RemoveActionAtObserver(LevelEvents.ON_CORRUPTED_ROOM_TRUE, OnCorruptedEnter);
-        EventBroadcaster.Instance.RemoveActionAtObserver(LevelEvents.ON_CORRUPTED_ROOM_FALSE, OnCorruptedExit);
-        EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
-        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
-        EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
-        EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
-
-
-    }
-
-    private void OnCorruptedEnter()
-    {
-        isInCorruptedRoom = true;
-    }
-
-    private void OnCorruptedExit()
-    {
-        isInCorruptedRoom = false;
-    }
-
-    private void StopMoving()
-    {
-        canMove = false;
-    }
-
-    private void ContinueMoving()
-    {
-        canMove = true;
-    }
-
     private void Update()
     {
-        if (!canMove) return;
-
-        if (PBController.IsCompanionManualModeActive)
+        if (!canMove || PBController.IsCompanionManualModeActive)
         {
-            previousInput = Vector2.zero;
-            currentMoveDirection = Vector3.zero;
+            moveInput = Vector2.zero;
+            cachedMoveDirection = Vector3.zero; // clear it here too
             return;
         }
 
-        Vector2 input = moveAction.ReadValue<Vector2>();
+        lookInput = lookAction.ReadValue<Vector2>();
+        moveInput = moveAction.ReadValue<Vector2>();
 
-        if (input != Vector2.zero)
-        {
-            EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_MOVED);
-        }
-        else if (previousInput != Vector2.zero)
-        {
-            EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_STOPPED);
-        }
+        bodyYaw += lookInput.x * mouseSensitivity;
+        transform.rotation = Quaternion.Euler(0f, bodyYaw, 0f);
 
-        previousInput = input;
+        cameraPitch -= lookInput.y * mouseSensitivity;
+        cameraPitch = Mathf.Clamp(cameraPitch, -89f, 89f);
+        playerCamera.transform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
 
-        Vector3 moveDirection = new Vector3(input.x, 0f, input.y);
-        currentMoveDirection = moveDirection;
-
-        // compute desired rotation from move direction here but apply in FixedUpdate via MoveRotation
-        if (moveDirection.sqrMagnitude > 0.0001f)
-        {
-            desiredRotation = Quaternion.LookRotation(moveDirection.normalized, Vector3.up);
-        }
+        // Cache direction AFTER rotation is applied, so FixedUpdate always gets the right one
+        cachedMoveDirection = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
 
         if (jumpAction.triggered && isGrounded)
-        {
             jumpRequested = true;
-        }
 
         jumpHeld = jumpAction.IsPressed();
     }
@@ -190,126 +116,75 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!canMove) return;
 
-        // Use room's isCorrupted flag when available to compute effective speed
         bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
-
-        // If _player has collected the "Mop" powerup, ignore corrupted speed debuff
         bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
-
         float effectiveSpeed = moveSpeed * ((roomCorrupted && !hasMop) ? corruptedSpeedMultiplier : 1f);
 
-        Vector3 delta = currentMoveDirection * effectiveSpeed * Time.fixedDeltaTime;
+        // Use the cached direction instead of recalculating from transform 
+        Vector3 delta = cachedMoveDirection * effectiveSpeed * Time.fixedDeltaTime;
 
-        // Reset focus assist signal each physics step; recompute below
+        ApplyMovementPhysics(delta);
+    }
+
+    private void ApplyMovementPhysics(Vector3 delta)
+    {
+        Vector3 unclampedTarget = rb.position + delta;
+        Vector3 targetPos = unclampedTarget;
+
+        bool shouldClamp = restrictToRoomBounds && currentRoom != null && doorwayOverlapCount <= 0;
+
         IsTouchingWalls = false;
         IsAtRoomCorner = false;
 
-        // Use Rigidbody-based movement only (we ensure _rb exists in Awake)
-        if (rb != null)
+        if (shouldClamp)
         {
-            Vector3 basePos = rb.position;
-            Vector3 unclampedTarget = basePos + delta;
-            Vector3 targetPos = unclampedTarget;
+            Vector3 clamped = ClampPositionToRoom(unclampedTarget, currentRoom.Bounds, clampYInsideRoomVolume);
 
-            // Only clamp while NOT overlapping a doorway
-            bool shouldClampToRoom = restrictToRoomBounds && currentRoom != null && doorwayOverlapCount <= 0;
+            bool xClamped = !Mathf.Approximately(unclampedTarget.x, clamped.x);
+            bool zClamped = !Mathf.Approximately(unclampedTarget.z, clamped.z);
+            IsTouchingWalls = xClamped || zClamped;
+            IsAtRoomCorner = xClamped && zClamped;
 
-            // Track clamp on each axis (similar to LevelCameraCompanion pre-clamp tracking)
-            bool preXClamped = false, preYClamped = false, preZClamped = false;
-
-            if (shouldClampToRoom)
-            {
-                Vector3 clamped = ClampPositionToRoom(unclampedTarget, currentRoom.Bounds, clampYInsideRoomVolume);
-
-                preXClamped = !Mathf.Approximately(unclampedTarget.x, clamped.x);
-                preYClamped = clampYInsideRoomVolume && !Mathf.Approximately(unclampedTarget.y, clamped.y);
-                preZClamped = !Mathf.Approximately(unclampedTarget.z, clamped.z);
-
-                targetPos = clamped;
-            }
-            else if (currentRoom != null && clampYInsideRoomVolume)
-            {
-                targetPos.y = Mathf.Clamp(unclampedTarget.y, currentRoom.Bounds.min.y, currentRoom.Bounds.max.y);
-            }
-
-            if (delta.sqrMagnitude > 0f || (restrictToRoomBounds && currentRoom != null))
-            {
-                rb.MovePosition(targetPos);
-            }
-
-            // apply rotation in sync with physics to avoid conflicts
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation, desiredRotation, rotationSpeed * Time.fixedDeltaTime));
-
-            // Jump & better jumping
-            if (jumpRequested && isGrounded)
-            {
-                // Reset vertical velocity then apply jump impulse via velocity to avoid tunneling
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
-
-                isGrounded = false;
-                jumpRequested = false;
-            }
-
-            if (rb.linearVelocity.y < 0f)
-            {
-                rb.AddForce(Physics.gravity * (fallMultiplier - 1f) * rb.mass);
-            }
-            else if (rb.linearVelocity.y > 0f && !jumpHeld)
-            {
-                rb.AddForce(Physics.gravity * (lowJumpMultiplier - 1f) * rb.mass);
-            }
-
-            // Update focus assist signal (only engage for lateral clamping; floors/ceilings excluded)
-            if (emitFocusAssistWhenTouchingWalls && shouldClampToRoom)
-            {
-                bool xClamped = preXClamped;
-                bool zClamped = preZClamped;
-
-                IsTouchingWalls = xClamped || zClamped;
-                IsAtRoomCorner = (xClamped ? 1 : 0) + (zClamped ? 1 : 0) >= 2;
-            }
+            targetPos = clamped;
         }
+
+        rb.MovePosition(targetPos);
+
+        if (jumpRequested && isGrounded)
+        {
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
+            isGrounded = false;
+            jumpRequested = false;
+        }
+
+        if (rb.linearVelocity.y < 0f)
+            rb.AddForce(Physics.gravity * (fallMultiplier - 1f) * rb.mass);
+        else if (rb.linearVelocity.y > 0f && !jumpHeld)
+            rb.AddForce(Physics.gravity * (lowJumpMultiplier - 1f) * rb.mass);
     }
+
 
     private void OnCollisionEnter(Collision collision)
     {
-        // Only consider contacts that are roughly pointing up as grounding contacts
-        if (collision.contacts.Length > 0)
+        foreach (var contact in collision.contacts)
         {
-            for (int i = 0; i < collision.contacts.Length; i++)
+            if (Vector3.Dot(contact.normal, Vector3.up) > 0.5f)
             {
-                ContactPoint c = collision.contacts[i];
-                if (Vector3.Dot(c.normal, Vector3.up) > 0.5f)
-                {
-                    isGrounded = true;
-                    break;
-                }
+                isGrounded = true;
+                break;
             }
         }
     }
 
-    // Track the current room and detect doorway overlaps.
     private void OnTriggerEnter(Collider other)
     {
-
         var room = other.GetComponent<RoomComponent>();
         if (room != null)
         {
             currentRoom = room;
-
-            var boundsCol = room.BoundsCollider;
-            if (boundsCol != null && other != boundsCol)
-            {
-                doorwayOverlapCount++;
-            }
+            if (room.BoundsCollider != null && other != room.BoundsCollider) doorwayOverlapCount++;
         }
-        else
-        {
-            if (other.CompareTag(StairwayTag))
-            {
-                doorwayOverlapCount++;
-            }
-        }
+        else if (other.CompareTag(StairwayTag)) doorwayOverlapCount++;
     }
 
     private void OnTriggerExit(Collider other)
@@ -317,60 +192,36 @@ public class PlayerMovement : MonoBehaviour
         var room = other.GetComponent<RoomComponent>();
         if (room != null)
         {
-            var boundsCol = room.BoundsCollider;
-            if (boundsCol != null && other != boundsCol)
-            {
+            if (room.BoundsCollider != null && other != room.BoundsCollider)
                 doorwayOverlapCount = Mathf.Max(0, doorwayOverlapCount - 1);
-            }
         }
-        else
-        {
-            if (other.CompareTag(StairwayTag))
-            {
-                doorwayOverlapCount = Mathf.Max(0, doorwayOverlapCount - 1);
-            }
-        }
+        else if (other.CompareTag(StairwayTag)) doorwayOverlapCount = Mathf.Max(0, doorwayOverlapCount - 1);
     }
 
     private void ResolveCurrentRoomAtPosition()
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, 0.05f, ~0, QueryTriggerInteraction.Collide);
-        for (int i = 0; i < hits.Length; i++)
+        foreach (var hit in hits)
         {
-            var room = hits[i].GetComponent<RoomComponent>();
-            if (room != null)
+            var room = hit.GetComponent<RoomComponent>();
+            if (room != null && room.Bounds.Contains(transform.position))
             {
-                if (room.Bounds.Contains(transform.position))
-                {
-                    currentRoom = room;
-                    return;
-                }
+                currentRoom = room;
+                return;
             }
         }
     }
 
     private static Vector3 ClampPositionToRoom(Vector3 position, Bounds bounds, bool clampY)
     {
-        if (clampY)
-        {
-            return new Vector3(
-                Mathf.Clamp(position.x, bounds.min.x, bounds.max.x),
-                Mathf.Clamp(position.y, bounds.min.y, bounds.max.y),
-                Mathf.Clamp(position.z, bounds.min.z, bounds.max.z)
-            );
-        }
-        else
-        {
-            return new Vector3(
-                Mathf.Clamp(position.x, bounds.min.x, bounds.max.x),
-                position.y,
-                Mathf.Clamp(position.z, bounds.min.z, bounds.max.z)
-            );
-        }
+        return new Vector3(
+            Mathf.Clamp(position.x, bounds.min.x, bounds.max.x),
+            clampY ? Mathf.Clamp(position.y, bounds.min.y, bounds.max.y) : position.y,
+            Mathf.Clamp(position.z, bounds.min.z, bounds.max.z)
+        );
     }
 
-    public void SetCanMove(bool value)
-    {
-        canMove = value;
-    }
+    private void StopMoving() => canMove = false;
+    private void ContinueMoving() => canMove = true;
+    public void SetCanMove(bool value) => canMove = value;
 }
