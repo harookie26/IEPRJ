@@ -13,7 +13,6 @@ public class InputManager : MonoBehaviour
 
     private bool interactPressed;
     private bool corruptedRoomPressed;
-    private bool stealthPressed;
     private bool debugModePressed;
 
     private InputSystem2D inputActions;
@@ -92,7 +91,6 @@ public class InputManager : MonoBehaviour
                 // While blocked, clear all input states
                 interactPressed = false;
                 corruptedRoomPressed = false;
-                stealthPressed = false;
                 debugModePressed = false;
                 moveInput = Vector2.zero;
                 sprintHeld = false;
@@ -112,7 +110,6 @@ public class InputManager : MonoBehaviour
 
         // Reset per-frame interact & stealth unless we set them below
         interactPressed = false;
-        stealthPressed = false;
 
         if (onlyAllowLMBOrEnter)
         {
@@ -178,9 +175,6 @@ public class InputManager : MonoBehaviour
             // DETECT PRESS EVENT, do NOT post OFF every frame.
             corruptedRoomPressed = Keyboard.current != null && Keyboard.current.zKey.wasPressedThisFrame;
 
-            // New stealth key detection (F)
-            //stealthPressed = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
-
             // Debug mode toggle (F12)
             debugModePressed = Keyboard.current != null && Keyboard.current.f12Key.wasPressedThisFrame;
         }
@@ -199,18 +193,12 @@ public class InputManager : MonoBehaviour
             OnInteractPressed?.Invoke();
         }
 
-        if (stealthPressed && !blockInputUntilRelease)
-        {
-            OnStealthPressed?.Invoke();
-        }
-
     }
 
     // Polling API for other scripts
     public Vector2 GetMoveInput() => (onlyAllowLMBOrEnter || blockInputUntilRelease) ? Vector2.zero : moveInput;
     public bool IsSprinting() => !onlyAllowLMBOrEnter && !blockInputUntilRelease && sprintHeld;
     public bool WasInteractPressed() => !blockInputUntilRelease && interactPressed;
-    public bool WasStealthPressed() => !blockInputUntilRelease && stealthPressed;
     public bool IsChanneling() => !blockInputUntilRelease && !onlyAllowLMBOrEnter && channeling;
     public bool WasDebugModePressed() => !blockInputUntilRelease && debugModePressed;
 
