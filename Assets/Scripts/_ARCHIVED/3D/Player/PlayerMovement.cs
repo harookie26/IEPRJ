@@ -47,6 +47,8 @@ public class PlayerMovement : MonoBehaviour
     private PlayerCollectibleManager collectibleManager;
     private const string StairwayTag = "Stairway";
 
+    private Vector3 cachedMoveDirection = Vector3.zero;
+
     public bool IsTouchingWalls { get; private set; }
     public bool IsAtRoomCorner { get; private set; }
 
@@ -87,6 +89,7 @@ public class PlayerMovement : MonoBehaviour
         if (!canMove || PBController.IsCompanionManualModeActive)
         {
             moveInput = Vector2.zero;
+            cachedMoveDirection = Vector3.zero; // clear it here too
             return;
         }
 
@@ -99,6 +102,9 @@ public class PlayerMovement : MonoBehaviour
         cameraPitch -= lookInput.y * mouseSensitivity;
         cameraPitch = Mathf.Clamp(cameraPitch, -89f, 89f);
         playerCamera.transform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
+
+        // Cache direction AFTER rotation is applied, so FixedUpdate always gets the right one
+        cachedMoveDirection = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
 
         if (jumpAction.triggered && isGrounded)
             jumpRequested = true;
@@ -114,8 +120,8 @@ public class PlayerMovement : MonoBehaviour
         bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
         float effectiveSpeed = moveSpeed * ((roomCorrupted && !hasMop) ? corruptedSpeedMultiplier : 1f);
 
-        Vector3 movement = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
-        Vector3 delta = movement * effectiveSpeed * Time.fixedDeltaTime;
+        // Use the cached direction instead of recalculating from transform 
+        Vector3 delta = cachedMoveDirection * effectiveSpeed * Time.fixedDeltaTime;
 
         ApplyMovementPhysics(delta);
     }
