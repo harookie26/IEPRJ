@@ -6,7 +6,7 @@ public class PlayerStateMachine : MonoBehaviour
 {
     IPlayerState _currentState;
 
-    public enum PlayerStateKind { Unknown, Default, Idle, Channel, Hiding }
+    public enum PlayerStateKind { Unknown, Default, Idle }
     public PlayerStateKind CurrentState { get; private set; } = PlayerStateKind.Unknown;
 
     public Type CurrentStateType => _currentState?.GetType();
@@ -14,22 +14,8 @@ public class PlayerStateMachine : MonoBehaviour
 
     public bool IsState<T>() where T : IPlayerState => _currentState is T;
 
-    public event Action HidingEntered;
-    public event Action HidingExited;
-
     public event Action IdleEntered;
     public event Action IdleExited;
-
-    [Header("Stealth")]
-    [Tooltip("Radius to search for nearby walls when stealth key is pressed")]
-    public float stealthRadius = 2f;
-    [Tooltip("Layer mask used to find walls for hiding")]
-    public LayerMask stealthMask = ~0;
-    [Tooltip("Small extra distance when raycasting towards the surface")]
-    public float stealthRayExtra = 0.1f;
-
-    [Tooltip("When true, prefer explicit WallHideAnchor components when selecting a hide point.")]
-    public bool preferWallComponents = true;
 
     [Header("Idle")]
     [Tooltip("Seconds of no input before entering Idle state")]
@@ -38,30 +24,9 @@ public class PlayerStateMachine : MonoBehaviour
     [Tooltip("Seconds between automatic restarts of the idle trail while player remains idle. Set to 0 to disable.")]
     public float idleTrailRestartInterval = 5f;
 
-    [Header("Channel")]
-    [Tooltip("Hover height above ground while channeling")]
-    public float channelHoverHeight = 0.3f;
-    [Tooltip("Vertical bob amplitude while channeling")]
-    public float channelBobAmplitude = 0.05f;
-    [Tooltip("Bob frequency (cycles per second)")]
-    public float channelBobFrequency = 2f;
-    [Tooltip("How fast to move toward target hover height")]
-    public float channelRiseLerpSpeed = 6f;
-    [Tooltip("Max raycast distance downward to find ground while channeling")]
-    public float channelGroundRayDistance = 5f;
-    [Tooltip("Layer mask for ground detection while channeling")]
-    public LayerMask channelGroundMask = ~0;
-
-    [Header("Debug")]
-    [Tooltip("Draw the channel ground ray while channeling")]
-    public bool channelDrawGroundRay = true;
-
     [Header("VFX")]
     [Tooltip("Optional trail object to enable when player enters Idle state")]
     public TrailFollowDynamic idleTrail;
-
-    private float hideCooldown = 0.2f;
-    private float hideCooldownTimer = 0f;
 
     private float idleTimer = 0f;
 
@@ -73,21 +38,14 @@ public class PlayerStateMachine : MonoBehaviour
 
     void OnEnable()
     {
-        if (InputManager.Instance != null)
-            InputManager.Instance.OnStealthPressed += HandleStealthPressed;
     }
 
     void OnDisable()
     {
-        if (InputManager.Instance != null)
-            InputManager.Instance.OnStealthPressed -= HandleStealthPressed;
     }
 
     void Update()
     {
-        if (hideCooldownTimer > 0f)
-            hideCooldownTimer -= Time.deltaTime;
-
         // Detect any _player input / activity this frame
         bool inputDetected = DetectInput();
 
@@ -105,7 +63,7 @@ public class PlayerStateMachine : MonoBehaviour
         else
         {
             // count down to idle (but not if channeling)
-            if (!(_currentState is IdleState) && !(_currentState is ChannelState))
+            if (!(_currentState is IdleState))
             {
                 idleTimer -= Time.deltaTime;
                 if (idleTimer <= 0f)
@@ -119,16 +77,21 @@ public class PlayerStateMachine : MonoBehaviour
         _currentState?.Tick();
     }
 
-    // simple, conservative input detection covering keys, mouse, axes
+    public void SetToDefaultState()
+    {
+        SetState(new DefaultState(this));
+        idleTimer = idleDelay;
+    }
+
+    public void NotifyIdleEntered() => IdleEntered?.Invoke();
+    public void NotifyIdleExited() => IdleExited?.Invoke();
+    public bool IsIdle => _currentState is IdleState;
+
+
     bool DetectInput()
     {
-        // Any key (includes mouse buttons while held)
         if (Input.anyKey) return true;
-
-        // Mouse buttons
         if (Input.GetMouseButton(0) || Input.GetMouseButton(1) || Input.GetMouseButton(2)) return true;
-
-        // Common axes
         if (Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.01f) return true;
         if (Mathf.Abs(Input.GetAxisRaw("Vertical")) > 0.01f) return true;
         if (Mathf.Abs(Input.GetAxisRaw("Mouse X")) > 0.01f) return true;
@@ -145,181 +108,11 @@ public class PlayerStateMachine : MonoBehaviour
 
         // update the public helper
         if (newState is IdleState) CurrentState = PlayerStateKind.Idle;
-        else if (newState is ChannelState) CurrentState = PlayerStateKind.Channel;
-        else if (newState is PlayerHidingState) CurrentState = PlayerStateKind.Hiding;
         else if (newState is DefaultState) CurrentState = PlayerStateKind.Default;
         else CurrentState = PlayerStateKind.Unknown;
 
         _currentState?.Enter();
     }
-
-    // Public API to toggle channel state
-    public void EnterChannelState()
-    {
-        if (!(_currentState is ChannelState))
-            SetState(new ChannelState(this));
-    }
-
-    public void ExitChannelState()
-    {
-        if (_currentState is ChannelState)
-            SetToDefaultState();
-    }
-
-    // Updated: now can auto-find a wall if none provided.
-    public void RequestHide(Vector3? wallPoint = null, Vector3? wallNormal = null, bool autoFindIfMissing = true)
-    {
-        if (hideCooldownTimer > 0f)
-            return;
-
-        Vector3 wp = wallPoint ?? Vector3.zero;
-        Vector3 wn = wallNormal ?? Vector3.zero;
-        bool haveWallInfo = wallPoint.HasValue && wallNormal.HasValue;
-
-        if (!haveWallInfo && autoFindIfMissing)
-        {
-            if (TryComputeHideAnchor(out Vector3 pos, out Vector3 norm))
-            {
-                wp = pos;
-                wn = norm;
-                haveWallInfo = true;
-            }
-        }
-
-        SetState(new PlayerHidingState(this,
-            haveWallInfo ? wp : (Vector3?)null,
-            haveWallInfo ? wn : (Vector3?)null));
-    }
-
-    public void SetToDefaultState()
-    {
-        SetState(new DefaultState(this));
-        hideCooldownTimer = hideCooldown;
-        // reset idle timer whenever we explicitly go to default
-        idleTimer = idleDelay;
-    }
-
-    public void NotifyHidingEntered() => HidingEntered?.Invoke();
-    public void NotifyHidingExited() => HidingExited?.Invoke();
-
-    // New idle notify helpers
-    public void NotifyIdleEntered() => IdleEntered?.Invoke();
-    public void NotifyIdleExited() => IdleExited?.Invoke();
-
-    public bool IsHiding => _currentState is PlayerHidingState;
-    public bool IsIdle => _currentState is IdleState;
-    public bool IsChanneling => _currentState is ChannelState;
-
-    void HandleStealthPressed()
-    {
-        if (IsHiding)
-        {
-            SetToDefaultState();
-            return;
-        }
-
-        if (hideCooldownTimer > 0f)
-            return;
-
-        RequestHide(); // will auto-find
-    }
-
-    // Unified computation of nearest hide anchor. Returns true if a good point found.
-    bool TryComputeHideAnchor(out Vector3 bestPoint, out Vector3 bestNormal)
-    {
-        Vector3 origin = transform.position;
-        bestPoint = default;
-        bestNormal = default;
-
-        // 1) Prefer explicit components
-        if (preferWallComponents)
-        {
-            var anchors = FindObjectsOfType<WallHideAnchor>();
-            float bestAnchorDistSqr = float.MaxValue;
-            Vector3 bestAnchorPos = Vector3.zero;
-            Vector3 bestAnchorNormal = Vector3.up;
-            bool foundAnchor = false;
-
-            foreach (var a in anchors)
-            {
-                float dsq = (a.transform.position - origin).sqrMagnitude;
-                if (dsq <= stealthRadius * stealthRadius && dsq < bestAnchorDistSqr)
-                {
-                    if (a.TryGetAnchor(origin, out Vector3 pos, out Vector3 normal))
-                    {
-                        bestAnchorDistSqr = dsq;
-                        bestAnchorPos = pos;
-                        bestAnchorNormal = normal;
-                        foundAnchor = true;
-                    }
-                }
-            }
-
-            if (foundAnchor)
-            {
-                bestPoint = bestAnchorPos;
-                bestNormal = bestAnchorNormal;
-                Debug.Log($"PlayerStateMachine: Stealth resolved via WallHideAnchor at {bestPoint} normal {bestNormal}");
-                return true;
-            }
-        }
-
-        // 2) Collider-based search
-        Collider[] cols = Physics.OverlapSphere(origin, stealthRadius, stealthMask, QueryTriggerInteraction.Ignore);
-        if (cols == null || cols.Length == 0)
-            return false;
-
-        float bestDistSq = float.MaxValue;
-        bool found = false;
-
-        foreach (var col in cols)
-        {
-            Vector3 closest = col.ClosestPoint(origin);
-            Vector3 dir = closest - origin;
-            float dist = dir.magnitude;
-            if (dist <= 0.0001f)
-            {
-                dir = (origin - col.transform.position).normalized;
-                if (dir.sqrMagnitude <= 0.0001f) dir = transform.forward;
-                dist = Mathf.Max(0.01f, Vector3.Distance(origin, closest));
-            }
-
-            RaycastHit hit;
-            if (Physics.Raycast(origin, dir.normalized, out hit, dist + stealthRayExtra, stealthMask, QueryTriggerInteraction.Ignore))
-            {
-                if (hit.collider == col || hit.collider.transform.IsChildOf(col.transform) || col.transform.IsChildOf(hit.collider.transform))
-                {
-                    float dsq = (hit.point - origin).sqrMagnitude;
-                    if (dsq < bestDistSq)
-                    {
-                        bestDistSq = dsq;
-                        bestPoint = hit.point;
-                        bestNormal = hit.normal;
-                        found = true;
-                    }
-                }
-            }
-            else
-            {
-                float dsq = (closest - origin).sqrMagnitude;
-                if (dsq < bestDistSq)
-                {
-                    bestDistSq = dsq;
-                    bestPoint = closest;
-                    bestNormal = (closest - origin).normalized;
-                    found = true;
-                }
-            }
-        }
-
-        if (found)
-        {
-            Debug.Log($"PlayerStateMachine: Stealth resolved at {bestPoint} normal {bestNormal}");
-            return true;
-        }
-
-        return false;
-    } 
 
     class DefaultState : IPlayerState
     {
@@ -331,22 +124,14 @@ public class PlayerStateMachine : MonoBehaviour
 
         public void HandleInput()
         {
-            //if (Input.GetKeyDown(KeyCode.H))
-            //{
-            //    // Now uses the unified auto-find path.
-            //    _owner.RequestHide();
-            //}
         }
 
         public void Tick() { }
     }
 
-    // New IdleState: entered after idleDelay seconds of no input.
-    // Any input immediately forces a transition back to DefaultState.
     class IdleState : IPlayerState
     {
         readonly PlayerStateMachine _owner;
-        // timer used to periodically restart the idle trail while still idle
         float _restartTimer;
 
         public IdleState(PlayerStateMachine owner) => _owner = owner;
@@ -361,7 +146,7 @@ public class PlayerStateMachine : MonoBehaviour
             // Activate trail VFX if assigned; try to find it if null
             if (_owner.idleTrail == null)
             {
-                var found = GameObject.FindObjectOfType<TrailFollowDynamic>();
+                var found = GameObject.FindAnyObjectByType<TrailFollowDynamic>();
                 if (found != null)
                 {
                     _owner.idleTrail = found;
@@ -384,9 +169,7 @@ public class PlayerStateMachine : MonoBehaviour
         public void Exit()
         {
             Debug.Log("PlayerStateMachine: Exit IdleState");
-            // Notify listeners that _player left idle
             _owner.NotifyIdleExited();
-            // Cleanup idle-specific state
 
             // Disable trail VFX if assigned
             if (_owner.idleTrail != null)
@@ -398,7 +181,6 @@ public class PlayerStateMachine : MonoBehaviour
 
         public void HandleInput()
         {
-            // Redundant with the machine-level detection, but keeps the state robust:
             if (Input.anyKey ||
                 Input.GetMouseButton(0) || Input.GetMouseButton(1) || Input.GetMouseButton(2) ||
                 Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.01f ||
@@ -412,13 +194,11 @@ public class PlayerStateMachine : MonoBehaviour
 
         public void Tick()
         {
-            // Periodically restart the idle trail if configured
             if (_owner.idleTrail != null && _owner.idleTrailRestartInterval > 0f)
             {
                 _restartTimer += Time.deltaTime;
                 if (_restartTimer >= _owner.idleTrailRestartInterval)
                 {
-                    // ensure active
                     _owner.idleTrail.gameObject.SetActive(true);
                     _owner.idleTrail.Restart();
                     _restartTimer = 0f;
@@ -427,112 +207,4 @@ public class PlayerStateMachine : MonoBehaviour
         }
     }
 
-    class ChannelState : IPlayerState
-    {
-        readonly PlayerStateMachine _owner;
-
-        // bob state
-        float _time;
-        float _lastGroundY;
-        Rigidbody _rb;
-        bool _hadRb;
-        bool _originalUseGravity;
-
-        public ChannelState(PlayerStateMachine owner) => _owner = owner;
-
-        public void Enter()
-        {
-            Debug.Log("PlayerStateMachine: Enter ChannelState");
-
-            // Disable gravity while channeling if we have a Rigidbody
-            _rb = _owner.GetComponent<Rigidbody>();
-            _hadRb = _rb != null;
-            if (_hadRb)
-            {
-                _originalUseGravity = _rb.useGravity;
-                _rb.useGravity = false;
-                _rb.linearVelocity = Vector3.zero; // FIX: was linearVelocity
-            }
-
-            _time = 0f;
-            _lastGroundY = SampleGroundY(_owner.transform.position);
-        }
-
-        public void Exit()
-        {
-            Debug.Log("PlayerStateMachine: Exit ChannelState");
-
-            // Restore gravity
-            if (_hadRb && _rb != null)
-            {
-                _rb.useGravity = _originalUseGravity;
-            }
-        }
-
-        public void HandleInput() { }
-
-        public void Tick()
-        {
-            _time += Time.deltaTime;
-
-            // Follow ground height under _player
-            float groundY = SampleGroundY(_owner.transform.position);
-            if (!float.IsNaN(groundY))
-                _lastGroundY = groundY;
-
-            float bob = Mathf.Sin(_time * Mathf.PI * 2f * _owner.channelBobFrequency) * _owner.channelBobAmplitude;
-            float targetY = _lastGroundY + _owner.channelHoverHeight + bob;
-
-            Vector3 pos = _owner.transform.position;
-            float newY = Mathf.Lerp(pos.y, targetY, Time.deltaTime * _owner.channelRiseLerpSpeed);
-            Vector3 newPos = new Vector3(pos.x, newY, pos.z);
-
-            if (_hadRb && _rb != null)
-            {
-                _rb.linearVelocity = Vector3.zero; // FIX: was linearVelocity
-                _rb.MovePosition(newPos);
-            }
-            else
-            {
-                _owner.transform.position = newPos;
-            }
-        }
-
-        float SampleGroundY(Vector3 origin)
-        {
-            Ray ray = new Ray(origin + Vector3.up * 0.1f, Vector3.down);
-            if (Physics.Raycast(ray, out RaycastHit hit, _owner.channelGroundRayDistance, _owner.channelGroundMask, QueryTriggerInteraction.Ignore))
-            {
-                return hit.point.y;
-            }
-            // Fallback: keep relative hover if no ground found
-            return origin.y - _owner.channelHoverHeight;
-        }
-    }
-
-    // Debug visualization of the ground ray while channeling
-    void OnDrawGizmos()
-    {
-        if (!channelDrawGroundRay || !IsChanneling) return;
-
-        Vector3 origin = transform.position + Vector3.up * 0.1f;
-        Vector3 dir = Vector3.down;
-        float maxDist = channelGroundRayDistance;
-
-        // Base ray
-        Gizmos.color = new Color(0.2f, 0.9f, 1f, 0.8f);
-        Gizmos.DrawRay(origin, dir * maxDist);
-
-        if (Physics.Raycast(origin, dir, out RaycastHit hit, maxDist, channelGroundMask, QueryTriggerInteraction.Ignore))
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawLine(origin, hit.point);
-            Gizmos.DrawSphere(hit.point, 0.05f);
-        }
-        else
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(origin, origin + dir * maxDist);
-        }
-    }
 }
