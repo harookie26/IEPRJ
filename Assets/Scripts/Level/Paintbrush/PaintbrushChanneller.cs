@@ -3,10 +3,11 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using Game.ObjectTypes;
 using System.Collections.Generic;
+using Assets.Scripts.Level.Paintbrush;
 
 [DisallowMultipleComponent]
 [FoldableInspector]
-public class PlayerChanneller : MonoBehaviour
+public class PaintbrushChanneller: MonoBehaviour
 {
     [Tooltip("Origin used for the interact raycast. Typically the player's camera or a head transform.")]
     public Transform rayOrigin;
@@ -39,7 +40,7 @@ public class PlayerChanneller : MonoBehaviour
 
     private INotifiesChannelCompletion currentCompletionNotifier;
 
-    private PlayerStateMachine stateMachine;
+    private PaintbrushStateMachine stateMachine;
 
     private int consecutiveMisses;
 
@@ -49,9 +50,10 @@ public class PlayerChanneller : MonoBehaviour
     // Track completed painting IDs so each painting only completes once.
     private HashSet<string> completedPaintingIds = new HashSet<string>();
 
+
     private void Awake()
     {
-        stateMachine = GetComponent<PlayerStateMachine>();
+        stateMachine = GetComponent<PaintbrushStateMachine>();
         if (stateMachine == null)
         {
             Debug.LogWarning("[PlayerChanneller] PlayerStateMachine not found on the same GameObject. ChannelState transitions will be skipped.");

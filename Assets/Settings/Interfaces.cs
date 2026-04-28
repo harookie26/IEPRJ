@@ -71,4 +71,12 @@ namespace Game.States
         void Tick();
     }
 
+    public interface IPaintbrushState
+    {
+        void Enter();
+        void Exit();
+        void HandleInput();
+        void Tick();
+    }
+
 }

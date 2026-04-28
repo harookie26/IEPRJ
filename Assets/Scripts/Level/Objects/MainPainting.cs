@@ -7,13 +7,13 @@ public class MainPainting : MonoBehaviour
     [SerializeField] private GameObject cover3;
     [SerializeField] private GameObject cover4;
 
-    private PlayerChanneller playerChaneller;
+    private PaintbrushChanneller paintbrushChanneller;
     private TrailFollowDynamic trailFollow;
 
     private void Start()
     {
         // assign to fields (do not shadow)
-        playerChaneller = FindFirstObjectByType<PlayerChanneller>();
+        paintbrushChanneller = FindFirstObjectByType<PaintbrushChanneller>();
         trailFollow = FindFirstObjectByType<TrailFollowDynamic>();
     }
 
@@ -25,25 +25,25 @@ public class MainPainting : MonoBehaviour
 
     private void UpdatePaintingCovers()
     {
-        if (playerChaneller == null)
+        if (paintbrushChanneller == null)
             return;
 
         // Use explicit painting IDs
-        if (cover1 != null) cover1.SetActive(!playerChaneller.HasCompletedPainting("paint1"));
-        if (cover2 != null) cover2.SetActive(!playerChaneller.HasCompletedPainting("paint2"));
-        if (cover3 != null) cover3.SetActive(!playerChaneller.HasCompletedPainting("paint3"));
-        if (cover4 != null) cover4.SetActive(!playerChaneller.HasCompletedPainting("paint4"));
+        if (cover1 != null) cover1.SetActive(!paintbrushChanneller.HasCompletedPainting("paint1"));
+        if (cover2 != null) cover2.SetActive(!paintbrushChanneller.HasCompletedPainting("paint2"));
+        if (cover3 != null) cover3.SetActive(!paintbrushChanneller.HasCompletedPainting("paint3"));
+        if (cover4 != null) cover4.SetActive(!paintbrushChanneller.HasCompletedPainting("paint4"));
     }
 
     private void UpdateTrailTarget()
     {
-        if (playerChaneller == null || trailFollow == null)
+        if (paintbrushChanneller == null || trailFollow == null)
             return;
 
-        if (playerChaneller.HasCompletedPainting("paint1")) trailFollow.ChangeTarget(3);
-        else if (playerChaneller.HasCompletedPainting("paint2")) trailFollow.ChangeTarget(4);
-        else if (playerChaneller.HasCompletedPainting("paint3")) trailFollow.ChangeTarget(5);
-        else if (playerChaneller.HasCompletedPainting("paint4")) trailFollow.ChangeTarget(6);
+        if (paintbrushChanneller.HasCompletedPainting("paint1")) trailFollow.ChangeTarget(3);
+        else if (paintbrushChanneller.HasCompletedPainting("paint2")) trailFollow.ChangeTarget(4);
+        else if (paintbrushChanneller.HasCompletedPainting("paint3")) trailFollow.ChangeTarget(5);
+        else if (paintbrushChanneller.HasCompletedPainting("paint4")) trailFollow.ChangeTarget(6);
 
     }
 
