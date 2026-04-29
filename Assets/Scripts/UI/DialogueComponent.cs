@@ -13,6 +13,7 @@ public class DialogueComponent : MonoBehaviour
     [SerializeField] private string[] dialogueIDs;
 
     private int currentIndex = 0;
+    public bool HasBeenTriggered = false;
 
     private void Awake()
     {
@@ -20,11 +21,20 @@ public class DialogueComponent : MonoBehaviour
         collider.isTrigger = true;
     }
 
+    private void OnEnable()
+    {
+        EventBroadcaster.Instance.AddObserver(EventNames.GameStateEvents.ON_LEVEL_RELOAD, ResetTrigger);
+    }
+
+    private void OnDisable()
+    {
+        EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.GameStateEvents.ON_LEVEL_RELOAD, ResetTrigger);
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
 
-        Debug.Log("I AM HERE NOW LMAO");
 
         if (dialogueIDs == null || dialogueIDs.Length == 0)
         {
@@ -57,6 +67,12 @@ public class DialogueComponent : MonoBehaviour
         {
             currentIndex++;
         });
+    }
+
+    public void ResetTrigger()
+    {
+        HasBeenTriggered = false;
+        currentIndex = 0;
     }
 
 }
