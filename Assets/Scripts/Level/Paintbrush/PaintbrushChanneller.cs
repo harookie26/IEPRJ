@@ -31,6 +31,10 @@ public class PaintbrushChanneller: MonoBehaviour
     [Tooltip("Delay after completion before a new channel can start (even if the key is still held). Uses unscaled time.")]
     public float rechannelCooldown = 0.35f;
 
+    [Header("VFX Reference")]
+    [Tooltip("The VFX/Particle System prefab parented to the paintbrush.")]
+    public GameObject paintbrushVFX;
+
     private PlayerCollectibleManager collectibles;
 
     private Coroutine channelCoroutine;
@@ -79,6 +83,8 @@ public class PaintbrushChanneller: MonoBehaviour
 
     private void OnDisable()
     {
+        if (paintbrushVFX != null) paintbrushVFX.SetActive(false);
+
         TryUnsubscribe();
 
         if (channelCoroutine != null)
@@ -190,6 +196,8 @@ public class PaintbrushChanneller: MonoBehaviour
 
     private void HandleChannelStop()
     {
+        if (paintbrushVFX != null) paintbrushVFX.SetActive(false);
+
         if (channelCoroutine != null)
         {
             if (currentChannelTarget != null)
@@ -236,6 +244,9 @@ public class PaintbrushChanneller: MonoBehaviour
     private IEnumerator ChannelRoutine()
     {
         Debug.Log("[PlayerChanneller] ChannelRoutine started.");
+
+        if (paintbrushVFX != null) paintbrushVFX.SetActive(true);
+
         while (true)
         {
             if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
@@ -252,6 +263,7 @@ public class PaintbrushChanneller: MonoBehaviour
             if (hitTarget != null)
             {
                 consecutiveMisses = 0;
+
 
                 if (hitTarget != currentChannelTarget)
                 {
@@ -271,6 +283,7 @@ public class PaintbrushChanneller: MonoBehaviour
                     }
 
                     currentChannelTarget = hitTarget;
+
 
                     if (stateMachine != null && !stateMachine.IsChanneling)
                         stateMachine.EnterChannelState();
@@ -349,6 +362,8 @@ public class PaintbrushChanneller: MonoBehaviour
                         currentChannelTarget = null;
                         consecutiveMisses = 0;
 
+                        if (paintbrushVFX != null) paintbrushVFX.SetActive(false);
+
                         UnsubscribeFromCompletion();
 
                         // Exit ChannelState because channeling ended (no active target)
@@ -369,6 +384,8 @@ public class PaintbrushChanneller: MonoBehaviour
         {
             completedId = currentCompletionNotifier.PaintingId;
         }
+
+        if (paintbrushVFX != null) paintbrushVFX.SetActive(false);
 
         if (currentChannelTarget != null)
         {
