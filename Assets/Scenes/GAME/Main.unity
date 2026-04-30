@@ -26585,7 +26585,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolume
   mode: 1
-  size: {x: 25.228485, y: 4.156, z: 5.3794794}
+  size: {x: 3.674879, y: 4.0638, z: 3.674879}
   overrideRendererFilters: 0
   minRendererVolumeSize: 0.1
   objectLayerMask:
@@ -26625,7 +26625,7 @@ Transform:
   m_GameObject: {fileID: 1328377526}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.7177582, y: -0.6380001, z: -0.9702606}
+  m_LocalPosition: {x: 7.059046, y: -0.68410015, z: -0.11796063}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -26737,6 +26737,10 @@ MonoBehaviour:
   requireReleaseAfterCompletion: 1
   rechannelCooldown: 0.35
   paintbrushVFX: {fileID: 1756396360}
+  paintbrushRenderer: {fileID: 1915125443}
+  emissionPropertyName: _EmissionColor
+  glowColor: {r: 0.2783019, g: 1, b: 0.2783019, a: 1}
+  emissionFadeSpeed: 4.2
 --- !u!4 &1338498474 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5504563294820429183, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
@@ -29933,6 +29937,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1338498474}
     m_Modifications:
+    - target: {fileID: 105838486273641656, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 820160672213593800, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1107879617556753065, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
       propertyPath: InitialModule.startSize.scalar
       value: 5
@@ -29963,6 +29975,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4594878441947942568, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4594878441947942568, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
+      propertyPath: m_StaticEditorFlags
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4712908590543412220, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
@@ -30024,6 +30040,14 @@ PrefabInstance:
     - target: {fileID: 4753596625575407876, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
       propertyPath: m_ConstrainProportionsScale
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5330923558252891599, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5530847650893132570, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -37099,6 +37123,10 @@ PrefabInstance:
       propertyPath: maxDistance
       value: 1.5
       objectReference: {fileID: 0}
+    - target: {fileID: 4175390700452529922, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5504563294820429183, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.3
@@ -37163,9 +37191,17 @@ PrefabInstance:
       propertyPath: offset.z
       value: -0.25
       objectReference: {fileID: 0}
+    - target: {fileID: 8152591753358401359, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 8044221c615a4c0478cc7a3627e60ef7, type: 2}
     - target: {fileID: 8558968373898407569, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
       propertyPath: m_Name
       value: Paintbrush
+      objectReference: {fileID: 0}
+    - target: {fileID: 8558968373898407569, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -37178,6 +37214,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1338498465}
   m_SourcePrefab: {fileID: 100100000, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+--- !u!23 &1915125443 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8152591753358401359, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+  m_PrefabInstance: {fileID: 1915125442}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &1918542633
 Mesh:
   m_ObjectHideFlags: 0

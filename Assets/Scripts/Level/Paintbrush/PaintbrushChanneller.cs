@@ -35,6 +35,22 @@ public class PaintbrushChanneller: MonoBehaviour
     [Tooltip("The VFX/Particle System prefab parented to the paintbrush.")]
     public GameObject paintbrushVFX;
 
+    [Header("Emissive Settings")]
+    [Tooltip("The MeshRenderer of the paintbrush part that should glow.")]
+    public MeshRenderer paintbrushRenderer;
+
+    [Tooltip("The name of the emissive color property in your shader (usually _EmissionColor).")]
+    public string emissionPropertyName = "_EmissionColor";
+
+    [Tooltip("The color and max intensity of the glow.")]
+    [ColorUsage(true, true)]
+
+    public Color glowColor = Color.white;
+    public float emissionFadeSpeed = 5f;
+
+    private Material paintbrushMaterial;
+    private float currentEmissionIntensity = 0f;
+
     private PlayerCollectibleManager collectibles;
 
     private Coroutine channelCoroutine;
@@ -62,11 +78,45 @@ public class PaintbrushChanneller: MonoBehaviour
         {
             Debug.LogWarning("[PlayerChanneller] PlayerStateMachine not found on the same GameObject. ChannelState transitions will be skipped.");
         }
-        // Find collectibles manager
+
         collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
         if (collectibles == null)
         {
             Debug.LogWarning("[PlayerChanneller] PlayerCollectibleManager not found. Channeling will be disabled until present.");
+        }
+
+        if (paintbrushRenderer != null)
+        {
+            paintbrushMaterial = paintbrushRenderer.material;
+        }
+    }
+
+    private void Update()
+    {
+        bool isInputActive = InputManager.Instance != null && InputManager.Instance.IsChanneling();
+
+        float targetIntensity = isInputActive ? 3f : 0f;
+
+        currentEmissionIntensity = Mathf.MoveTowards(
+            currentEmissionIntensity,
+            targetIntensity,
+            Time.deltaTime * emissionFadeSpeed
+        );
+
+        if (collectibles.HasCollected("Paintbucket"))
+        {
+            if (currentEmissionIntensity > 0.001f)
+            {
+                // Ensure emission is active in the shader
+                paintbrushMaterial.EnableKeyword("_EMISSION");
+                paintbrushMaterial.SetColor(emissionPropertyName, glowColor * currentEmissionIntensity);
+            }
+            else
+            {
+                // Fully disable emission when intensity hits zero to save performance
+                paintbrushMaterial.SetColor(emissionPropertyName, Color.black);
+                paintbrushMaterial.DisableKeyword("_EMISSION");
+            }
         }
     }
 
@@ -246,6 +296,13 @@ public class PaintbrushChanneller: MonoBehaviour
         Debug.Log("[PlayerChanneller] ChannelRoutine started.");
 
         if (paintbrushVFX != null) paintbrushVFX.SetActive(true);
+
+        if (currentEmissionIntensity <= 0)
+        {
+            float targetIntensity = currentChannelTarget != null ? 1f : 0f;
+            currentEmissionIntensity = Mathf.MoveTowards(currentEmissionIntensity, targetIntensity, Time.deltaTime * emissionFadeSpeed);
+            paintbrushMaterial.SetColor(emissionPropertyName, glowColor * currentEmissionIntensity);
+        }
 
         while (true)
         {
