@@ -35,6 +35,25 @@ public class EventNames {
 
     }
 
+    public static class HintEvents
+    {
+        public const string HINT1_START = "HINT1_START";
+        public const string HINT1_END = "HINT1_END";
+        public const string HINT2_START = "HINT2_START";
+        public const string HINT2_END = "HINT2_END";
+        public const string HINT3_START = "HINT3_START";
+        public const string HINT3_END = "HINT3_END";
+        public const string HINT4_START = "HINT4_START";
+        public const string HINT4_END = "HINT4_END";
+        public const string HINT5_START = "HINT5_START";
+        public const string HINT5_END = "HINT5_END";
+
+        public const string ADD_PAINTING_RESTORED = "ADD_PAINTING_RESTORED";
+
+        public const string OPEN_HINT = "OPEN_HINT";
+        public const string CLOSE_HINT = "CLOSE_HINT";
+    }
+
     public static class PlayerEvents
     {
 		public const string PLAYER_MOVED = "PLAYER_MOVED";
