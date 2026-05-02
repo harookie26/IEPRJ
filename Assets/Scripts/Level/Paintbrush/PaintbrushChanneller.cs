@@ -370,6 +370,7 @@ public class PaintbrushChanneller : MonoBehaviour
 
                         // Subscribe to completion event
                         currentCompletionNotifier.ChannelCompleted += OnTargetCompleted;
+
                     }
                     else
                     {
@@ -446,8 +447,6 @@ public class PaintbrushChanneller : MonoBehaviour
         {
             completedId = currentCompletionNotifier.PaintingId;
         }
-
-        // Removed abrupt paintbrushVFX.SetActive(false) here
 
         if (currentChannelTarget != null)
         {

@@ -72,6 +72,12 @@ public class BaseCollectible : MonoBehaviour, ICollectible
         }
 
         OnCollect();
+
+        if(GetID == "Paintbucket")
+        {
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+        }
+
         Destroy(gameObject);
     }
 
