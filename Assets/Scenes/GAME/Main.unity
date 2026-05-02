@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.6792453, g: 0.6696333, b: 0.6696333, a: 1}
+  m_AmbientSkyColor: {r: 0.254717, g: 0.254717, b: 0.254717, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -641,6 +641,11 @@ Transform:
   - {fileID: 2020907217}
   m_Father: {fileID: 1898357059}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!108 &15788002 stripped
+Light:
+  m_CorrespondingSourceObject: {fileID: 2777713364699105341, guid: b5930138d1f27d042bf942f7d577cff8, type: 3}
+  m_PrefabInstance: {fileID: 1533445960}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &18414992
 GameObject:
   m_ObjectHideFlags: 0
@@ -5059,6 +5064,78 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1488677192}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &301845587
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 301845588}
+  - component: {fileID: 301845590}
+  - component: {fileID: 301845589}
+  m_Layer: 5
+  m_Name: PSX Test
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &301845588
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 301845587}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 930723462}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 1920, y: 1080}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &301845589
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 301845587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Texture: {fileID: 8400000, guid: 39680ac318b1f2e40875598133e666a1, type: 2}
+  m_UVRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+--- !u!222 &301845590
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 301845587}
+  m_CullTransparentMesh: 1
 --- !u!1 &302285503 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: d7feb2dabbb078d45aa30795d12470bd, type: 3}
@@ -26737,6 +26814,7 @@ MonoBehaviour:
   requireReleaseAfterCompletion: 1
   rechannelCooldown: 0.35
   paintbrushVFX: {fileID: 1756396360}
+  paintbrushLight: {fileID: 15788002}
   paintbrushRenderer: {fileID: 1915125443}
   emissionPropertyName: _EmissionColor
   glowColor: {r: 0.2783019, g: 1, b: 0.2783019, a: 1}
@@ -37179,6 +37257,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6575742268984116288, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+      propertyPath: cameraTransform
+      value: 
+      objectReference: {fileID: 2095731256}
     - target: {fileID: 7523077988506817869, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
       propertyPath: offset.x
       value: -0.5
@@ -39012,10 +39094,13 @@ PrefabInstance:
     - {fileID: 7690231523310871950, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 3271892533214988812, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
-      insertIndex: 3
-      addedObject: {fileID: 1970611134}
+      insertIndex: 0
+      addedObject: {fileID: 301845588}
     - targetCorrespondingSourceObject: {fileID: 3271892533214988812, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
       insertIndex: 4
+      addedObject: {fileID: 1970611134}
+    - targetCorrespondingSourceObject: {fileID: 3271892533214988812, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
+      insertIndex: 5
       addedObject: {fileID: 84080830}
     - targetCorrespondingSourceObject: {fileID: 5425839490648008090, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
       insertIndex: 2
@@ -41187,7 +41272,7 @@ GameObject:
   - component: {fileID: 2095731258}
   - component: {fileID: 2095731257}
   m_Layer: 3
-  m_Name: Camera
+  m_Name: Player Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
