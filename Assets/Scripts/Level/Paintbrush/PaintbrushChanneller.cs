@@ -7,7 +7,7 @@ using Assets.Scripts.Level.Paintbrush;
 
 [DisallowMultipleComponent]
 [FoldableInspector]
-public class PaintbrushChanneller: MonoBehaviour
+public class PaintbrushChanneller : MonoBehaviour
 {
     [Tooltip("Origin used for the interact raycast. Typically the player's camera or a head transform.")]
     public Transform rayOrigin;
@@ -30,6 +30,30 @@ public class PaintbrushChanneller: MonoBehaviour
 
     [Tooltip("Delay after completion before a new channel can start (even if the key is still held). Uses unscaled time.")]
     public float rechannelCooldown = 0.35f;
+
+    [Header("VFX Reference")]
+    [Tooltip("The VFX/Particle System prefab parented to the paintbrush.")]
+    public GameObject paintbrushVFX;
+
+    [Header("Light Reference")]
+    [Tooltip("The point light parented to the paintbrush VFX Object.")]
+    public Light paintbrushLight;
+
+    [Header("Emissive Settings")]
+    [Tooltip("The MeshRenderer of the paintbrush part that should glow.")]
+    public MeshRenderer paintbrushRenderer;
+
+    [Tooltip("The name of the emissive color property in your shader (usually _EmissionColor).")]
+    public string emissionPropertyName = "_EmissionColor";
+
+    [Tooltip("The color and max intensity of the glow.")]
+    [ColorUsage(true, true)]
+
+    public Color glowColor = Color.white;
+    public float emissionFadeSpeed = 5f;
+
+    private Material paintbrushMaterial;
+    private float currentEmissionIntensity = 0f;
 
     private PlayerCollectibleManager collectibles;
 
@@ -58,11 +82,54 @@ public class PaintbrushChanneller: MonoBehaviour
         {
             Debug.LogWarning("[PlayerChanneller] PlayerStateMachine not found on the same GameObject. ChannelState transitions will be skipped.");
         }
-        // Find collectibles manager
+
         collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
         if (collectibles == null)
         {
             Debug.LogWarning("[PlayerChanneller] PlayerCollectibleManager not found. Channeling will be disabled until present.");
+        }
+
+        if (paintbrushRenderer != null)
+        {
+            paintbrushMaterial = paintbrushRenderer.material;
+        }
+    }
+
+    private void Update()
+    {
+        bool isInputActive = InputManager.Instance != null && InputManager.Instance.IsChanneling();
+
+        float targetIntensity = isInputActive ? 3f : 0f;
+
+        currentEmissionIntensity = Mathf.MoveTowards(
+            currentEmissionIntensity,
+            targetIntensity,
+            Time.deltaTime * emissionFadeSpeed
+        );
+
+        if (paintbrushLight != null)
+        {
+            paintbrushLight.intensity = currentEmissionIntensity;
+        }
+
+        if (collectibles.HasCollected("Paintbucket"))
+        {
+            if (currentEmissionIntensity > 0.001f)
+            {
+                paintbrushMaterial.EnableKeyword("_EMISSION");
+                paintbrushMaterial.SetColor(emissionPropertyName, glowColor * currentEmissionIntensity);
+
+                if (paintbrushVFX != null && !paintbrushVFX.activeSelf)
+                    paintbrushVFX.SetActive(true);
+            }
+            else
+            {
+                paintbrushMaterial.SetColor(emissionPropertyName, Color.black);
+                paintbrushMaterial.DisableKeyword("_EMISSION");
+
+                if (paintbrushVFX != null && paintbrushVFX.activeSelf)
+                    paintbrushVFX.SetActive(false);
+            }
         }
     }
 
@@ -79,6 +146,9 @@ public class PaintbrushChanneller: MonoBehaviour
 
     private void OnDisable()
     {
+        // Keep this one, it's good practice to kill visuals if the script dies
+        if (paintbrushVFX != null) paintbrushVFX.SetActive(false);
+
         TryUnsubscribe();
 
         if (channelCoroutine != null)
@@ -190,6 +260,8 @@ public class PaintbrushChanneller: MonoBehaviour
 
     private void HandleChannelStop()
     {
+        // Removed abrupt paintbrushVFX.SetActive(false) here
+
         if (channelCoroutine != null)
         {
             if (currentChannelTarget != null)
@@ -236,6 +308,9 @@ public class PaintbrushChanneller: MonoBehaviour
     private IEnumerator ChannelRoutine()
     {
         Debug.Log("[PlayerChanneller] ChannelRoutine started.");
+
+        // Removed abrupt paintbrushVFX.SetActive(true) here
+
         while (true)
         {
             if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
@@ -349,6 +424,8 @@ public class PaintbrushChanneller: MonoBehaviour
                         currentChannelTarget = null;
                         consecutiveMisses = 0;
 
+                        // Removed abrupt paintbrushVFX.SetActive(false) here
+
                         UnsubscribeFromCompletion();
 
                         // Exit ChannelState because channeling ended (no active target)
@@ -369,6 +446,8 @@ public class PaintbrushChanneller: MonoBehaviour
         {
             completedId = currentCompletionNotifier.PaintingId;
         }
+
+        // Removed abrupt paintbrushVFX.SetActive(false) here
 
         if (currentChannelTarget != null)
         {
@@ -401,8 +480,6 @@ public class PaintbrushChanneller: MonoBehaviour
 
         if (stateMachine != null && stateMachine.IsChanneling)
             stateMachine.ExitChannelState();
-
-        // ChannelledPaintingCount is now derived from completedPaintingIds.Count, so nothing else to increment here.
     }
 
     private void UnsubscribeFromCompletion()
