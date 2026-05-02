@@ -5,7 +5,7 @@
 
 //public class Win_Scenario : MonoBehaviour
 //{
-//    [SerializeField] private GameObject player;
+//    [SerializeField] private GameObject _player;
 
 //    private bool objectiveCompleted;
 

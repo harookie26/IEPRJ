@@ -1,39 +1,39 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static EventNames.GameStateEvents;
 
+[FoldableInspector]
 public class MainMenu : MonoBehaviour
 {
     [SerializeField] private Button playButton;
-    [SerializeField] private Button settingsButton;
     [SerializeField] private Button exitButton;
-
-    [Header("Settings UI")]
     [SerializeField] private GameObject settingsPanel;
-    [SerializeField] private GameObject settingsCloseButton;
 
-    private SceneLoader sceneLoader;
+    private ScreenFader _screenFader;
+    private SceneLoader _sceneLoader;
+
+    private GameStateManager _gameState => FindFirstObjectByType<GameStateManager>();
+
+    private bool _settingsOpen = false;
 
     private void Start()
     {
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+
+        _screenFader = FindFirstObjectByType<ScreenFader>();
+        _screenFader.StartCoroutine(_screenFader.FadeInSequence(1.0f));
+
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
         if (playButton != null)
         {
-            playButton.onClick.AddListener(() => sceneLoader.LoadSceneByName(SceneNames.HubScene));
+            playButton.onClick.AddListener(() => _sceneLoader.LoadSceneByName(SceneNames.GameScene));
         }
         else
         {
             Debug.LogError("Play button is not assigned in the inspector.");
-        }
-
-        if (settingsButton != null)
-        {
-            Debug.LogWarning("Settings button functionality is not implemented yet.");
-        }
-        else
-        {
-            Debug.LogError("Settings button is not assigned in the inspector.");
         }
         if (exitButton != null)
         {
@@ -44,24 +44,57 @@ public class MainMenu : MonoBehaviour
             Debug.LogError("No button is not assigned in the inspector.");
         }
 
-        sceneLoader = FindFirstObjectByType<SceneLoader>();
-        if (sceneLoader == null)
+        _sceneLoader = FindFirstObjectByType<SceneLoader>();
+        if (_sceneLoader == null)
         {
             Debug.LogError("SceneLoader not found in the scene. Please add one and assign it.");
         }
     }
 
-    public void OnSettingsToggled()
+    public void ToggleSettings()
     {
-        if (settingsPanel != null && settingsCloseButton != null)
+        if (_settingsOpen)
+            CloseSettings();
+        else
+            OpenSettings();
+    }
+
+    private void OpenSettings()
+    {
+        // Open settings and hide pause visually but keep game paused
+        _settingsOpen = true;
+        if (settingsPanel != null) settingsPanel.SetActive(true);
+
+
+        _gameState.PauseGame();
+        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
+
+        UpdateCursorVisibility();
+    }
+
+    private void CloseSettings()
+    {
+        _settingsOpen = false;
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+
+        // Keep game paused while back on pause menu
+        _gameState.PauseGame();
+        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
+
+        UpdateCursorVisibility();
+    }
+
+    private void UpdateCursorVisibility()
+    {
+        if (_settingsOpen || SceneManager.GetActiveScene().name == "MainMenu")
         {
-            bool isActive = settingsPanel.activeSelf;
-            settingsPanel.SetActive(!isActive);
-            settingsCloseButton.SetActive(!isActive);
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
         }
         else
         {
-            Debug.LogError("Settings panel or close button is not assigned in the inspector.");
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
         }
     }
 }

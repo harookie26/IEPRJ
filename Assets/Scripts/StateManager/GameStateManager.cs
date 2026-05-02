@@ -1,19 +1,34 @@
 using UnityEngine;
 using static EventNames.GameStateEvents;
 using UnityEngine.SceneManagement;
-using Unity.VisualScripting;
+using System.Collections;
 
+[FoldableInspector]
 public class GameStateManager : MonoBehaviour
 {
-    private bool isGamePaused;
+    private bool _isGamePaused;
 
-    private InputManager inputManager;
+    private InputManager _inputManager;
 
-    private bool debugMode = false;
+    private bool _debugMode = false;
+
+    private EnemyStateMachine _enemy;
+
+    private PaintbrushChanneller paintbrushChanneller;
+
+    private ScreenFader _screenFader => FindFirstObjectByType<ScreenFader>();
+
+    private SceneLoader _sceneLoader => FindFirstObjectByType<SceneLoader>();
+
+    public int currentLevelProgress = 0;
+
+    private bool _isWinSequenceRunning = false;
 
     private void Awake()
     {
-        inputManager = InputManager.Instance;
+        _inputManager = InputManager.Instance;
+        _enemy = FindFirstObjectByType<EnemyStateMachine>();
+        paintbrushChanneller = FindFirstObjectByType<PaintbrushChanneller>();
     }
 
     private void OnEnable()
@@ -30,18 +45,18 @@ public class GameStateManager : MonoBehaviour
 
     void Start()
     {
-        isGamePaused = false;
+        _isGamePaused = false;
     }
 
     void Update()
     {
-        if (inputManager == null)
-            inputManager = InputManager.Instance;
+        if (_inputManager == null)
+            _inputManager = InputManager.Instance;
 
-        if (inputManager != null && inputManager.WasDebugModePressed())
+        if (_inputManager != null && _inputManager.WasDebugModePressed())
         {
-            debugMode = !debugMode;
-            if (debugMode)
+            _debugMode = !_debugMode;
+            if (_debugMode)
             {
                 EventBroadcaster.Instance.PostEvent(ON_DEBUG_MODE_ON);
                 Debug.Log("[GameStateManager] Debug mode ON");
@@ -52,23 +67,96 @@ public class GameStateManager : MonoBehaviour
                 Debug.Log("[GameStateManager] Debug mode OFF");
             }
         }
+
+        UpdateLevelProgress();
     }
 
-    private void PauseGame()
+    public void PauseGame()
     {
-        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
-        Time.timeScale = 0.00000001f;
+        if (_isGamePaused) return;
+
+        _isGamePaused = true;
+
+        Time.timeScale = 0f;
+
+        if (_enemy != null)
+            _enemy.Freeze();
     }
 
-    private void ResumeGame()
+    public void ResumeGame()
     {
-        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
+        if (!_isGamePaused) return;
+
+        _isGamePaused = false;
+
         Time.timeScale = 1f;
+
+        if (_enemy != null)
+            _enemy.Unfreeze();
     }
 
-    private void OnApplicationQuit()
+    public void OnApplicationQuit()
     {
         PlayerPrefs.DeleteKey("Hub");
         PlayerPrefs.Save();
+    }
+
+    private IEnumerator WinGameSequence()
+    {
+        if (_isWinSequenceRunning)
+            yield break;
+
+        _isWinSequenceRunning = true;
+
+        Time.timeScale = 1f;
+
+        Debug.Log("[GameStateManager] Starting WinGameSequence. screenFader=" + (_screenFader != null) + ", sceneLoader=" + (_sceneLoader != null));
+
+        if (_screenFader != null)
+        {
+            yield return _screenFader.FadeOutSequence(0.5f);
+        }
+        else
+        {
+            Debug.LogWarning("[GameStateManager] No ScreenFader found in scene. Skipping fade.");
+        }
+
+        float postFadeDelay = 0.25f;
+        if (postFadeDelay > 0f)
+            yield return new WaitForSecondsRealtime(postFadeDelay);
+
+        if (_sceneLoader != null)
+        {
+            _sceneLoader.LoadSceneByName("MainMenu");
+        }
+        else
+        {
+            Debug.LogWarning("[GameStateManager] No SceneLoader found. Using SceneManager.LoadScene fallback.");
+            SceneManager.LoadScene("MainMenu");
+        }
+    }
+
+    public void TriggerWinSequence()
+    {
+        if (_isWinSequenceRunning)
+        {
+            Debug.Log("[GameStateManager] Win sequence already running. Ignoring TriggerWinSequence call.");
+            return;
+        }
+
+        StartCoroutine(WinGameSequence());
+    }
+
+    private void UpdateLevelProgress()
+    {
+        if (paintbrushChanneller != null)
+        {
+            currentLevelProgress = paintbrushChanneller.GetChannelledPaintingCount();
+        }
+    }
+
+    public int GetCurrentLevelProgress()
+    {
+        return currentLevelProgress;
     }
 }

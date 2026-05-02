@@ -3,7 +3,7 @@ using UnityEngine.AI;
 
 public class EnemyDistracted : EnemyState
 {
-    // The exact world position of the painting that distracted the enemy.
+    // The exact world position of the painting that distracted the _enemy.
     public Vector3 PaintingPosition { get; set; }
 
     private NavMeshAgent agent;

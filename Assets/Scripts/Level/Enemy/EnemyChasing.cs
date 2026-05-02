@@ -1,5 +1,7 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
+using static EventNames;
 
 public class EnemyChasing : EnemyState
 {
@@ -118,8 +120,9 @@ public class EnemyChasing : EnemyState
         {
             agent.isStopped = true;
             agent.ResetPath();
-            state.Switchstate(state.EnemyCalm);
+
             Debug.Log("BOOOOOOOO! (caught by NavMeshAgent)");
+            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_CATCHED);
             return;
         }
 
@@ -205,7 +208,7 @@ public class EnemyChasing : EnemyState
         }
 
         Vector3 origin = state.Enemy.transform.position + Vector3.up * 1.2f;
-        Vector3 targetPos = state.TargetPlayer.transform.position + Vector3.up * 1.0f; // aim for player's approximate center
+        Vector3 targetPos = state.TargetPlayer.transform.position + Vector3.up * 1.0f; // aim for _player's approximate center
         Vector3 dir = targetPos - origin;
         float dist = dir.magnitude;
         if (dist <= 0.0001f)
@@ -225,9 +228,9 @@ public class EnemyChasing : EnemyState
         LastLoSOrigin = origin;
         LastLoSTarget = targetPos;
         HasLastLoS = true;
-        LastHitPoint = targetPos; // default to player position
+        LastHitPoint = targetPos; // default to _player position
 
-        // Ignore trigger colliders so triggers don't block LoS.
+        // Ignore trigger _colliders so triggers don't block LoS.
         if (Physics.Raycast(origin, dir, out RaycastHit hit, dist, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
         {
             LastHitPoint = hit.point;
@@ -245,7 +248,7 @@ public class EnemyChasing : EnemyState
             return false;
         }
 
-        // Nothing hit between enemy and player -> clear LoS
+        // Nothing hit between _enemy and _player -> clear LoS
         LastLoSClear = true;
         return true;
     }

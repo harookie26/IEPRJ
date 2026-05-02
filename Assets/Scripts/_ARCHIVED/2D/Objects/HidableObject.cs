@@ -76,8 +76,8 @@ public class HidableObject : MonoBehaviour, IHidable
 
     //private void OnGUI()
     //{
-    //    GameObject player = GameObject.FindGameObjectWithTag("Player");
-    //    bool playerNearby = player != null && Mathf.Abs(transform.position.x - player.transform.position.x) <= graceDistance;
+    //    GameObject _player = GameObject.FindGameObjectWithTag("Player");
+    //    bool playerNearby = _player != null && Mathf.Abs(transform.position.x - _player.transform.position.x) <= graceDistance;
 
     //    if (playerNearby && !isHiding && cooldownTimer <= 0f)
     //    {

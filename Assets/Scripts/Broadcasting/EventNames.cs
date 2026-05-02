@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Runtime.CompilerServices;
+using UnityEngine.UnityConsent;
 
 
 public class EventNames {
@@ -47,12 +48,16 @@ public class EventNames {
         public const string ENEMY_SPOTTED_PLAYER = "ENEMY_SPOTTED_PLAYER";
         public const string ENEMY_LOST_PLAYER = "ENEMY_LOST_PLAYER";
         public const string ENEMY_SEARCHING = "ENEMY_SEARCHING";
+		public const string ENEMY_CATCHED = "ENEMY_CATCHED";
     }
 
     public static class UIEvents
     {
         public const string HOVER_UI_SHOWN = "HOVER_UI_SHOWN";
         public const string HOVER_UI_HIDDEN = "HOVER_UI_HIDDEN";
+
+		public const string PLAY_DIALOGUE_START = "PLAY_DIALOGUE_START";
+		public const string PLAY_DIALOGUE_END = "PLAY_DIALOGUE_END";
     }
 
 	public static class CutsceneEvents

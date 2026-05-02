@@ -73,7 +73,6 @@ public class SceneHandler : MonoBehaviour
             {
                 EventBroadcaster.Instance.PostEvent(SceneEvents.ON_SCENE_SWITCH);
 
-                sceneLoader.LoadSceneByName(SceneNames.ArcadeStart);
             }
             else
             {

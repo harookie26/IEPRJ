@@ -15,7 +15,7 @@ public class LoseQuestion : MonoBehaviour
 
         if (yesButton != null)
         {
-            yesButton.onClick.AddListener(() => sceneLoader.LoadSceneByName(SceneNames.LevelSelection));
+
         }
         else
         {
@@ -24,7 +24,6 @@ public class LoseQuestion : MonoBehaviour
 
         if (noButton != null)
         {
-            noButton.onClick.AddListener(() => sceneLoader.LoadSceneByName(SceneNames.GameOverScene));
         }
         else
         {

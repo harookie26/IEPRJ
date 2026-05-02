@@ -1,6 +1,9 @@
 using System;
-using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
+using UnityEngine;
+using UnityEngine.InputSystem;
 using static EventNames;
 
 public class DialogueManager : MonoBehaviour
@@ -8,8 +11,18 @@ public class DialogueManager : MonoBehaviour
     public static DialogueManager Instance { get; private set; }
 
     [Header("UI Components")]
+    [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private TextMeshProUGUI characterNameText;
     [SerializeField] private TextMeshProUGUI dialogueLineText;
+
+    [Header("Dialogue Settings")]
+    [SerializeField] private float dialogueSpeed = 0.05f;
+
+    private Queue<string> dialogueQueue = new();
+    private Action onDialogueComplete;
+
+    private HashSet<string> completedDialogues = new();
+    private Dictionary<string, int> dialogueIndices = new();
 
     private void Awake()
     {
@@ -23,35 +36,103 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    public void ShowDialogue(string characterName, string dialogueLine, Action onComplete)
+    public void PlayNextDialogue(string objectKey, string[] dialogueIDs, Func<string, Dialogue> fetchDialogue, Action onComplete = null)
     {
-        Debug.Log("ShowDialogue called. Setting up dialogue line.");
+        if (!dialogueIndices.ContainsKey(objectKey))
+            dialogueIndices[objectKey] = 0;
 
+        int index = dialogueIndices[objectKey];
+
+        if (index >= dialogueIDs.Length)
+            return;
+
+        string dialogueID = dialogueIDs[index];
+
+        if (HasCompletedDialogue(dialogueID))
+            return;
+
+        Dialogue dialogue = fetchDialogue(dialogueID);
+        if (dialogue == null)
+            return;
+
+        ShowDialogue(dialogue, () =>
+        {
+            completedDialogues.Add(dialogueID);
+            dialogueIndices[objectKey]++;
+            onComplete?.Invoke();
+        });
+    }
+
+    public void ShowDialogue(Dialogue dialogue, Action onComplete = null)
+    {
+        EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_START);
+
+        dialoguePanel.SetActive(true);
         characterNameText.gameObject.SetActive(true);
         dialogueLineText.gameObject.SetActive(true);
 
-        characterNameText.text = characterName;
-        dialogueLineText.text = dialogueLine;
+        characterNameText.text = dialogue.characterName;
+        dialogueQueue.Clear();
 
-        // Disable all input except LMB/Enter
-        if (InputManager.Instance != null)
+        foreach (string line in dialogue.dialogueLines)
+            dialogueQueue.Enqueue(line);
+
+        onDialogueComplete = () =>
         {
-            InputManager.Instance.StartCoroutine(InputManager.Instance.WaitForInputCoroutine(() =>
-            {
-                Debug.Log("Input detected. Closing dialogue and completing action.");
-
-                characterNameText.gameObject.SetActive(false);
-                dialogueLineText.gameObject.SetActive(false);
-
-                // Re-enable all input
-                onComplete?.Invoke();
-            }));
-        }
-        else
-        {
-            Debug.LogWarning("InputManager instance not found. Cannot wait for input. Completing immediately.");
-            // Re-enable all input just in case
             onComplete?.Invoke();
+            EventBroadcaster.Instance.PostEvent(UIEvents.PLAY_DIALOGUE_END);
+        };
+
+        ShowNextLine();
+    }
+
+    private void ShowNextLine()
+    {
+        if (dialogueQueue.Count == 0)
+        {
+            EndDialogue();
+            return;
         }
+
+        string nextLine = dialogueQueue.Dequeue();
+
+        StopAllCoroutines();
+        StartCoroutine(ShowLineRoutine(nextLine));
+    }
+
+    private IEnumerator ShowLineRoutine(string line)
+    {
+        dialogueLineText.text = "";
+        foreach (char c in line)
+        {
+            dialogueLineText.text += c;
+            yield return new WaitForSeconds(dialogueSpeed);
+        }
+
+        // Explicitly wait until input is detected
+        yield return new WaitUntil(() =>
+        {
+            // Use InputManager if available, otherwise raw InputSystem
+            if (InputManager.Instance != null)
+                return InputManager.Instance.WasInteractPressed() || InputManager.Instance.WasAnyKeyExceptChannelPressed();
+
+            return Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
+        });
+
+        ShowNextLine();
+    }
+
+    private void EndDialogue()
+    {
+        characterNameText.gameObject.SetActive(false);
+        dialogueLineText.gameObject.SetActive(false);
+        dialoguePanel.gameObject.SetActive(false);
+
+        onDialogueComplete?.Invoke();
+    }
+
+    public bool HasCompletedDialogue(string dialogueID)
+    {
+        return completedDialogues.Contains(dialogueID);
     }
 }

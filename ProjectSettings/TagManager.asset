@@ -4,7 +4,6 @@
 TagManager:
   serializedVersion: 3
   tags:
-  - Door
   - Room
   - Enemy
   - Objective
@@ -14,6 +13,8 @@ TagManager:
   - ChannelablePainting
   - SFXAudioSource
   - MusicAudioSource
+  - Hallway
+  - Stairway
   layers:
   - Default
   - TransparentFX
@@ -34,7 +35,7 @@ TagManager:
   - Chanellable
   - Stealth
   - Collectible
-  - 
+  - Room
   - 
   - 
   - 

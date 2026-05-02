@@ -1,5 +1,5 @@
-using UnityEngine;
 using Game.ObjectTypes;
+using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class PaintingInteractable : MonoBehaviour, IInteractable
@@ -32,19 +32,15 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
         GameObject audioObject = GameObject.FindWithTag("SFXAudioSource");
 
         if (audioObject != null)
-        {
             sfxAudioSource = audioObject.GetComponent<AudioSource>();
-        }
         else
-        {
             Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
-        }
 
     }
 
     public void Interact()
     {
-        // Find the enemy state machine in the scene and tell it to distract at this painting.
+        // Find the _enemy state machine in the scene and tell it to distract at this painting.
         var enemyStateMachine = FindFirstObjectByType<EnemyStateMachine>();
         if (enemyStateMachine == null)
         {
@@ -52,7 +48,54 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
             return;
         }
 
-        sfxAudioSource.PlayOneShot(audioList.enemyDistractedSFX); //Play the needed SFX clip from the AudioList component
+        // Ensure audio references are available before trying to play
+        if (audioList == null)
+            audioList = FindAnyObjectByType<AudioList>();
+
+        if (sfxAudioSource == null)
+        {
+            var audioObject = GameObject.FindWithTag("SFXAudioSource");
+            if (audioObject != null)
+                sfxAudioSource = audioObject.GetComponent<AudioSource>();
+        }
+
+        if (sfxAudioSource != null && audioList != null && audioList.enemyDistractedSFX != null)
+        {
+            sfxAudioSource.PlayOneShot(audioList.enemyDistractedSFX);
+        }
+        else
+        {
+            Debug.LogWarning("PaintingInteractable.Interact: Missing audio source, AudioList, or clip. Skipping SFX playback.");
+        }
+
+        // If this interactable is associated with the main painting, check if it's fully revealed
+        var mainPainting = GetComponent<MainPainting>() ?? GetComponentInParent<MainPainting>() ?? FindFirstObjectByType<MainPainting>();
+        var gameState = FindFirstObjectByType<GameStateManager>();
+
+        bool revealedByCovers = mainPainting != null && mainPainting.IsFullyRevealed();
+        bool revealedByProgress = gameState != null && gameState.GetCurrentLevelProgress() >= 4;
+
+        if (revealedByCovers || revealedByProgress)
+        {
+            if (gameState != null)
+            {
+                gameState.TriggerWinSequence();
+                // No need to distract _enemy if win sequence will start
+                return;
+            }
+            else
+            {
+                Debug.LogWarning("PaintingInteractable.Interact: No GameStateManager found to trigger win sequence.");
+            }
+        }
+
         enemyStateMachine.DistractAt(transform.position);
+
+        // Hide the interact HUD after a successful interaction
+        var ui = FindFirstObjectByType<UIManager>();
+        if (ui != null)
+        {
+            ui.HideHUD(UIManager.Keys.Interact);
+        }
     }
 }

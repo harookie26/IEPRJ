@@ -1,13 +1,14 @@
 using UnityEngine;
-using UnityEngine.UIElements;
 
 [RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 public class EnemyFOV : MonoBehaviour
 {
     [SerializeField] private LayerMask layerMask;
     [SerializeField] private float fov = 90f;
     [SerializeField] private float viewDistance = 10f;
     [SerializeField] private int rayCount = 30;
+    [SerializeField] private Material fovMaterial; // material used to render the FOV mesh
 
     private Mesh mesh;
     private Vector3 origin;
@@ -18,7 +19,25 @@ public class EnemyFOV : MonoBehaviour
     private void Start()
     {
         mesh = new Mesh();
+        mesh.name = "EnemyFOV_Mesh";
         GetComponent<MeshFilter>().mesh = mesh;
+
+        MeshRenderer mr = GetComponent<MeshRenderer>();
+        if (fovMaterial != null)
+        {
+            mr.material = fovMaterial;
+        }
+        else
+        {
+            // Create a simple semi-transparent unlit material if none provided
+            Shader shader = Shader.Find("Unlit/Color");
+            if (shader != null)
+            {
+                Material temp = new Material(shader);
+                temp.color = new Color(1f, 0f, 0f, 0.2f);
+                mr.material = temp;
+            }
+        }
     }
 
     private void LateUpdate()
@@ -82,6 +101,30 @@ public class EnemyFOV : MonoBehaviour
         mesh.vertices = vertices;
         mesh.uv = uv;
         mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+    }
+
+    // Draw helpful gizmos in the editor for visualization
+    private void OnDrawGizmosSelected()
+    {
+        origin = transform.position;
+        Gizmos.color = new Color(1f, 0f, 0f, 0.25f);
+        // Draw outer arc by sampling points along the FOV
+        int sampleCount = Mathf.Max(3, rayCount);
+        float angleStep = fov / sampleCount;
+        Vector3 prevPoint = origin + (Quaternion.Euler(0, -fov / 2f, 0) * transform.forward) * viewDistance;
+        for (int i = 1; i <= sampleCount; i++)
+        {
+            float ang = -fov / 2f + angleStep * i;
+            Vector3 nextPoint = origin + (Quaternion.Euler(0, ang, 0) * transform.forward) * viewDistance;
+            Gizmos.DrawLine(origin, nextPoint);
+            Gizmos.DrawLine(prevPoint, nextPoint);
+            prevPoint = nextPoint;
+        }
+
+        // Draw radius
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(origin, viewDistance);
     }
 
 }

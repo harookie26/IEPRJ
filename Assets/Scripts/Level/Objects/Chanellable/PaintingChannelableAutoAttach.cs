@@ -32,7 +32,7 @@ public class PaintingChannelableAutoAttach : MonoBehaviour
 
     [Tooltip("If TRUE, apply the above settings to existing PaintingChannelable components found on matching GameObjects as well.")]
     [SerializeField] private bool applyToExistingComponents = true;
-
+    
     private float rescanTimer;
 
     private void Awake()
@@ -106,7 +106,6 @@ public class PaintingChannelableAutoAttach : MonoBehaviour
                 if (applyToExistingComponents)
                 {
                     ApplySettingsTo(existing);
-                    Debug.Log($"[PaintingChannelableAutoAttach] Applied settings to existing PaintingChannelable on '{go.name}'.");
                 }
                 continue;
             }

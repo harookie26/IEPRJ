@@ -1,46 +1,82 @@
 using UnityEngine;
 using System.Linq;
+using System.Collections;
 using static EventNames;
 
 public class DoorInputManager : MonoBehaviour
 {
     private bool _isCutsceneActive = false;
     private GameObject _player;
+    private PlayerMovement _playerMovement;
+
+    [Header("Door Cooldown")]
+    [Tooltip("Seconds after initiating a door transfer before another can be started.")] 
+    public float doorUseCooldown = 3f; // made public for other components
+    private float _lastDoorUseTime = -Mathf.Infinity;
+    private bool _isTransferring = false;
+
+    // Public read-only access to last use time
+    public float LastDoorUseTime => _lastDoorUseTime;
+
+    private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
+    private EnemyStateMachine enemy => FindFirstObjectByType<EnemyStateMachine>();
 
     private void Awake()
     {
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
-    }
 
-    private void OnEnable()
-    {
-    }
-
-    private void Start()
-    {
         _player = GameObject.FindGameObjectWithTag("Player");
+        _playerMovement = FindFirstObjectByType<PlayerMovement>();
     }
 
     private void Update()
     {
         if (_isCutsceneActive || _player == null)
             return;
-        
+
+        if (_isTransferring || Time.unscaledTime < _lastDoorUseTime + doorUseCooldown)
+            return;
+
         if (InputManager.Instance.WasInteractPressed())
         {
 
             if (DoorsComponent.CurrentDoor?.IsReadyToUse() == true)
             {
-                Debug.Log($"[DoorInputManager] Teleporting via {DoorsComponent.CurrentDoor.name}");
-                DoorsComponent.CurrentDoor.MoveToLinkedDoor();
+                _lastDoorUseTime = Time.unscaledTime;
+                StartCoroutine(TransferPlayer(0.05f));
             }
             else
             {
-                Debug.LogWarning("[DoorInputManager] No valid door found.");
+                //Debug.LogWarning("[DoorInputManager] No valid door found.");
             }
         }
     }
 
+    private IEnumerator TransferPlayer(float postFadeDelaySeconds)
+    {
+        _isTransferring = true;
 
+        if (screenFader == null)
+        {
+            Debug.LogWarning("[DoorInputManager] ScreenFader not found. Moving immediately.");
+            DoorsComponent.CurrentDoor.MoveToLinkedDoor();
+            _isTransferring = false;
+            yield break;
+        }
+
+        _playerMovement.SetCanMove(false);
+        enemy.Freeze();
+        yield return StartCoroutine(screenFader.FadeOutSequence(0.25f));
+
+        if (postFadeDelaySeconds > 0f)
+            yield return new WaitForSecondsRealtime(postFadeDelaySeconds);
+
+        DoorsComponent.CurrentDoor.MoveToLinkedDoor();
+
+        yield return StartCoroutine(screenFader.FadeInSequence(0.25f));
+        enemy.Unfreeze();
+        _playerMovement.SetCanMove(true);
+        _isTransferring = false;
+    }
 }

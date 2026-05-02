@@ -16,7 +16,7 @@ public class DialogueAction : CutsceneAction
         if (dialogueManager != null)
         {
             // The DialogueManager will be responsible for calling onComplete
-            dialogueManager.ShowDialogue(CharacterName, DialogueLine, onComplete);
+        ///    dialogueManager.ShowDialogue(CharacterName, DialogueLine, onComplete); 
         }
         else
         {

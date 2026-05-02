@@ -7,7 +7,7 @@ public class EnemyCalm : EnemyState
     private float roamCooldown = 3f;
     private Vector3 roamDestination;
 
-    // When set before switching into this state, the enemy will wait this many seconds
+    // When set before switching into this state, the _enemy will wait this many seconds
     // before selecting a roam destination. Default 0 (immediate roaming).
     public float EntryDelay { get; set; } = 0f;
 
