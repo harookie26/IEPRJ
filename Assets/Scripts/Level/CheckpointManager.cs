@@ -1,7 +1,8 @@
-using UnityEngine;
-using System.Collections;
-using UnityEngine.AI;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.AI;
 
 [FoldableInspector]
 public class CheckpointManager : MonoBehaviour
@@ -21,6 +22,8 @@ public class CheckpointManager : MonoBehaviour
     private Vector3 _enemySavedDistractedPaintingPosition;
     private bool _enemySavedWasDistracted;
     private string _enemySavedStateName;
+    private HashSet<string> _savedCompletedDialogues;
+
     private EnemyStateMachine _enemyStateMachine => FindFirstObjectByType<EnemyStateMachine>();
 
     private ScreenFader _screenFader => FindFirstObjectByType<ScreenFader>();
@@ -72,6 +75,8 @@ public class CheckpointManager : MonoBehaviour
             _enemySavedStateName = "NoEnemyStateMachine";
         }
 
+        _savedCompletedDialogues = new HashSet<string>(DialogueManager.Instance.GetCompletedDialogues());
+
         Debug.Log($"[CheckpointManager] Checkpoint saved at index {_currentCheckpointIndex}. PlayerPos: {_playerSavedPosition}, EnemyPos: {_enemySavedPosition}, EnemyState: {_enemySavedStateName}");
     }
 
@@ -94,6 +99,13 @@ public class CheckpointManager : MonoBehaviour
 
         _player.transform.position = _playerSavedPosition;
         _player.transform.eulerAngles = _playerSavedRotation;
+
+        if (_savedCompletedDialogues != null)
+        {
+            DialogueManager.Instance.RestoreCompletedDialogues(_savedCompletedDialogues);
+
+            EventBroadcaster.Instance.PostEvent(EventNames.GameStateEvents.ON_LEVEL_RELOAD);
+        }
 
         if (_enemy == null)
         {

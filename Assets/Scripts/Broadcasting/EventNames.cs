@@ -14,6 +14,7 @@ public class EventNames {
 		public const string ON_GAME_RESTART = "ON_GAME_RESTART";
 		public const string ON_LEVEL_COMPLETE = "ON_LEVEL_COMPLETE";
 		public const string ON_LEVEL_FAILED = "ON_LEVEL_FAILED";
+		public const string ON_LEVEL_RELOAD = "ON_LEVEL_RELOAD";
 
 		public const string ON_DEBUG_MODE_ON = "ON_DEBUG_MODE_ON";
 		public const string ON_DEBUG_MODE_OFF = "ON_DEBUG_MODE_OFF";
@@ -31,6 +32,26 @@ public class EventNames {
 	{
 		public const string ON_CORRUPTED_ROOM_TRUE = "ON_CORRUPTED_ROOM_TRUE";
 		public const string ON_CORRUPTED_ROOM_FALSE = "ON_CORRUPTED_ROOM_FALSE";
+
+    }
+
+    public static class HintEvents
+    {
+        public const string HINT1_START = "HINT1_START";
+        public const string HINT1_END = "HINT1_END";
+        public const string HINT2_START = "HINT2_START";
+        public const string HINT2_END = "HINT2_END";
+        public const string HINT3_START = "HINT3_START";
+        public const string HINT3_END = "HINT3_END";
+        public const string HINT4_START = "HINT4_START";
+        public const string HINT4_END = "HINT4_END";
+        public const string HINT5_START = "HINT5_START";
+        public const string HINT5_END = "HINT5_END";
+
+        public const string ADD_PAINTING_RESTORED = "ADD_PAINTING_RESTORED";
+
+        public const string OPEN_HINT = "OPEN_HINT";
+        public const string CLOSE_HINT = "CLOSE_HINT";
     }
 
     public static class PlayerEvents

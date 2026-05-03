@@ -36,6 +36,16 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        
+    }
+
+    private void OnDisable()
+    {
+        
+    }
+
     public void PlayNextDialogue(string objectKey, string[] dialogueIDs, Func<string, Dialogue> fetchDialogue, Action onComplete = null)
     {
         if (!dialogueIndices.ContainsKey(objectKey))
@@ -120,6 +130,18 @@ public class DialogueManager : MonoBehaviour
         });
 
         ShowNextLine();
+    }
+
+    public IEnumerable<string> GetCompletedDialogues()
+    {
+        return completedDialogues;
+    }
+
+    public void RestoreCompletedDialogues(IEnumerable<string> savedSet)
+    {
+        completedDialogues = new HashSet<string>(savedSet);
+        dialogueIndices.Clear(); // optional: reset per-object indices if you want exact rewind
+        Debug.Log("[DialogueManager] Restored completed dialogues to checkpoint state.");
     }
 
     private void EndDialogue()

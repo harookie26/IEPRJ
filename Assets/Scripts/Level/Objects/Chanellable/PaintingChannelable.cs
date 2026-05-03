@@ -178,6 +178,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         if (sfxAudioSource != null && audioList != null && audioList.paintingRestorationCompleteSFX != null)
             sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
 
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.ADD_PAINTING_RESTORED);
+
         checkpointManager.SaveCheckpoint();
     }
 }
