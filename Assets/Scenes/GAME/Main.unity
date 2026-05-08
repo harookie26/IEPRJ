@@ -10354,7 +10354,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       propertyPath: moveSpeed
-      value: 3
+      value: 1.75
       objectReference: {fileID: 0}
     - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       propertyPath: playerInput
@@ -15540,7 +15540,7 @@ Transform:
   m_GameObject: {fileID: 808703917}
   serializedVersion: 2
   m_LocalRotation: {x: 0.70710576, y: -0, z: -0, w: 0.70710784}
-  m_LocalPosition: {x: 0.2840004, y: -0.31299996, z: 0.37300003}
+  m_LocalPosition: {x: 0.296, y: -0.281, z: 0.465}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -24370,7 +24370,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 715144462282737622, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1323447428346790150, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Speed
@@ -26662,7 +26662,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolume
   mode: 1
-  size: {x: 3.674879, y: 4.0638, z: 3.674879}
+  size: {x: 3, y: 3, z: 3}
   overrideRendererFilters: 0
   minRendererVolumeSize: 0.1
   objectLayerMask:
@@ -26702,7 +26702,7 @@ Transform:
   m_GameObject: {fileID: 1328377526}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7.059046, y: -0.68410015, z: -0.11796063}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -41271,6 +41271,7 @@ GameObject:
   - component: {fileID: 2095731259}
   - component: {fileID: 2095731258}
   - component: {fileID: 2095731257}
+  - component: {fileID: 2095731260}
   m_Layer: 3
   m_Name: Player Camera
   m_TagString: Untagged
@@ -41379,7 +41380,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 1000
-  field of view: 80
+  field of view: 60
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -41397,6 +41398,39 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &2095731260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2095731255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 432749224ecbb174388137e7c02c669a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCamera
+  enableMotionEffects: 1
+  walkBobAmountY: 0.08
+  walkBobAmountX: 0.05
+  walkBobSpeed: 1.75
+  runBobAmountY: 0.07
+  runBobAmountX: 0.035
+  runBobSpeed: 10
+  swayRollAmount: 3
+  swayRollSpeed: 4
+  walkSpeedThreshold: 1
+  runSpeedThreshold: 4
+  motionLerpSpeed: 0.1
+  idleMotionFadeInDelay: 2
+  idleMotionFadeInDuration: 1
+  idlePositionDriftAmount: 0.002
+  idleRotationAmount: 0.1
+  idleMotionSpeed: 0.5
+  idleFOV: 60
+  walkFOV: 65
+  sprintFOV: 75
+  fovTransitionSpeed: 3.5
 --- !u!1001 &2099458968
 PrefabInstance:
   m_ObjectHideFlags: 0
