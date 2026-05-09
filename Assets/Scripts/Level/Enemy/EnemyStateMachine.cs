@@ -1,4 +1,3 @@
-using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -32,7 +31,8 @@ public class EnemyStateMachine : MonoBehaviour
     [Tooltip("Maximum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
     [SerializeField] private float teleportMaxSeconds = 10f;
 
-    [Header("Detection Camera/VFX")] [Tooltip("Enable camera zoom/focus and vignette during detection sequence.")]
+    [Header("Detection Camera/VFX")]
+    [Tooltip("Enable camera zoom/focus and vignette during detection sequence.")]
     [SerializeField] private bool enableCameraFxOnDetect = true;
     [Tooltip("Seconds to keep camera focused on enemy when player detected (0 = manual revert externally).")]
     [SerializeField] private float detectFocusDuration = 2.5f;
@@ -48,7 +48,7 @@ public class EnemyStateMachine : MonoBehaviour
     private float teleportTimer = 0f;
     private float nextTeleportDelay = 0f;
 
-    private LevelCameraDefault levelCamera; // cached main camera behaviour
+    private PlayerCamera playerCamera; // cached main camera behaviour
     private VFXManager vfxManager; // cached VFX manager for vignette
     private PlayerMovement playerMovement => FindFirstObjectByType<PlayerMovement>();
 
@@ -195,7 +195,7 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         // Cache camera & VFX references
-        levelCamera = FindFirstObjectByType<LevelCameraDefault>();
+        playerCamera = FindFirstObjectByType<PlayerCamera>();
         vfxManager = FindFirstObjectByType<VFXManager>();
 
         RollNextTeleportDelay();
@@ -548,10 +548,10 @@ public class EnemyStateMachine : MonoBehaviour
     private IEnumerator KillSequence()
     {
         ///Insert Kill Animations and calls here
-        
+
         yield return new WaitForSeconds(3);
         EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESTART);
-        
+
         yield return StartCoroutine(checkpoint.ReturnToCheckpoint());
 
         enemyCaught = false;
@@ -563,18 +563,18 @@ public class EnemyStateMachine : MonoBehaviour
     {
         if (enableCameraFxOnDetect)
         {
-            if (levelCamera == null) levelCamera = FindFirstObjectByType<LevelCameraDefault>();
+            if (playerCamera == null) playerCamera = FindFirstObjectByType<PlayerCamera>();
             if (vfxManager == null) vfxManager = FindFirstObjectByType<VFXManager>();
 
             Transform enemyTransform = enemy != null ? enemy.transform : transform;
 
-            if (levelCamera != null)
-            {
-                levelCamera.FocusOnEnemy(enemyTransform, detectFocusDuration);
-                levelCamera.ZoomIn();
-                if (detectAdditionalZoomInSteps > 0)
-                    StartCoroutine(ExtraZoomSteps(levelCamera, detectAdditionalZoomInSteps, detectExtraZoomInterval));
-            }
+            //if (playerCamera != null)
+            //{
+            //    playerCamera.FocusOnEnemy(enemyTransform, detectFocusDuration);
+            //    playerCamera.ZoomIn();
+            //    if (detectAdditionalZoomInSteps > 0)
+            //        StartCoroutine(ExtraZoomSteps(playerCamera, detectAdditionalZoomInSteps, detectExtraZoomInterval));
+            //}
             if (vfxManager != null)
             {
                 vfxManager.IncreaseVignette();
@@ -599,11 +599,11 @@ public class EnemyStateMachine : MonoBehaviour
         // Revert FX
         if (enableCameraFxOnDetect)
         {
-            if (levelCamera != null)
-            {
-                levelCamera.RevertFocusToPlayer();
-                levelCamera.ZoomOut();
-            }
+            //if (playerCamera != null)
+            //{
+            //    playerCamera.RevertFocusToPlayer();
+            //    playerCamera.ZoomOut();
+            //}
             if (vfxManager != null)
             {
                 vfxManager.DecreaseVignette();
@@ -611,14 +611,14 @@ public class EnemyStateMachine : MonoBehaviour
         }
     }
 
-    private IEnumerator ExtraZoomSteps(LevelCameraDefault camRef, int steps, float interval)
-    {
-        while (steps-- > 0 && camRef != null)
-        {
-            yield return new WaitForSeconds(interval);
-            camRef.ZoomIn();
-        }
-    }
+    //private IEnumerator ExtraZoomSteps(PlayerCamera camRef, int steps, float interval)
+    //{
+    //    while (steps-- > 0 && camRef != null)
+    //    {
+    //        yield return new WaitForSeconds(interval);
+    //        camRef.ZoomIn();
+    //    }
+    //}
 
     private IEnumerator ExtraVignetteSteps(VFXManager vfxRef, int steps, float interval)
     {

@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 4089393246162446923}
   - component: {fileID: 593192666447636398}
   - component: {fileID: 7893331947386255069}
-  - component: {fileID: 3591441259976563279}
   - component: {fileID: 926612734817445831}
   m_Layer: 0
   m_Name: Main Camera
@@ -152,31 +151,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc1a1aadc45592b48bf28af11282e447, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &3591441259976563279
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1833913750349661034}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98c1d5f585b70304cb0fb5fe475da859, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  smoothSpeed: 0.125
-  offset: {x: 0, y: -1.6, z: 2}
-  keepTargetInView: 1
-  focusOnlyWhenPlayerTouchingWalls: 1
-  deadZoneDegrees: 6
-  focusSlerpSpeed: 10
-  playerMovement: {fileID: 0}
-  minFov: 40
-  maxFov: 65
-  zoomStep: 25
-  fovLerpSpeed: 2
-  enemyTag: Enemy
-  enemyFocusDurationOnZoomIn: 0
 --- !u!114 &926612734817445831
 MonoBehaviour:
   m_ObjectHideFlags: 0

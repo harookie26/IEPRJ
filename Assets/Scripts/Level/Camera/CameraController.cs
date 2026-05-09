@@ -5,13 +5,13 @@ public class CameraController : MonoBehaviour
     public enum Mode { Default, Companion }
     public Mode CurrentMode { get; private set; } = Mode.Default;
 
-    private LevelCameraDefault defaultCamera;
+    private PlayerCamera defaultCamera;
     private LevelCameraCompanion companionCamera;
 
     private void Awake()
     {
         if (defaultCamera == null)
-            defaultCamera = GetComponent<LevelCameraDefault>();
+            defaultCamera = GetComponent<PlayerCamera>();
         if (companionCamera == null)
             companionCamera = GetComponent<LevelCameraCompanion>();
     }
