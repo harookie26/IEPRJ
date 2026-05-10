@@ -1,7 +1,5 @@
-using UnityEngine;
-using System.Linq;
-using Game.ObjectTypes;
 using Game.Level;
+using UnityEngine;
 
 public enum VerticalDoorDirection
 {
@@ -11,18 +9,14 @@ public enum VerticalDoorDirection
 }
 
 [FoldableInspector]
-public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
+public class DoorsComponent : MonoBehaviour, IDoor
 {
-    [SerializeField] private int roomAId;
-    [SerializeField] private int roomBId;
+    [SerializeField] private DoorsComponent partnerDoor;
 
     private IRoom roomA;
     private IRoom roomB;
 
-    [SerializeField] private string linkID;
-    [SerializeField, HideInInspector] private string uniqueID = System.Guid.NewGuid().ToString();
-
-    [SerializeField] private Collider triggerZone;
+    private Collider triggerZone;
     private GameObject _player;
 
     // Vertical direction setting (Up/Down/None)
@@ -35,9 +29,6 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
     private bool _playerInZone = false;
 
     public static DoorsComponent CurrentDoor;
-    public string LinkID => linkID;
-    public string UniqueID => uniqueID;
-
     public int Id => GetInstanceID();
     public IRoom RoomA => roomA;
     public IRoom RoomB => roomB;
@@ -49,30 +40,20 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
 
     private void Awake()
     {
-        if (string.IsNullOrEmpty(linkID))
+        if (partnerDoor == null)
         {
-            Debug.LogError($"[Door:{name}] Missing LinkID.");
+            Debug.LogError($"[Door:{name}] Missing partner door reference.");
             return;
         }
 
         _player = GameObject.FindGameObjectWithTag("Player");
         uiManager = FindFirstObjectByType<UIManager>();
-        LinkRegistry.Register(this);
 
         triggerZone = GetComponent<Collider>() ?? triggerZone;
-
-        roomA = RoomRegistry.GetRoom(roomAId);
-        roomB = RoomRegistry.GetRoom(roomBId);
-
-        if (roomA == null || roomB == null)
-        {
-            Debug.LogError($"[Door:{name}] Could not find rooms for IDs {roomAId} and/or {roomBId}");
-        }
     }
 
     private void OnDestroy()
     {
-        LinkRegistry.Unregister(this);
     }
 
     void OnTriggerEnter(Collider other)
@@ -132,31 +113,14 @@ public class DoorsComponent : MonoBehaviour, ILinkable, IDoor
 
     public void MoveToLinkedDoor()
     {
-        var linkedList = LinkRegistry
-            .GetLinkedObjects(linkID)
-            .OfType<DoorsComponent>()
-            .ToList();
-
-        if (linkedList.Count < 2)
+        if (partnerDoor == null)
         {
-            Debug.LogError($"[Door:{name}] Not enough linked doors for LinkID '{linkID}'");
+            Debug.LogError($"[Door:{name}] Partner door not assigned.");
             return;
         }
 
-        var linked = linkedList
-            .OrderByDescending(d => Vector3.Distance(d.transform.position, transform.position))
-            .First();
-
-        if (linked == this)
-        {
-            Debug.LogError($"[Door:{name}] Only found self as link target.");
-            return;
-        }
-
-        Vector3 targetPos = linked.transform.position;
-        Vector3 playerPos = _player.transform.position;
-
-        _player.transform.position = new Vector3(targetPos.x, targetPos.y, targetPos.z);
+        Vector3 targetPos = partnerDoor.transform.position;
+        _player.transform.position = targetPos;
         _lastEntryTime = Time.time;
     }
 

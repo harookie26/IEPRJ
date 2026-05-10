@@ -346,9 +346,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 6
   roomBId: 10
-  linkID: set6
-  uniqueID: b55a242d-abf6-4047-b56c-f75ab087ba07
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 1846406327}
   verticalDirection: 1
   weight: 1
 --- !u!65 &3860279
@@ -1623,9 +1621,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 13
   roomBId: 0
-  linkID: set3
-  uniqueID: 5da26b41-f54d-4625-8e96-16079efff7c6
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 1457747742}
   verticalDirection: 2
   weight: 1
 --- !u!65 &68854450
@@ -1911,9 +1907,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 6
   roomBId: 7
-  linkID: set5
-  uniqueID: 0c570a4a-089d-49ce-a07f-35fc42fdf072
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 1880925135}
   verticalDirection: 1
   weight: 1
 --- !u!65 &86370766
@@ -7288,9 +7282,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 3
   roomBId: 14
-  linkID: set4
-  uniqueID: 3dad499f-9845-4ade-aaea-5538835d41b1
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 1714636262}
   verticalDirection: 2
   weight: 1
 --- !u!65 &376888112
@@ -12584,9 +12576,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 1
   roomBId: 2
-  linkID: set2
-  uniqueID: be1c7ef5-c558-46be-8880-4e6d0e5676dc
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 1004778960}
   verticalDirection: 1
   weight: 1
 --- !u!65 &655355607
@@ -20206,9 +20196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 2
   roomBId: 1
-  linkID: set2
-  uniqueID: 6eaed0fe-17ec-4a15-a50c-100620bf5e2e
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 655355606}
   verticalDirection: 2
   weight: 1
 --- !u!65 &1004778961
@@ -20388,9 +20376,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 3
   roomBId: 1
-  linkID: set1
-  uniqueID: 41960e9d-3c4e-4ce1-8a48-4cc7ea775322
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 1537547952}
   verticalDirection: 1
   weight: 1
 --- !u!65 &1007020743
@@ -28219,9 +28205,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 0
   roomBId: 13
-  linkID: set3
-  uniqueID: 4cc0d0cc-3c31-47d5-8454-7bdb84684b16
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 68854449}
   verticalDirection: 1
   weight: 1
 --- !u!65 &1457747743
@@ -30607,9 +30591,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 1
   roomBId: 3
-  linkID: set1
-  uniqueID: 6cffaa3d-e629-44bf-a24b-5894bce3642b
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 1007020742}
   verticalDirection: 2
   weight: 1
 --- !u!65 &1537547953
@@ -32753,9 +32735,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 14
   roomBId: 3
-  linkID: set4
-  uniqueID: bdccd384-9c10-4a50-8ade-22ec1d7686e4
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 376888111}
   verticalDirection: 1
   weight: 1
 --- !u!65 &1714636263
@@ -35205,9 +35185,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 10
   roomBId: 8
-  linkID: set6
-  uniqueID: fcd7d1ac-baf5-410a-b568-668574420227
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 3860278}
   verticalDirection: 2
   weight: 1
 --- !u!65 &1846406328
@@ -36528,9 +36506,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   roomAId: 7
   roomBId: 6
-  linkID: set5
-  uniqueID: 2d8f8838-3d59-45bf-ba45-7be2de0b8ca6
-  triggerZone: {fileID: 0}
+  partnerDoor: {fileID: 86370765}
   verticalDirection: 2
   weight: 1
 --- !u!65 &1880925136
