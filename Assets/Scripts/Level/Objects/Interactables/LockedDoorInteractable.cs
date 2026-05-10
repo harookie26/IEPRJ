@@ -31,6 +31,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         if (collectibles != null && collectibles.HasCollected("Key"))
         {
             Destroy(gameObject);
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT2_START);
             sfxAudioSource.PlayOneShot(audioList.lockedDoorSFX);
 
         }
