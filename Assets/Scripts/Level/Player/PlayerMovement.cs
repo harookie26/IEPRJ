@@ -15,7 +15,6 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Movement Settings")]
     [SerializeField] float moveSpeed = 5f;
-    [SerializeField] float jumpForce = 5f;
     [SerializeField] float mouseSensitivity = 0.1f;
 
     [Header("Movement Acceleration")]
@@ -25,9 +24,18 @@ public class PlayerMovement : MonoBehaviour
     [Header("Corruption Effects")]
     [SerializeField] private float corruptedSpeedMultiplier = 0.6f;
 
-    [Header("Better Jumping")]
-    [SerializeField] private float fallMultiplier = 2.5f;
-    [SerializeField] private float lowJumpMultiplier = 2f;
+    [Header("Jumping")]
+    [SerializeField] float jumpForce = 2f;
+    [SerializeField] private float jumpAccelerationDuration = 0.4f;
+    [SerializeField] private AnimationCurve jumpAscentCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [SerializeField] private float jumpAscendMultiplier = 1.5f;
+    [SerializeField] private float fallMultiplier = 1.2f;
+
+    [Header("Coyote Time & Air Control")]
+    [SerializeField] private float coyoteTimeDuration = 0.2f;
+    [SerializeField] private float airStrafeMultiplier = 0.3f;
+    [SerializeField] private float landingDeceleration = 30f;
+    [SerializeField] private float landingRecoveryDuration = 0.1f;
 
     [Header("Room Constraint")]
     [SerializeField] private bool restrictToRoomBounds = true;
@@ -38,7 +46,14 @@ public class PlayerMovement : MonoBehaviour
     private bool isGrounded = true;
     private bool canMove = true;
     private bool jumpRequested = false;
-    private bool jumpHeld = false;
+
+    private float jumpStartTime = 0f;
+    private Vector3 jumpStartVelocity = Vector3.zero;
+    private bool isJumpAscending = false;
+
+    private float coyoteTimeRemaining = 0f;
+    private bool wasGroundedLastFrame = true;
+    private float landingRecoveryTimeRemaining = 0f;
 
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -60,8 +75,65 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector3 cachedMoveDirection = Vector3.zero;
 
+    [Header("Ground Detection")]
+    [SerializeField] private float groundDetectionDistance = 0.1f;
+    [SerializeField] private LayerMask groundLayer = -1;
+
     public bool IsTouchingWalls { get; private set; }
     public bool IsAtRoomCorner { get; private set; }
+
+    private void UpdateGroundStatus()
+    {
+        if (isJumpAscending)
+            return;
+
+        Vector3 rayOrigin = rb.position + Vector3.up * 0.1f;
+        if (Physics.Raycast(rayOrigin, Vector3.down, groundDetectionDistance, groundLayer))
+        {
+            isGrounded = true;
+        }
+        else
+        {
+            isGrounded = false;
+        }
+    }
+
+    private void UpdateCoyoteTime()
+    {
+        if (isGrounded)
+        {
+            coyoteTimeRemaining = coyoteTimeDuration;
+            wasGroundedLastFrame = true;
+        }
+        else
+        {
+            coyoteTimeRemaining -= Time.fixedDeltaTime;
+            wasGroundedLastFrame = false;
+        }
+    }
+
+    private void UpdateLandingRecovery()
+    {
+        if (landingRecoveryTimeRemaining > 0)
+        {
+            landingRecoveryTimeRemaining -= Time.fixedDeltaTime;
+        }
+    }
+
+    private void DetectLanding()
+    {
+        if (!wasGroundedLastFrame && isGrounded)
+        {
+            landingRecoveryTimeRemaining = landingRecoveryDuration;
+            ApplyLandingDeceleration();
+        }
+        wasGroundedLastFrame = isGrounded;
+    }
+
+    private void ApplyLandingDeceleration()
+    {
+        currentHorizontalVelocity = Vector3.Lerp(currentHorizontalVelocity, Vector3.zero, landingDeceleration * Time.fixedDeltaTime);
+    }
 
     private void Awake()
     {
@@ -81,6 +153,7 @@ public class PlayerMovement : MonoBehaviour
         Cursor.visible = false;
 
         bodyYaw = transform.eulerAngles.y;
+        coyoteTimeRemaining = 0f;
     }
 
     private void Start() => ResolveCurrentRoomAtPosition();
@@ -117,15 +190,19 @@ public class PlayerMovement : MonoBehaviour
 
         cachedMoveDirection = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
 
-        if (jumpAction.triggered && isGrounded)
+        if (jumpAction.triggered && (isGrounded || coyoteTimeRemaining > 0))
             jumpRequested = true;
-
-        jumpHeld = jumpAction.IsPressed();
     }
 
     private void FixedUpdate()
     {
         if (!canMove) return;
+
+        UpdateGroundStatus();
+
+        DetectLanding();
+        UpdateCoyoteTime();
+        UpdateLandingRecovery();
 
         bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
         bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
@@ -148,6 +225,12 @@ public class PlayerMovement : MonoBehaviour
         if (distanceToTarget > 0.01f)
         {
             float acceleration = (distanceToTarget > 0) ? moveAcceleration : moveDeceleration;
+
+            if (!isGrounded)
+            {
+                acceleration *= airStrafeMultiplier;
+            }
+
             float maxDelta = acceleration * Time.fixedDeltaTime;
 
             currentVel = Vector3.Lerp(currentVel, targetVel, Mathf.Min(maxDelta / distanceToTarget, 1f));
@@ -186,17 +269,34 @@ public class PlayerMovement : MonoBehaviour
 
         rb.MovePosition(newPos);
 
-        if (jumpRequested && isGrounded)
+        if (jumpRequested && (isGrounded || coyoteTimeRemaining > 0))
         {
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
+            jumpStartTime = Time.time;
+            jumpStartVelocity = rb.linearVelocity;
+            isJumpAscending = true;
             isGrounded = false;
+            coyoteTimeRemaining = 0f;
             jumpRequested = false;
+        }
+
+        if (isJumpAscending)
+        {
+            float jumpElapsedTime = Time.time - jumpStartTime;
+            float jumpProgress = Mathf.Clamp01(jumpElapsedTime / jumpAccelerationDuration);
+
+            float curveValue = jumpAscentCurve.Evaluate(jumpProgress);
+            float targetJumpVelocity = jumpForce * curveValue * jumpAscendMultiplier;
+
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, targetJumpVelocity, rb.linearVelocity.z);
+
+            if (jumpProgress >= 1f)
+            {
+                isJumpAscending = false;
+            }
         }
 
         if (rb.linearVelocity.y < 0f)
             rb.AddForce(Physics.gravity * (fallMultiplier - 1f) * rb.mass);
-        else if (rb.linearVelocity.y > 0f && !jumpHeld)
-            rb.AddForce(Physics.gravity * (lowJumpMultiplier - 1f) * rb.mass);
     }
 
 

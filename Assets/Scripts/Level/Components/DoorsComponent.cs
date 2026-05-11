@@ -24,8 +24,6 @@ public class DoorsComponent : MonoBehaviour, IDoor
     [SerializeField] private VerticalDoorDirection verticalDirection = VerticalDoorDirection.None;
     public VerticalDoorDirection VerticalDirection => verticalDirection;
 
-    private static float _entryCooldown = 0.5f;
-    private static float _lastEntryTime = -1f;
     private bool _playerInZone = false;
 
     public static DoorsComponent CurrentDoor;
@@ -37,6 +35,7 @@ public class DoorsComponent : MonoBehaviour, IDoor
     public float Weight => weight;
 
     private UIManager uiManager;
+    private DoorInputManager _doorInputManager;
 
     private void Awake()
     {
@@ -48,8 +47,10 @@ public class DoorsComponent : MonoBehaviour, IDoor
 
         _player = GameObject.FindGameObjectWithTag("Player");
         uiManager = FindFirstObjectByType<UIManager>();
+        _doorInputManager = FindFirstObjectByType<DoorInputManager>();
 
         triggerZone = GetComponent<Collider>() ?? triggerZone;
+
     }
 
     private void OnDestroy()
@@ -78,16 +79,18 @@ public class DoorsComponent : MonoBehaviour, IDoor
     private void ShowDoorHUD()
     {
         if (uiManager == null) return;
-        var doorInput = FindFirstObjectByType<DoorInputManager>();
-        if (doorInput != null)
+
+        // Check if cooldown is still active
+        if (_doorInputManager != null)
         {
-            bool cooldownActive = Time.unscaledTime < doorInput.LastDoorUseTime + doorInput.doorUseCooldown;
+            bool cooldownActive = Time.unscaledTime < _doorInputManager.LastDoorUseTime + _doorInputManager.doorUseCooldown;
             if (cooldownActive)
             {
                 uiManager.ClearForcedHUD();
                 return;
             }
         }
+
         switch (verticalDirection)
         {
             case VerticalDoorDirection.Up:
@@ -105,9 +108,8 @@ public class DoorsComponent : MonoBehaviour, IDoor
 
     public bool IsReadyToUse()
     {
-        if (_player == null) return false;
-        if (Time.time - _lastEntryTime < _entryCooldown) return false;
-
+        // Simply check if player is in the trigger zone
+        // Cooldown is handled exclusively by DoorInputManager
         return _playerInZone;
     }
 
@@ -121,7 +123,6 @@ public class DoorsComponent : MonoBehaviour, IDoor
 
         Vector3 targetPos = partnerDoor.transform.position;
         _player.transform.position = targetPos;
-        _lastEntryTime = Time.time;
     }
 
     public Vector3 GetEntryPointFor(IRoom fromRoom)

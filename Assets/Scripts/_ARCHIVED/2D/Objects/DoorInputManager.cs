@@ -35,20 +35,22 @@ public class DoorInputManager : MonoBehaviour
         if (_isCutsceneActive || _player == null)
             return;
 
-        if (_isTransferring || Time.unscaledTime < _lastDoorUseTime + doorUseCooldown)
+        // Early exit if actively transferring
+        if (_isTransferring)
             return;
 
+        // Early exit if in cooldown
+        if (Time.unscaledTime < _lastDoorUseTime + doorUseCooldown)
+            return;
+
+        // Only process if interact was pressed THIS frame
         if (InputManager.Instance.WasInteractPressed())
         {
-
-            if (DoorsComponent.CurrentDoor?.IsReadyToUse() == true)
+            // Check if player is in a valid door zone and door is ready
+            if (DoorsComponent.CurrentDoor != null && DoorsComponent.CurrentDoor.IsReadyToUse())
             {
                 _lastDoorUseTime = Time.unscaledTime;
                 StartCoroutine(TransferPlayer(0.05f));
-            }
-            else
-            {
-                //Debug.LogWarning("[DoorInputManager] No valid door found.");
             }
         }
     }
