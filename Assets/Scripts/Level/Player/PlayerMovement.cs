@@ -51,6 +51,10 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 jumpStartVelocity = Vector3.zero;
     private bool isJumpAscending = false;
 
+    private float jumpStartTime = 0f;
+    private Vector3 jumpStartVelocity = Vector3.zero;
+    private bool isJumpAscending = false;
+
     private float coyoteTimeRemaining = 0f;
     private bool wasGroundedLastFrame = true;
     private float landingRecoveryTimeRemaining = 0f;
@@ -96,43 +100,6 @@ public class PlayerMovement : MonoBehaviour
         {
             isGrounded = false;
         }
-    }
-
-    private void UpdateCoyoteTime()
-    {
-        if (isGrounded)
-        {
-            coyoteTimeRemaining = coyoteTimeDuration;
-            wasGroundedLastFrame = true;
-        }
-        else
-        {
-            coyoteTimeRemaining -= Time.fixedDeltaTime;
-            wasGroundedLastFrame = false;
-        }
-    }
-
-    private void UpdateLandingRecovery()
-    {
-        if (landingRecoveryTimeRemaining > 0)
-        {
-            landingRecoveryTimeRemaining -= Time.fixedDeltaTime;
-        }
-    }
-
-    private void DetectLanding()
-    {
-        if (!wasGroundedLastFrame && isGrounded)
-        {
-            landingRecoveryTimeRemaining = landingRecoveryDuration;
-            ApplyLandingDeceleration();
-        }
-        wasGroundedLastFrame = isGrounded;
-    }
-
-    private void ApplyLandingDeceleration()
-    {
-        currentHorizontalVelocity = Vector3.Lerp(currentHorizontalVelocity, Vector3.zero, landingDeceleration * Time.fixedDeltaTime);
     }
 
     private void Awake()
@@ -199,10 +166,6 @@ public class PlayerMovement : MonoBehaviour
         if (!canMove) return;
 
         UpdateGroundStatus();
-
-        DetectLanding();
-        UpdateCoyoteTime();
-        UpdateLandingRecovery();
 
         bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
         bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
