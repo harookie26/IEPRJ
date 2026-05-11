@@ -344,8 +344,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 6
-  roomBId: 10
   partnerDoor: {fileID: 1846406327}
   verticalDirection: 1
   weight: 1
@@ -1797,8 +1795,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 13
-  roomBId: 0
   partnerDoor: {fileID: 1457747742}
   verticalDirection: 2
   weight: 1
@@ -1821,8 +1817,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.9999998, y: 2.3604813, z: 1}
-  m_Center: {x: -0, y: 0.68024063, z: 0}
+  m_Size: {x: 0.9999998, y: 2.2869968, z: 3.3441324}
+  m_Center: {x: -0, y: 0.71698284, z: -1.1720666}
 --- !u!23 &68854451
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2083,8 +2079,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 6
-  roomBId: 7
   partnerDoor: {fileID: 1880925135}
   verticalDirection: 1
   weight: 1
@@ -7426,8 +7420,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 3
-  roomBId: 14
   partnerDoor: {fileID: 1714636262}
   verticalDirection: 2
   weight: 1
@@ -10418,6 +10410,10 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1938054373330018028, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: m_Interpolate
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2907841877613936095, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       propertyPath: m_TagString
       value: Untagged
@@ -10491,6 +10487,10 @@ PrefabInstance:
       value: Untagged
       objectReference: {fileID: 0}
     - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpForce
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       propertyPath: moveSpeed
       value: 1.75
       objectReference: {fileID: 0}
@@ -10502,6 +10502,46 @@ PrefabInstance:
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 2095731259}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: fallMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: lowJumpMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpAscendMultiplier
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpAccelerationDuration
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpAscentCurve.m_Curve.Array.data[0].inSlope
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpAscentCurve.m_Curve.Array.data[1].inSlope
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpAscentCurve.m_Curve.Array.data[0].outSlope
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpAscentCurve.m_Curve.Array.data[1].outSlope
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpAscentCurve.m_Curve.Array.data[0].tangentMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5195265188184142072, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: jumpAscentCurve.m_Curve.Array.data[1].tangentMode
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5341513443896240152, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       propertyPath: m_Height
       value: 1.5
@@ -12898,8 +12938,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 1
-  roomBId: 2
   partnerDoor: {fileID: 1004778960}
   verticalDirection: 1
   weight: 1
@@ -20698,8 +20736,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 2
-  roomBId: 1
   partnerDoor: {fileID: 655355606}
   verticalDirection: 2
   weight: 1
@@ -20878,8 +20914,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 3
-  roomBId: 1
   partnerDoor: {fileID: 1537547952}
   verticalDirection: 1
   weight: 1
@@ -20902,8 +20936,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1.9654512, z: 1}
-  m_Center: {x: -0, y: 0.48272562, z: 0}
+  m_Size: {x: 1, y: 1.9527183, z: 6.42251}
+  m_Center: {x: -0, y: 0.4890921, z: -2.7112546}
 --- !u!23 &1007020744
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -28823,8 +28857,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 0
-  roomBId: 13
   partnerDoor: {fileID: 68854449}
   verticalDirection: 1
   weight: 1
@@ -28847,8 +28879,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1.8736935, z: 1}
-  m_Center: {x: -0, y: 0.43684673, z: 0}
+  m_Size: {x: 1, y: 1.7776394, z: 3.4712346}
+  m_Center: {x: -0, y: 0.48487377, z: -1.2356173}
 --- !u!23 &1457747744
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -31209,8 +31241,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 1
-  roomBId: 3
   partnerDoor: {fileID: 1007020742}
   verticalDirection: 2
   weight: 1
@@ -31233,8 +31263,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.925997, y: 2.0355568, z: 1.2508583}
-  m_Center: {x: 0.0705459, y: 0.5177784, z: 0.2846978}
+  m_Size: {x: 1.0686088, y: 1.923833, z: 3.275863}
+  m_Center: {x: -0.0007601297, y: 0.5736403, z: -1.8093894}
 --- !u!23 &1537547954
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -33353,8 +33383,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 14
-  roomBId: 3
   partnerDoor: {fileID: 376888111}
   verticalDirection: 1
   weight: 1
@@ -35982,8 +36010,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 10
-  roomBId: 8
   partnerDoor: {fileID: 3860278}
   verticalDirection: 2
   weight: 1
@@ -37207,8 +37233,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c63e982c6c83549959f03e82d01f02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
-  roomAId: 7
-  roomBId: 6
   partnerDoor: {fileID: 86370765}
   verticalDirection: 2
   weight: 1
