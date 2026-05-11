@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static EventNames.GameStateEvents;
 using static EventNames;
+using Unity.VisualScripting;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
@@ -66,6 +68,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float lookInterpolationSpeed = 0.15f;
 
     private float cameraPitch = 0f;
+
     private float bodyYaw = 0f;
 
     private int doorwayOverlapCount = 0;
@@ -82,6 +85,96 @@ public class PlayerMovement : MonoBehaviour
     public bool IsTouchingWalls { get; private set; }
     public bool IsAtRoomCorner { get; private set; }
     public bool IsGrounded => isGrounded;
+
+    public bool isGamePaused = false;
+
+
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+
+        moveAction = playerInput.actions["Movement"];
+        jumpAction = playerInput.actions["Jump"];
+        lookAction = playerInput.actions["Look"];
+
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+        collectibleManager = FindFirstObjectByType<PlayerCollectibleManager>();
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        bodyYaw = transform.eulerAngles.y;
+        coyoteTimeRemaining = 0f;
+    }
+
+    private void Start() => ResolveCurrentRoomAtPosition();
+
+    private void OnEnable()
+    {
+        EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
+        EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
+        EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
+        EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
+        EventBroadcaster.Instance.AddObserver(ON_GAME_PAUSE, GameIsPaused);
+        EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, GameIsResumed);
+    }
+
+    private void Update()
+    {
+        if(isGamePaused) return; // Prevent processing input when the game is paused
+
+        if (!canMove || PBController.IsCompanionManualModeActive)
+        {
+            moveInput = Vector2.zero;
+            lookInputTarget = Vector2.zero;
+            cachedMoveDirection = Vector3.zero;
+            return;
+        }
+
+        lookInputTarget = lookAction.ReadValue<Vector2>();
+        moveInput = moveAction.ReadValue<Vector2>();
+
+        lookInputCurrent = Vector2.Lerp(lookInputCurrent, lookInputTarget, lookInterpolationSpeed);
+
+        bodyYaw += lookInputCurrent.x * mouseSensitivity;
+        transform.rotation = Quaternion.Euler(0f, bodyYaw, 0f);
+
+        cameraPitch -= lookInputCurrent.y * mouseSensitivity;
+        cameraPitch = Mathf.Clamp(cameraPitch, -89f, 89f);
+        
+
+        cachedMoveDirection = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
+
+        if (jumpAction.triggered && (isGrounded || coyoteTimeRemaining > 0))
+            jumpRequested = true;
+    }
+
+    private void FixedUpdate()
+    {
+        if (!canMove) return;
+
+        UpdateGroundStatus();
+
+        DetectLanding();
+        UpdateCoyoteTime();
+        UpdateLandingRecovery();
+
+        bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
+        bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
+        float effectiveSpeed = moveSpeed * ((roomCorrupted && !hasMop) ? corruptedSpeedMultiplier : 1f);
+
+        Vector3 targetVelocity = cachedMoveDirection * effectiveSpeed;
+
+        ApplyAcceleration(ref currentHorizontalVelocity, targetVelocity);
+
+        Vector3 combinedVelocity = new Vector3(currentHorizontalVelocity.x, rb.linearVelocity.y, currentHorizontalVelocity.z);
+
+        ApplyMovementPhysics(combinedVelocity);
+    }
 
     private void UpdateGroundStatus()
     {
@@ -136,87 +229,6 @@ public class PlayerMovement : MonoBehaviour
         currentHorizontalVelocity = Vector3.Lerp(currentHorizontalVelocity, Vector3.zero, landingDeceleration * Time.fixedDeltaTime);
     }
 
-    private void Awake()
-    {
-        rb = GetComponent<Rigidbody>();
-
-        moveAction = playerInput.actions["Movement"];
-        jumpAction = playerInput.actions["Jump"];
-        lookAction = playerInput.actions["Look"];
-
-        rb.constraints = RigidbodyConstraints.FreezeRotation;
-        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
-
-        collectibleManager = FindFirstObjectByType<PlayerCollectibleManager>();
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-
-        bodyYaw = transform.eulerAngles.y;
-        coyoteTimeRemaining = 0f;
-    }
-
-    private void Start() => ResolveCurrentRoomAtPosition();
-
-    private void OnEnable()
-    {
-        EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
-        EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
-        EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
-        EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
-    }
-
-    private void Update()
-    {
-        if (!canMove || PBController.IsCompanionManualModeActive)
-        {
-            moveInput = Vector2.zero;
-            lookInputTarget = Vector2.zero;
-            cachedMoveDirection = Vector3.zero;
-            return;
-        }
-
-        lookInputTarget = lookAction.ReadValue<Vector2>();
-        moveInput = moveAction.ReadValue<Vector2>();
-
-        lookInputCurrent = Vector2.Lerp(lookInputCurrent, lookInputTarget, lookInterpolationSpeed);
-
-        bodyYaw += lookInputCurrent.x * mouseSensitivity;
-        transform.rotation = Quaternion.Euler(0f, bodyYaw, 0f);
-
-        cameraPitch -= lookInputCurrent.y * mouseSensitivity;
-        cameraPitch = Mathf.Clamp(cameraPitch, -89f, 89f);
-        playerCamera.transform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
-
-        cachedMoveDirection = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
-
-        if (jumpAction.triggered && (isGrounded || coyoteTimeRemaining > 0))
-            jumpRequested = true;
-    }
-
-    private void FixedUpdate()
-    {
-        if (!canMove) return;
-
-        UpdateGroundStatus();
-
-        DetectLanding();
-        UpdateCoyoteTime();
-        UpdateLandingRecovery();
-
-        bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
-        bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
-        float effectiveSpeed = moveSpeed * ((roomCorrupted && !hasMop) ? corruptedSpeedMultiplier : 1f);
-
-        Vector3 targetVelocity = cachedMoveDirection * effectiveSpeed;
-
-        ApplyAcceleration(ref currentHorizontalVelocity, targetVelocity);
-
-        Vector3 combinedVelocity = new Vector3(currentHorizontalVelocity.x, rb.linearVelocity.y, currentHorizontalVelocity.z);
-
-        ApplyMovementPhysics(combinedVelocity);
-    }
 
     private void ApplyAcceleration(ref Vector3 currentVel, Vector3 targetVel)
     {
@@ -361,6 +373,21 @@ public class PlayerMovement : MonoBehaviour
     private void StopMoving() => canMove = false;
     private void ContinueMoving() => canMove = true;
     public void SetCanMove(bool value) => canMove = value;
+
+    public float CameraPitch => cameraPitch;
+
+    private void GameIsPaused()
+    {
+        isGamePaused = true;
+    }
+
+    private void GameIsResumed()
+    {
+        isGamePaused = false;
+
+        lookInputTarget = Vector2.zero;
+        lookInputCurrent = Vector2.zero;
+    }
 
     /// <summary>
     /// Resets the player's velocity to zero. Used after teleportation to prevent physics artifacts.

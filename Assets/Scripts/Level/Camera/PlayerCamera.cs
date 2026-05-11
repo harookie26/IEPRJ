@@ -1,7 +1,11 @@
 using UnityEngine;
+using static EventNames.GameStateEvents;
+using static EventNames;
 
 public class PlayerCamera : MonoBehaviour
 {
+    private PlayerMovement playerMovement;
+
     [Header("Motion Settings")]
     [SerializeField] private bool enableMotionEffects = true;
 
@@ -39,6 +43,8 @@ public class PlayerCamera : MonoBehaviour
     [SerializeField] private float sprintFOV = 75f;
     [SerializeField] private float fovTransitionSpeed = 5f;
 
+    private Vector3 lastSafeEulerAngles = Vector3.zero;
+
     private Rigidbody playerRigidbody;
     private Vector3 originalPosition;
     private Vector3 currentBobOffset = Vector3.zero;
@@ -65,14 +71,54 @@ public class PlayerCamera : MonoBehaviour
     private bool isTransitioningFromIdle = false;
     private float headBobTransitionBlend = 1f;
 
+    private bool isGamePaused = false;
+
+    private float resumeCooldown = 0f;
+
     public bool EnableMotionEffects
     {
         get => enableMotionEffects;
         set => enableMotionEffects = value;
     }
 
+
+    private void OnEnable()
+    {
+        EventBroadcaster.Instance.AddObserver(ON_GAME_PAUSE, GameIsPaused);
+        EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, GameIsResumed);
+    }
+
+    private void GameIsPaused()
+    {
+        isGamePaused = true;
+    }
+
+    private void GameIsResumed()
+    {
+        isGamePaused = false;
+
+        resumeCooldown = 0.1f; // ignore camera motion briefly
+
+        if (playerRigidbody != null)
+            lastPlayerPosition = playerRigidbody.position;
+
+        if (mainCamera != null)
+            currentFOV = mainCamera.fieldOfView;
+
+        horizontalVelocity = 0f;
+        targetHorizontalVelocity = 0f;
+        calculatedVelocity = 0f;
+
+        currentBobOffset = Vector3.zero;
+        currentRollSway = 0f;
+
+        originalPosition = transform.localPosition;
+    }
+
     private void Start()
     {
+        playerMovement = GetComponentInParent<PlayerMovement>();
+
         playerRigidbody = GetComponentInParent<Rigidbody>();
         if (playerRigidbody == null)
         {
@@ -99,6 +145,31 @@ public class PlayerCamera : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (isGamePaused) return;
+
+        if (resumeCooldown > 0f)
+        {
+            resumeCooldown -= Time.deltaTime;
+
+            lastPlayerPosition = playerRigidbody.position;
+
+            transform.localPosition = originalPosition;
+            transform.localRotation = Quaternion.Euler(
+                playerMovement != null ? playerMovement.CameraPitch : 0f,
+                0f,
+                0f
+            );
+
+            return;
+        }
+
+        /*Vector3 euler = transform.localRotation.eulerAngles;
+        float pitch = euler.x > 180f ? euler.x - 360f : euler.x;
+        float yaw = euler.y > 180f ? euler.y - 360f : euler.y;
+
+        if (!float.IsNaN(pitch) && !float.IsNaN(yaw))
+            lastSafeEulerAngles = new Vector3(pitch, yaw, 0f);*/
+
         if (!enableMotionEffects || playerRigidbody == null)
         {
             ResetMotion();
@@ -277,25 +348,23 @@ public class PlayerCamera : MonoBehaviour
     {
         transform.localPosition = originalPosition + currentBobOffset;
 
-        if (playerRigidbody != null)
-        {
-            Quaternion baseRotation = transform.localRotation;
-            Vector3 eulerAngles = baseRotation.eulerAngles;
+        float pitch = playerMovement != null ? playerMovement.CameraPitch : 0f;
+        float safeRoll = Mathf.Clamp(currentRollSway, -90f, 90f);
+        if (float.IsNaN(safeRoll)) safeRoll = 0f;
 
-            transform.localRotation = Quaternion.Euler(eulerAngles.x, eulerAngles.y, currentRollSway);
-        }
+        transform.localRotation = Quaternion.Euler(pitch, 0f, safeRoll);
     }
 
     private void ResetMotion()
     {
         transform.localPosition = Vector3.Lerp(transform.localPosition, originalPosition, motionLerpSpeed * 2f);
 
-        Quaternion targetRotation = Quaternion.Euler(transform.localRotation.eulerAngles.x, transform.localRotation.eulerAngles.y, 0);
+        float pitch = playerMovement != null ? playerMovement.CameraPitch : 0f;
+        Quaternion targetRotation = Quaternion.Euler(pitch, 0f, 0f);
         transform.localRotation = Quaternion.Lerp(transform.localRotation, targetRotation, motionLerpSpeed * 2f);
 
         currentBobOffset = Vector3.zero;
         currentRollSway = 0f;
-
         idleTimeElapsed = 0f;
         currentIdleMotionFade = 0f;
         idleMotionPhaseX = 0f;
