@@ -81,6 +81,7 @@ public class PlayerMovement : MonoBehaviour
 
     public bool IsTouchingWalls { get; private set; }
     public bool IsAtRoomCorner { get; private set; }
+    public bool IsGrounded => isGrounded;
 
     private void UpdateGroundStatus()
     {
@@ -360,4 +361,16 @@ public class PlayerMovement : MonoBehaviour
     private void StopMoving() => canMove = false;
     private void ContinueMoving() => canMove = true;
     public void SetCanMove(bool value) => canMove = value;
+
+    /// <summary>
+    /// Resets the player's velocity to zero. Used after teleportation to prevent physics artifacts.
+    /// </summary>
+    public void ResetVelocity()
+    {
+        rb.linearVelocity = Vector3.zero;
+        currentHorizontalVelocity = Vector3.zero;
+        isJumpAscending = false;
+        jumpRequested = false;
+        Debug.Log("[PlayerMovement] Velocity reset after teleportation.");
+    }
 }

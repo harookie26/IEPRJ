@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Game.ObjectTypes
@@ -51,7 +50,7 @@ namespace Game.Level
         Bounds Bounds { get; }
     }
 
-    public interface IDoor
+    public interface IStair
     {
         int Id { get; }
         IRoom RoomA { get; }

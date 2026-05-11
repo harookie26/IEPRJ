@@ -9,9 +9,9 @@ public enum VerticalDoorDirection
 }
 
 [FoldableInspector]
-public class DoorsComponent : MonoBehaviour, IDoor
+public class StairsComponent : MonoBehaviour, IStair
 {
-    [SerializeField] private DoorsComponent partnerDoor;
+    [SerializeField] private StairsComponent partnerDoor;
 
     private IRoom roomA;
     private IRoom roomB;
@@ -26,7 +26,7 @@ public class DoorsComponent : MonoBehaviour, IDoor
 
     private bool _playerInZone = false;
 
-    public static DoorsComponent CurrentDoor;
+    public static StairsComponent CurrentDoor;
     public int Id => GetInstanceID();
     public IRoom RoomA => roomA;
     public IRoom RoomB => roomB;
@@ -35,7 +35,8 @@ public class DoorsComponent : MonoBehaviour, IDoor
     public float Weight => weight;
 
     private UIManager uiManager;
-    private DoorInputManager _doorInputManager;
+    private StairsInputManager _doorInputManager;
+    private PlayerMovement _playerMovement;
 
     private void Awake()
     {
@@ -47,7 +48,8 @@ public class DoorsComponent : MonoBehaviour, IDoor
 
         _player = GameObject.FindGameObjectWithTag("Player");
         uiManager = FindFirstObjectByType<UIManager>();
-        _doorInputManager = FindFirstObjectByType<DoorInputManager>();
+        _doorInputManager = FindFirstObjectByType<StairsInputManager>();
+        _playerMovement = FindFirstObjectByType<PlayerMovement>();
 
         triggerZone = GetComponent<Collider>() ?? triggerZone;
 
@@ -80,7 +82,6 @@ public class DoorsComponent : MonoBehaviour, IDoor
     {
         if (uiManager == null) return;
 
-        // Check if cooldown is still active
         if (_doorInputManager != null)
         {
             bool cooldownActive = Time.unscaledTime < _doorInputManager.LastDoorUseTime + _doorInputManager.doorUseCooldown;
@@ -108,21 +109,67 @@ public class DoorsComponent : MonoBehaviour, IDoor
 
     public bool IsReadyToUse()
     {
-        // Simply check if player is in the trigger zone
-        // Cooldown is handled exclusively by DoorInputManager
-        return _playerInZone;
+        if (!_playerInZone)
+        {
+            Debug.Log($"[Stairs:{name}] Player not in zone.");
+            return false;
+        }
+
+        if (_playerMovement == null)
+        {
+            Debug.LogError($"[Stairs:{name}] PlayerMovement reference is NULL!");
+            return false;
+        }
+
+        if (!_playerMovement.IsGrounded)
+        {
+            Debug.Log($"[Stairs:{name}] Player NOT grounded (IsGrounded={_playerMovement.IsGrounded})");
+            return false;
+        }
+
+        return true;
     }
 
     public void MoveToLinkedDoor()
     {
         if (partnerDoor == null)
         {
-            Debug.LogError($"[Door:{name}] Partner door not assigned.");
+            Debug.LogError($"[Stairs:{name}] Partner door not assigned. Teleport failed.");
             return;
         }
 
+        if (_player == null)
+        {
+            Debug.LogError($"[Stairs:{name}] Player reference is null. Teleport failed.");
+            return;
+        }
+
+        Vector3 playerPosBefore = _player.transform.position;
         Vector3 targetPos = partnerDoor.transform.position;
-        _player.transform.position = targetPos;
+
+        Rigidbody playerRb = _player.GetComponent<Rigidbody>();
+        if (playerRb != null)
+        {
+            playerRb.MovePosition(targetPos);
+        }
+        else
+        {
+            _player.transform.position = targetPos;
+        }
+
+        Vector3 playerPosAfter = _player.transform.position;
+        Debug.Log($"  - Player position after move: {playerPosAfter}");
+        Debug.Log($"  - Position changed: {playerPosBefore != playerPosAfter}");
+        Debug.Log($"[Stairs:{name}] Teleported player from {playerPosBefore} to {playerPosAfter}");
+
+        if (_playerMovement != null)
+        {
+            _playerMovement.ResetVelocity();
+        }
+        else
+        {
+            Debug.LogWarning($"[Stairs:{name}] PlayerMovement not found. Could not reset velocity.");
+        }
     }
 
     public Vector3 GetEntryPointFor(IRoom fromRoom)
