@@ -26,31 +26,10 @@ public class EnemyStateMachine : MonoBehaviour
     public EnemyFOV EnemyFOV => enemyFOV;
 
     [Header("Teleporting")]
-    [Tooltip("Minimum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
-    [SerializeField] private float teleportMinSeconds = 5f;
-    [Tooltip("Maximum seconds to wait while Calm before a teleport occurs (randomized each cycle).")]
-    [SerializeField] private float teleportMaxSeconds = 10f;
-
-    [Header("Detection Camera/VFX")]
-    [Tooltip("Enable camera zoom/focus and vignette during detection sequence.")]
-    [SerializeField] private bool enableCameraFxOnDetect = true;
-    [Tooltip("Seconds to keep camera focused on enemy when player detected (0 = manual revert externally).")]
-    [SerializeField] private float detectFocusDuration = 2.5f;
-    [Tooltip("Extra zoom-in steps after initial zoom (for dramatic punch).")]
-    [SerializeField] private int detectAdditionalZoomInSteps = 0;
-    [Tooltip("Delay between each extra zoom step.")]
-    [SerializeField] private float detectExtraZoomInterval = 0.3f;
-    [Tooltip("Apply vignette increase steps (0 = single step).")]
-    [SerializeField] private int detectAdditionalVignetteSteps = 0;
-    [Tooltip("Delay between each extra vignette step.")]
-    [SerializeField] private float detectExtraVignetteInterval = 0.25f;
-
-    private float teleportTimer = 0f;
-    private float nextTeleportDelay = 0f;
-
-    private PlayerCamera playerCamera; // cached main camera behaviour
-    private VFXManager vfxManager; // cached VFX manager for vignette
-    private PlayerMovement playerMovement => FindFirstObjectByType<PlayerMovement>();
+    [Tooltip("List of transforms marking teleport destination points.")]
+    [SerializeField] private List<Transform> teleportPoints = new List<Transform>();
+    [Tooltip("Cooldown between teleports in seconds.")]
+    [SerializeField] private float teleportCooldown = 0.5f;
 
     private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
     private bool enemyCaught = false;
@@ -81,55 +60,12 @@ public class EnemyStateMachine : MonoBehaviour
 
     public GameObject TargetPlayer => targetPlayer;
     public GameObject Enemy => enemy;
-    public NavMeshAgent NavAgent => navMeshAgent; // restored property
-    public EnemyChasing EnemyChasing => enemyChasing;
-    public EnemyCalm EnemyCalm => enemyCalm;
-    public EnemyDistracted EnemyDistracted => enemyDistracted;
+    public NavMeshAgent NavAgent => navMeshAgent;
     public EnemyTeleporting EnemyTeleporting => enemyTeleporting;
 
-
-    // Room to force teleport into on next teleport
     public RoomComponent ForcedTeleportRoom { get; set; }
 
-
-    public enum EnemyStateType
-    {
-        Calm,
-        Chasing,
-        Distracted,
-        Teleporting,
-        Unknown
-    }
-
-    public EnemyStateType CurrentStateType
-    {
-        get
-        {
-            if (CurrentState == null) return EnemyStateType.Unknown;
-            if (CurrentState == enemyCalm) return EnemyStateType.Calm;
-            if (CurrentState == enemyChasing) return EnemyStateType.Chasing;
-            if (CurrentState == enemyDistracted) return EnemyStateType.Distracted;
-            if (CurrentState == enemyTeleporting) return EnemyStateType.Teleporting;
-            return EnemyStateType.Unknown;
-        }
-    }
-
-    public string CurrentStateName => CurrentState?.GetType().Name ?? "Null";
-
-    public Vector3? GetDistractedPaintingPosition()
-    {
-        if (CurrentState == enemyDistracted)
-        {
-            return enemyDistracted.PaintingPosition;
-        }
-        return null;
-    }
-
     [Header("Enemy States")]
-    EnemyState CurrentState;
-    private EnemyChasing enemyChasing = new EnemyChasing();
-    private EnemyCalm enemyCalm = new EnemyCalm();
-    private EnemyDistracted enemyDistracted = new EnemyDistracted();
     private EnemyTeleporting enemyTeleporting = new EnemyTeleporting();
 
     private bool isFrozen = false;
@@ -139,15 +75,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     private static readonly HashSet<EnemyStateMachine> AllInstances = new HashSet<EnemyStateMachine>();
 
-    // Detection coroutine tracking
-    private Coroutine playerDetectedRoutine; // ensures we don't stack multiple detection FX
-
-    // Track the room the _enemy is currently inside
     private RoomComponent currentEnemyRoom;
-
-    // Latch to avoid re-triggering detection repeatedly while both stay in same room
-    private bool detectionTriggeredForRoomPresence = false;
-    private RoomComponent lastDetectionRoom = null;
 
     private void OnEnable()
     {
@@ -177,10 +105,10 @@ public class EnemyStateMachine : MonoBehaviour
             MoveSpeed = config.moveSpeed;
             PatrolSpeed = config.patrolSpeed;
             TargetingBuffer = config.targetingBuffer;
-            EnemyAggroRadius = config.enemyAggroRadius;
-            EnemyKillRadius = config.enemyKillRadius;
-            DistractedCalmDuration = config.distractedCalmDuration;
-            DistractedRushMultiplier = config.distractedRushMultiplier;
+            //EnemyAggroRadius = config.enemyAggroRadius;
+            //EnemyKillRadius = config.enemyKillRadius;
+            //DistractedCalmDuration = config.distractedCalmDuration;
+            //DistractedRushMultiplier = config.distractedRushMultiplier;
         }
         else
         {
@@ -194,261 +122,15 @@ public class EnemyStateMachine : MonoBehaviour
             DistractedRushMultiplier = 1.5f;
         }
 
-        // Cache camera & VFX references
-        playerCamera = FindFirstObjectByType<PlayerCamera>();
-        vfxManager = FindFirstObjectByType<VFXManager>();
-
-        RollNextTeleportDelay();
-
-        CurrentState = enemyCalm;
-        CurrentState.EnterState(this);
+        enemyTeleporting.SetTeleportConfig(teleportPoints, teleportCooldown);
     }
 
     private void Update()
     {
-        if (CurrentState == enemyCalm)
+        if (Input.GetKeyDown(KeyCode.T))
         {
-            teleportTimer += Time.deltaTime;
-            if (teleportTimer >= nextTeleportDelay)
-            {
-                teleportTimer = 0f;
-                RollNextTeleportDelay();
-                Switchstate(enemyTeleporting);
-            }
-        }
-
-        if (Input.GetKeyDown(KeyCode.V))
-        {
-            // Force _enemy to teleport into the _player's current room
-            var rooms = FindObjectsOfType<RoomComponent>();
-            RoomComponent playerRoom = null;
-            if (rooms != null && rooms.Length > 0)
-            {
-                // 1) Prefer rooms reporting the _player inside via trigger
-                foreach (var r in rooms)
-                {
-                    if (r != null && r.IsPlayerInside)
-                    {
-                        playerRoom = r;
-                        break;
-                    }
-                }
-
-                // 2) Fallback: resolve by _player position against room bounds
-                if (playerRoom == null && targetPlayer != null)
-                {
-                    var playerPos = targetPlayer.transform.position;
-                    foreach (var r in rooms)
-                    {
-                        var b = r != null ? r.Bounds : new Bounds();
-                        if (b.size.sqrMagnitude > Mathf.Epsilon && b.Contains(playerPos))
-                        {
-                            playerRoom = r;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (playerRoom != null)
-            {
-                EnemyTeleporting.ForcedRoom = playerRoom;
-                teleportTimer = 0f;
-                RollNextTeleportDelay();
-                Switchstate(enemyTeleporting);
-            }
-            else
-            {
-                Debug.LogWarning("EnemyStateMachine: No player room found to force teleport.");
-            }
-        }
-
-        // Resolve _enemy room every frame from its current position so tracking stays accurate (teleports may skip triggers)
-        ResolveEnemyRoomAtPosition();
-
-        // If the _enemy is currently in a room and the _player is inside the same room, trigger detection FX
-        TryTriggerEnemyInRoomIfPlayerInSameRoom();
-
-        CurrentState?.UpdateState(this);
-    }
-
-    private void ResolveEnemyRoomAtPosition()
-    {
-        var rooms = FindObjectsOfType<RoomComponent>();
-        if (rooms == null || rooms.Length == 0)
-            return;
-        var enemyPos = (enemy != null ? enemy.transform.position : transform.position);
-        RoomComponent found = null;
-        foreach (var r in rooms)
-        {
-            if (r == null) continue;
-            var b = r.Bounds;
-            if (b.size.sqrMagnitude > Mathf.Epsilon && b.Contains(enemyPos))
-            {
-                found = r;
-                break;
-            }
-        }
-        if (found != currentEnemyRoom)
-        {
-            // room changed; reset detection latch
-            currentEnemyRoom = found;
-            detectionTriggeredForRoomPresence = false;
-            lastDetectionRoom = null;
-        }
-    }
-
-    public void Switchstate(EnemyState state)
-    {
-        if (state == enemyChasing || state == enemyDistracted)
-        {
-            teleportTimer = 0f;
-            RollNextTeleportDelay();
-        }
-        else if (state == enemyCalm)
-        {
-            teleportTimer = 0f;
-            RollNextTeleportDelay();
-        }
-
-        CurrentState = state;
-        state.EnterState(this);
-
-    }
-
-    private void RollNextTeleportDelay()
-    {
-        var min = Mathf.Max(0f, Mathf.Min(teleportMinSeconds, teleportMaxSeconds));
-        var max = Mathf.Max(min, Mathf.Max(teleportMinSeconds, teleportMaxSeconds));
-        nextTeleportDelay = Random.Range(min, max);
-    }
-
-    public void DistractAt(Vector3 paintingWorldPosition)
-    {
-        // Find the room containing the painting position
-        RoomComponent paintingRoom = null;
-        var rooms = FindObjectsOfType<RoomComponent>();
-        if (rooms != null && rooms.Length > 0)
-        {
-            foreach (var r in rooms)
-            {
-                if (r == null) continue;
-                var b = r.Bounds;
-                // Some paintings are mounted on walls and may have a Y outside the room bounds.
-                // Normalize the test position Y to the room center Y so XZ containment is used.
-                if (b.size.sqrMagnitude > Mathf.Epsilon)
-                {
-                    var testPos = paintingWorldPosition;
-                    testPos.y = b.center.y;
-                    if (b.Contains(testPos))
-                    {
-                        paintingRoom = r;
-                        break;
-                    }
-                }
-            }
-        }
-
-        // If painting is in a different room than the _enemy, teleport the _enemy into that room
-        if (paintingRoom != null && paintingRoom != currentEnemyRoom)
-        {
-            // Determine a teleport target position somewhere inside the room bounds (randomized)
-            var b = paintingRoom.Bounds;
-            Vector3 randomPointInRoom = b.center;
-            if (b.size.sqrMagnitude > Mathf.Epsilon)
-            {
-                var ext = b.extents;
-                randomPointInRoom = new Vector3(
-                    b.center.x + Random.Range(-ext.x, ext.x),
-                    b.center.y,
-                    b.center.z + Random.Range(-ext.z, ext.z)
-                );
-            }
-
-            // Keep _enemy's original Y to avoid teleporting into ceiling/floor; try to sample NavMesh near chosen point
-            var enemyTransform = (enemy != null ? enemy.transform : transform);
-            float desiredY = enemyTransform.position.y;
-            randomPointInRoom.y = desiredY;
-
-            Vector3 teleportTarget = randomPointInRoom;
-
-            // Try to find a nearest point on NavMesh within a reasonable radius
-            NavMeshHit hit;
-            bool foundOnNav = false;
-            float sampleRadius = Mathf.Max(1f, Mathf.Max(b.extents.x, b.extents.z));
-
-            if (NavMesh.SamplePosition(randomPointInRoom, out hit, sampleRadius, NavMesh.AllAreas))
-            {
-                teleportTarget = hit.position;
-                foundOnNav = true;
-            }
-            else if (navMeshAgent != null && navMeshAgent.isOnNavMesh)
-            {
-                // As a fallback, try sampling at painting position's XZ with _enemy Y
-                Vector3 fallback = new Vector3(paintingWorldPosition.x, desiredY, paintingWorldPosition.z);
-                if (NavMesh.SamplePosition(fallback, out hit, sampleRadius, NavMesh.AllAreas))
-                {
-                    teleportTarget = hit.position;
-                    foundOnNav = true;
-                }
-            }
-
-            try
-            {
-                if (navMeshAgent != null && navMeshAgent.isOnNavMesh && foundOnNav)
-                {
-                    // Warp the NavMeshAgent to the target position so navigation internals are updated
-                    navMeshAgent.Warp(teleportTarget);
-                    // Reset path to avoid stale destinations
-                    navMeshAgent.ResetPath();
-                }
-                else
-                {
-                    // Fallback: move transform directly
-                    enemyTransform.position = teleportTarget;
-                }
-
-                // Update current room and reset detection latch so detection can retrigger in the new room
-                currentEnemyRoom = paintingRoom;
-                detectionTriggeredForRoomPresence = false;
-                lastDetectionRoom = null;
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"EnemyStateMachine: Teleport failed: {ex.Message}");
-                // Fallback to direct positioning
-                if (enemy != null)
-                    enemy.transform.position = teleportTarget;
-            }
-        }
-
-        // Set painting and switch to distracted behavior
-        enemyDistracted.PaintingPosition = paintingWorldPosition;
-        Switchstate(enemyDistracted);
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (enemyChasing == null)
-            return;
-        if (CurrentState != enemyChasing)
-            return;
-        if (enemy == null || targetPlayer == null)
-            return;
-        if (!enemyChasing.HasLastLoS)
-            return;
-
-        Gizmos.color = enemyChasing.LastLoSClear ? Color.green : Color.red;
-        Gizmos.DrawLine(enemyChasing.LastLoSOrigin, enemyChasing.LastLoSTarget);
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawSphere(enemyChasing.LastLoSOrigin, 0.05f);
-        Gizmos.DrawSphere(enemyChasing.LastLoSTarget, 0.05f);
-
-        if (enemyChasing.LastHitCollider != null)
-        {
-            Gizmos.color = Color.magenta;
-            Gizmos.DrawSphere(enemyChasing.LastHitPoint, 0.12f);
+            enemyTeleporting.ForcedRoom = null;
+            enemyTeleporting.TeleportNow(this);
         }
     }
 
@@ -556,156 +238,5 @@ public class EnemyStateMachine : MonoBehaviour
 
         enemyCaught = false;
 
-    }
-
-    // Detection coroutine now triggers camera focus / zoom / vignette.
-    private IEnumerator EnemyInRoom()
-    {
-        if (enableCameraFxOnDetect)
-        {
-            if (playerCamera == null) playerCamera = FindFirstObjectByType<PlayerCamera>();
-            if (vfxManager == null) vfxManager = FindFirstObjectByType<VFXManager>();
-
-            Transform enemyTransform = enemy != null ? enemy.transform : transform;
-
-            //if (playerCamera != null)
-            //{
-            //    playerCamera.FocusOnEnemy(enemyTransform, detectFocusDuration);
-            //    playerCamera.ZoomIn();
-            //    if (detectAdditionalZoomInSteps > 0)
-            //        StartCoroutine(ExtraZoomSteps(playerCamera, detectAdditionalZoomInSteps, detectExtraZoomInterval));
-            //}
-            if (vfxManager != null)
-            {
-                vfxManager.IncreaseVignette();
-                if (detectAdditionalVignetteSteps > 0)
-                    StartCoroutine(ExtraVignetteSteps(vfxManager, detectAdditionalVignetteSteps, detectExtraVignetteInterval));
-            }
-        }
-
-        Time.timeScale = 0.5f;
-        Freeze();
-        playerMovement.SetCanMove(false);
-
-        // Hold focus for duration
-        float wait = enableCameraFxOnDetect ? detectFocusDuration : 2f;
-        if (wait > 0f)
-            yield return new WaitForSeconds(wait);
-
-        Time.timeScale = 1f;
-        Unfreeze();
-        playerMovement.SetCanMove(true);
-
-        // Revert FX
-        if (enableCameraFxOnDetect)
-        {
-            //if (playerCamera != null)
-            //{
-            //    playerCamera.RevertFocusToPlayer();
-            //    playerCamera.ZoomOut();
-            //}
-            if (vfxManager != null)
-            {
-                vfxManager.DecreaseVignette();
-            }
-        }
-    }
-
-    //private IEnumerator ExtraZoomSteps(PlayerCamera camRef, int steps, float interval)
-    //{
-    //    while (steps-- > 0 && camRef != null)
-    //    {
-    //        yield return new WaitForSeconds(interval);
-    //        camRef.ZoomIn();
-    //    }
-    //}
-
-    private IEnumerator ExtraVignetteSteps(VFXManager vfxRef, int steps, float interval)
-    {
-        while (steps-- > 0 && vfxRef != null)
-        {
-            yield return new WaitForSeconds(interval);
-            vfxRef.IncreaseVignette();
-        }
-    }
-
-    // ---- Room detection helpers ----
-    private void OnTriggerEnter(Collider other)
-    {
-        var room = other.GetComponent<RoomComponent>();
-        if (room != null)
-        {
-            currentEnemyRoom = room;
-            // If _player already inside this room, trigger now
-            TryTriggerEnemyInRoomIfPlayerInSameRoom();
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        var room = other.GetComponent<RoomComponent>();
-        if (room != null && room == currentEnemyRoom)
-        {
-            currentEnemyRoom = null;
-            // Reset latch if leaving the room where detection occurred
-            if (lastDetectionRoom == room)
-            {
-                detectionTriggeredForRoomPresence = false;
-                lastDetectionRoom = null;
-            }
-        }
-    }
-
-    private void TryTriggerEnemyInRoomIfPlayerInSameRoom()
-    {
-        // currentEnemyRoom already resolved by position each frame
-        if (currentEnemyRoom == null)
-            return;
-
-        // If we moved to another room, clear latch
-        if (lastDetectionRoom != null && lastDetectionRoom != currentEnemyRoom)
-        {
-            detectionTriggeredForRoomPresence = false;
-            lastDetectionRoom = null;
-        }
-
-        // Determine if _player is inside the same room
-        bool playerInside = currentEnemyRoom.IsPlayerInside;
-        if (!playerInside && targetPlayer != null)
-        {
-            var b = currentEnemyRoom.Bounds;
-            var playerPos = targetPlayer.transform.position;
-            playerInside = b.size.sqrMagnitude > Mathf.Epsilon && b.Contains(playerPos);
-        }
-
-        // If _player is not inside, clear latch for this room and return
-        if (!playerInside)
-        {
-            if (lastDetectionRoom == currentEnemyRoom)
-            {
-                detectionTriggeredForRoomPresence = false;
-                lastDetectionRoom = null;
-            }
-            return;
-        }
-
-        // Already triggered for this co-presence in this room
-        if (detectionTriggeredForRoomPresence && lastDetectionRoom == currentEnemyRoom)
-            return;
-
-        if (playerDetectedRoutine != null)
-            return; // already running
-
-        // Start wrapper to reset routine handle upon completion, and latch this room presence
-        detectionTriggeredForRoomPresence = true;
-        lastDetectionRoom = currentEnemyRoom;
-        playerDetectedRoutine = StartCoroutine(EnemyInRoomWrapper());
-    }
-
-    private IEnumerator EnemyInRoomWrapper()
-    {
-        yield return EnemyInRoom();
-        playerDetectedRoutine = null;
-        // Do not clear detectionTriggeredForRoomPresence here; it clears when someone leaves
     }
 }

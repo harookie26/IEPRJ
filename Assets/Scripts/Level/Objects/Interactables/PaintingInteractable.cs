@@ -89,8 +89,6 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
             }
         }
 
-        enemyStateMachine.DistractAt(transform.position);
-
         // Hide the interact HUD after a successful interaction
         var ui = FindFirstObjectByType<UIManager>();
         if (ui != null)
