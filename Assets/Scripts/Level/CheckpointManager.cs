@@ -17,7 +17,7 @@ public class CheckpointManager : MonoBehaviour
 
     private GameObject _enemy;
     private Vector3 _enemySavedPosition;
-    private EnemyStateMachine.EnemyStateType _enemySavedState;
+    // private EnemyStateMachine.EnemyStateType _enemySavedState;
     private Vector3 _enemySavedDistractedPaintingPosition;
     private bool _enemySavedWasDistracted;
     private string _enemySavedStateName;
@@ -48,31 +48,31 @@ public class CheckpointManager : MonoBehaviour
 
         _enemySavedPosition = _enemy.transform.position;
 
-        if (_enemyStateMachine != null)
-        {
-            _enemySavedState = _enemyStateMachine.CurrentStateType;
+        //if (_enemyStateMachine != null)
+        //{
+        //    _enemySavedState = _enemyStateMachine.CurrentStateType;
 
-            var paintingPos = _enemyStateMachine.GetDistractedPaintingPosition();
-            if (paintingPos.HasValue)
-            {
-                _enemySavedWasDistracted = true;
-                _enemySavedDistractedPaintingPosition = paintingPos.Value;
-            }
-            else
-            {
-                _enemySavedWasDistracted = false;
-                _enemySavedDistractedPaintingPosition = Vector3.zero;
-            }
+        //    var paintingPos = _enemyStateMachine.GetDistractedPaintingPosition();
+        //    if (paintingPos.HasValue)
+        //    {
+        //        _enemySavedWasDistracted = true;
+        //        _enemySavedDistractedPaintingPosition = paintingPos.Value;
+        //    }
+        //    else
+        //    {
+        //        _enemySavedWasDistracted = false;
+        //        _enemySavedDistractedPaintingPosition = Vector3.zero;
+        //    }
 
-            _enemySavedStateName = _enemyStateMachine.CurrentStateName;
-        }
-        else
-        {
-            _enemySavedState = EnemyStateMachine.EnemyStateType.Unknown;
-            _enemySavedWasDistracted = false;
-            _enemySavedDistractedPaintingPosition = Vector3.zero;
-            _enemySavedStateName = "NoEnemyStateMachine";
-        }
+        //    _enemySavedStateName = _enemyStateMachine.CurrentStateName;
+        //}
+        //else
+        //{
+        //    _enemySavedState = EnemyStateMachine.EnemyStateType.Unknown;
+        //    _enemySavedWasDistracted = false;
+        //    _enemySavedDistractedPaintingPosition = Vector3.zero;
+        //    _enemySavedStateName = "NoEnemyStateMachine";
+        //}
 
         _savedCompletedDialogues = new HashSet<string>(DialogueManager.Instance.GetCompletedDialogues());
 
@@ -149,35 +149,12 @@ public class CheckpointManager : MonoBehaviour
         if (agent != null)
             agent.ResetPath();
 
-        switch (_enemySavedState)
-        {
-            case EnemyStateMachine.EnemyStateType.Calm:
-                _enemyStateMachine.Switchstate(_enemyStateMachine.EnemyCalm);
-                break;
+        //switch (_enemySavedState)
+        //{
 
-            case EnemyStateMachine.EnemyStateType.Chasing:
-                _enemyStateMachine.Switchstate(_enemyStateMachine.EnemyChasing);
-                break;
-
-            case EnemyStateMachine.EnemyStateType.Distracted:
-                if (_enemySavedWasDistracted)
-                {
-                    _enemyStateMachine.DistractAt(_enemySavedDistractedPaintingPosition);
-                }
-                else
-                {
-                    _enemyStateMachine.Switchstate(_enemyStateMachine.EnemyDistracted);
-                }
-                break;
-
-            case EnemyStateMachine.EnemyStateType.Teleporting:
-                _enemyStateMachine.Switchstate(_enemyStateMachine.EnemyTeleporting);
-                break;
-
-            default:
-                _enemyStateMachine.Switchstate(_enemyStateMachine.EnemyCalm);
-                break;
-        }
+        //    default:
+        //        break;
+        //}
 
         // Wait for _player input before fading back in
         if (InputManager.Instance != null)

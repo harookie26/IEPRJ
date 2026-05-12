@@ -1,144 +1,217 @@
+using Game.Level;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class EnemyTeleporting : EnemyState
 {
-    // Static forced room for next teleport. Set by EnemyStateMachine on key press.
-    public static RoomComponent ForcedRoom;
+    private List<Transform> teleportPoints;
+    private float teleportCooldown = 0.5f;
+
+    private float cooldownTimer = 0f;
+    private bool teleportInProgress = false;
+    public RoomComponent ForcedRoom { get; set; }
+    public void SetTeleportConfig(List<Transform> points, float cooldown)
+    {
+        teleportPoints = points;
+        teleportCooldown = cooldown;
+    }
 
     public override void EnterState(EnemyStateMachine state)
     {
-        DoTeleport(state);
-        // After teleporting, go back to Calm. EnemyStateMachine will roll a new Calm timer.
-        state.Switchstate(state.EnemyCalm);
+        TeleportNow(state);
+        cooldownTimer = teleportCooldown;
+        teleportInProgress = false;
+        Debug.Log("Entered Teleporting State");
     }
 
     public override void UpdateState(EnemyStateMachine state)
     {
-        // No-op: teleport happens immediately on enter.
+        if (cooldownTimer > 0f)
+        {
+            cooldownTimer -= Time.deltaTime;
+        }
     }
 
     public override void OnCollision(EnemyStateMachine state)
     {
-        // No-op
     }
 
-    private void DoTeleport(EnemyStateMachine state)
+    public void TeleportNow(EnemyStateMachine state)
     {
-        var rooms = Object.FindObjectsOfType<RoomComponent>();
-        if (rooms == null || rooms.Length == 0)
+        if (state == null || state.Enemy == null)
         {
-            Debug.LogWarning("[EnemyTeleporting] No RoomComponent found. Teleport skipped.");
+            Debug.LogError("EnemyTeleporting: State or Enemy is null");
             return;
         }
 
-        var agent = state.NavAgent;
-        var enemyGO = state.Enemy != null ? state.Enemy : state.gameObject;
-        var currentPos = enemyGO.transform.position;
+        teleportInProgress = true;
 
-        // If a forced target room was set, use it and clear the request.
-        var targetRoom = ForcedRoom;
-        if (targetRoom != null)
+        Vector3 targetPosition = Vector3.zero;
+        bool foundTarget = false;
+
+        RoomComponent forcedRoom = ForcedRoom ?? state.ForcedTeleportRoom;
+
+        if (forcedRoom != null)
         {
-            ForcedRoom = null; // consume request
-            TryTeleportIntoRoom(agent, enemyGO, targetRoom);
+            targetPosition = GetForcedTeleportPoint(state, forcedRoom);
+            foundTarget = targetPosition != Vector3.zero || forcedRoom != null;
+        }
+
+        if (!foundTarget)
+        {
+            targetPosition = GetRandomTeleportPoint(state);
+            foundTarget = targetPosition != Vector3.zero;
+        }
+
+        if (!foundTarget)
+        {
+            Debug.LogWarning("EnemyTeleporting: No valid teleport target found. Teleport aborted.");
+            teleportInProgress = false;
             return;
         }
 
-        // Identify current room (if any) to prefer a different one
-        RoomComponent currentRoom = null;
-        foreach (var r in rooms)
+        TeleportToPoint(state, targetPosition);
+        teleportInProgress = false;
+    }
+
+    private Vector3 GetRandomTeleportPoint(EnemyStateMachine state)
+    {
+        if (teleportPoints == null || teleportPoints.Count == 0)
         {
-            var b = r.Bounds;
-            if (b.size.sqrMagnitude > Mathf.Epsilon && b.Contains(currentPos))
+            Debug.LogWarning("EnemyTeleporting: teleportPoints list is empty.");
+            return Vector3.zero;
+        }
+
+        List<Transform> validPoints = new List<Transform>();
+        foreach (var point in teleportPoints)
+        {
+            if (point != null)
             {
-                currentRoom = r;
-                break;
+                validPoints.Add(point);
             }
         }
 
-        RoomComponent[] candidates;
-        if (currentRoom != null && rooms.Length > 1)
-            candidates = System.Array.FindAll(rooms, r => r != currentRoom);
-        else
-            candidates = rooms;
-
-        const int maxAttempts = 16;
-
-        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        if (validPoints.Count == 0)
         {
-            var room = candidates[Random.Range(0, candidates.Length)];
-            var bounds = room.Bounds;
-            if (bounds.size.sqrMagnitude <= Mathf.Epsilon) continue;
+            Debug.LogWarning("EnemyTeleporting: All teleport points are null.");
+            return Vector3.zero;
+        }
 
-            var randomPoint = new Vector3(
-                Random.Range(bounds.min.x, bounds.max.x),
-                Random.Range(bounds.min.y, bounds.max.y),
-                Random.Range(bounds.min.z, bounds.max.z)
-            );
+        IRoom currentRoom = RoomUtils.GetRoomForPosition(new Vector2(state.Enemy.transform.position.x, state.Enemy.transform.position.y));
 
-            if (agent != null && agent.isOnNavMesh)
+        List<Transform> differentRoomPoints = new List<Transform>();
+        foreach (var point in validPoints)
+        {
+            IRoom pointRoom = RoomUtils.GetRoomForPosition(new Vector2(point.position.x, point.position.y));
+
+            if (currentRoom == null || pointRoom == null || !currentRoom.Equals(pointRoom))
             {
-                if (NavMesh.SamplePosition(randomPoint, out var hit, 2.0f, NavMesh.AllAreas))
+                differentRoomPoints.Add(point);
+            }
+        }
+
+        List<Transform> pointsToUse = differentRoomPoints.Count > 0 ? differentRoomPoints : validPoints;
+
+        Transform randomPoint = pointsToUse[Random.Range(0, pointsToUse.Count)];
+        return randomPoint.position;
+    }
+    private Vector3 GetForcedTeleportPoint(EnemyStateMachine state, RoomComponent forcedRoom)
+    {
+        if (forcedRoom == null || teleportPoints == null || teleportPoints.Count == 0)
+        {
+            return Vector3.zero;
+        }
+
+        Bounds roomBounds = forcedRoom.Bounds;
+
+        Transform closestPoint = null;
+        float closestDistance = Mathf.Infinity;
+
+        foreach (var point in teleportPoints)
+        {
+            if (point == null) continue;
+
+            float distance = Vector3.Distance(point.position, roomBounds.center);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestPoint = point;
+            }
+        }
+
+        if (closestPoint == null)
+        {
+            Debug.LogWarning("EnemyTeleporting: No valid teleport points available for forced room.");
+            return Vector3.zero;
+        }
+
+        return closestPoint.position;
+    }
+
+    private void TeleportToPoint(EnemyStateMachine state, Vector3 targetPosition)
+    {
+        if (state == null || state.Enemy == null)
+        {
+            Debug.LogError("EnemyTeleporting: State or Enemy is null during teleport");
+            return;
+        }
+
+        NavMeshAgent navAgent = state.NavAgent;
+        GameObject enemyGameObject = state.Enemy;
+        Transform enemyTransform = enemyGameObject.transform;
+
+        float desiredY = enemyTransform.position.y;
+        targetPosition.y = desiredY;
+
+        try
+        {
+            if (navAgent != null && navAgent.isOnNavMesh)
+            {
+                NavMeshHit hit;
+                float sampleRadius = 5f;
+
+                if (NavMesh.SamplePosition(targetPosition, out hit, sampleRadius, NavMesh.AllAreas))
                 {
-                    if (agent.Warp(hit.position))
+                    navAgent.Warp(hit.position);
+                    navAgent.ResetPath();
+                    Debug.Log($"EnemyTeleporting: Warped enemy to {hit.position}");
+                }
+                else
+                {
+                    if (NavMesh.SamplePosition(targetPosition, out hit, 20f, NavMesh.AllAreas))
                     {
-                        Debug.Log($"[EnemyTeleporting] Teleported via NavMesh to {hit.position} in room '{room.name}' (Id={room.Id}).");
-                        return;
+                        navAgent.Warp(hit.position);
+                        navAgent.ResetPath();
+                        Debug.Log($"EnemyTeleporting: Warped enemy to {hit.position} (fallback radius)");
+                    }
+                    else
+                    {
+                        enemyTransform.position = targetPosition;
+                        Debug.LogWarning($"EnemyTeleporting: Could not find NavMesh point near {targetPosition}. Falling back to direct position set.");
                     }
                 }
             }
-
-            enemyGO.transform.position = randomPoint;
-            Debug.Log($"[EnemyTeleporting] Teleported (direct) to {randomPoint} in room '{room.name}' (Id={room.Id}).");
-            return;
+            else
+            {
+                enemyTransform.position = targetPosition;
+                Debug.LogWarning("EnemyTeleporting: NavMeshAgent unavailable or not on NavMesh. Using direct position.");
+            }
         }
-
-        Debug.LogWarning("[EnemyTeleporting] Failed to find a valid teleport point after several attempts.");
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"EnemyTeleporting: Exception during teleport: {ex.Message}");
+            enemyTransform.position = targetPosition;
+        }
     }
 
-    private void TryTeleportIntoRoom(NavMeshAgent agent, GameObject enemyGO, RoomComponent room)
+    public void SetForcedTeleportTarget(Transform targetTransform)
     {
-        var bounds = room.Bounds;
-        if (bounds.size.sqrMagnitude <= Mathf.Epsilon)
+        if (targetTransform == null)
         {
-            Debug.LogWarning($"[EnemyTeleporting] Target room '{room.name}' bounds invalid. Falling back to random.");
-            // Fallback: treat as normal
-            var state = enemyGO.GetComponent<EnemyStateMachine>();
-            if (state != null)
-            {
-                DoTeleport(state);
-            }
+            Debug.LogWarning("EnemyTeleporting: Attempted to set null forced teleport target.");
             return;
         }
-
-        // Try several points inside the target room
-        const int attempts = 8;
-        for (int i = 0; i < attempts; i++)
-        {
-            var randomPoint = new Vector3(
-                Random.Range(bounds.min.x, bounds.max.x),
-                Random.Range(bounds.min.y, bounds.max.y),
-                Random.Range(bounds.min.z, bounds.max.z)
-            );
-
-            if (agent != null && agent.isOnNavMesh)
-            {
-                if (NavMesh.SamplePosition(randomPoint, out var hit, 2.0f, NavMesh.AllAreas))
-                {
-                    if (agent.Warp(hit.position))
-                    {
-                        Debug.Log($"[EnemyTeleporting] Forced teleport via NavMesh to {hit.position} in room '{room.name}' (Id={room.Id}).");
-                        return;
-                    }
-                }
-            }
-
-            enemyGO.transform.position = randomPoint;
-            Debug.Log($"[EnemyTeleporting] Forced teleport (direct) to {randomPoint} in room '{room.name}' (Id={room.Id}).");
-            return;
-        }
-
-        Debug.LogWarning($"[EnemyTeleporting] Failed to teleport into target room '{room.name}'.");
+        Debug.Log($"EnemyTeleporting: Forced teleport target set to {targetTransform.name}");
     }
 }
