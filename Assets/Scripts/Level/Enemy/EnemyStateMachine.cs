@@ -105,10 +105,10 @@ public class EnemyStateMachine : MonoBehaviour
             MoveSpeed = config.moveSpeed;
             PatrolSpeed = config.patrolSpeed;
             TargetingBuffer = config.targetingBuffer;
-            EnemyAggroRadius = config.enemyAggroRadius;
-            EnemyKillRadius = config.enemyKillRadius;
-            DistractedCalmDuration = config.distractedCalmDuration;
-            DistractedRushMultiplier = config.distractedRushMultiplier;
+            //EnemyAggroRadius = config.enemyAggroRadius;
+            //EnemyKillRadius = config.enemyKillRadius;
+            //DistractedCalmDuration = config.distractedCalmDuration;
+            //DistractedRushMultiplier = config.distractedRushMultiplier;
         }
         else
         {
