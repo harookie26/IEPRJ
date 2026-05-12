@@ -34576,6 +34576,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Managers
       objectReference: {fileID: 0}
+    - target: {fileID: 7484102567388825872, guid: 8f812eaf27a28c44d818c4dc1e839619, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7844053116772737088, guid: 8f812eaf27a28c44d818c4dc1e839619, type: 3}
       propertyPath: m_LocalPosition.x
       value: -945.46375
@@ -41470,7 +41474,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2d4bda5000576246a0395009344f641, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlashlightScript
-  flashlight: {fileID: 318340457}
 --- !u!1 &825807567
 GameObject:
   m_ObjectHideFlags: 0
@@ -50737,11 +50740,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 3406056732257620371, guid: c1576a8dc15bfdc448ec0602b68d433a, type: 3}
---- !u!1 &1172682202 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 437703989750180183, guid: ee645fdcac6a48f4fb0299552b5a1edf, type: 3}
-  m_PrefabInstance: {fileID: 3925406899448180631}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1176927860 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 5d06cc33130c29d49a09463dda25fca8, type: 3}
@@ -51637,7 +51635,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1323447428346790150, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1915951209247502636, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_IsActive
@@ -51687,7 +51685,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 6175760895984936703, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -54396,11 +54395,6 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: efea8c502a767804f8933d33ea5f57c4, type: 3}
   m_PrefabInstance: {fileID: 1328936977}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1333771451 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 02ec266795a1d844f80473406eb009ea, type: 3}
-  m_PrefabInstance: {fileID: 863119167}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1333771452 stripped
 Transform:
@@ -59628,34 +59622,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f921bfc3ee548dd4cb70f541772ff520, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CorruptPaintingRandomizer
-  corruptedPaintingCover: {fileID: 5259041035665718072, guid: 3e33b2537595fe24c8cde7ae5c76ff5e, type: 3}
-  corruptedPaintingsTexture:
-  - {fileID: -3925887497561887157, guid: fcc082c179ce0bd49b254abd8dcd099e, type: 3}
-  - {fileID: 5683054237272212753, guid: 01a9d0ea732c77b4b8e0f00780320f8b, type: 3}
-  - {fileID: 3181819424553509685, guid: 8e9f99f013e82264a91a974b55f890e4, type: 3}
-  - {fileID: 1861185738333174015, guid: 0551d2766d7ccd84d9d433f6f8afc6e1, type: 3}
-  channelableLayerName: Chanellable
-  Room1paintings:
-  - {fileID: 1341130238}
-  - {fileID: 1333771451}
-  Room2paintings:
-  - {fileID: 1225010451}
-  - {fileID: 70233693}
-  - {fileID: 563632819}
-  - {fileID: 1570504863}
-  - {fileID: 1892064063}
-  Room3paintings:
-  - {fileID: 1172682202}
-  Room4paintings:
-  - {fileID: 2034241523}
-  - {fileID: 911221554}
-  - {fileID: 1078183630}
-  - {fileID: 1152550933}
-  - {fileID: 694338286}
-  Room5paintings:
-  - {fileID: 412782028}
-  - {fileID: 664404227}
-  isDebugMode: 0
 --- !u!4 &1612597698
 Transform:
   m_ObjectHideFlags: 0
@@ -68723,7 +68689,7 @@ MonoBehaviour:
   enableMotionEffects: 1
   walkBobAmountY: 0.08
   walkBobAmountX: 0.05
-  walkBobSpeed: 1.75
+  walkBobSpeed: 2.5
   runBobAmountY: 0.07
   runBobAmountX: 0.035
   runBobSpeed: 10
@@ -70006,7 +69972,7 @@ AudioSource:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5855460692486164120}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: -5483012979918329034, guid: 89d80aa3e9f44404ca1df8aec8f50490, type: 2}
   m_audioClip: {fileID: 0}

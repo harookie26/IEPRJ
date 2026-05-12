@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using static EventNames.GameStateEvents;
 using static EventNames;
-using Unity.VisualScripting;
+using static EventNames.GameStateEvents;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
@@ -125,7 +124,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-        if(isGamePaused) return; // Prevent processing input when the game is paused
+        if (isGamePaused) return; // Prevent processing input when the game is paused
 
         if (!canMove || PBController.IsCompanionManualModeActive)
         {
@@ -145,7 +144,7 @@ public class PlayerMovement : MonoBehaviour
 
         cameraPitch -= lookInputCurrent.y * mouseSensitivity;
         cameraPitch = Mathf.Clamp(cameraPitch, -89f, 89f);
-        
+
 
         cachedMoveDirection = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
 

@@ -21,9 +21,6 @@ public class EnemyStateMachine : MonoBehaviour
     [Header("Navigation")]
     [Tooltip("Optional: assign a NavMeshAgent here. If left empty, the agent will be cached from the 'enemy' GameObject at runtime.")]
     [SerializeField] private NavMeshAgent navMeshAgent;
-    [Tooltip("Reference to the EnemyFOV component that determines line-of-sight / visibility.")]
-    [SerializeField] private EnemyFOV enemyFOV;
-    public EnemyFOV EnemyFOV => enemyFOV;
 
     [Header("Teleporting")]
     [Tooltip("List of transforms marking teleport destination points.")]
@@ -51,12 +48,6 @@ public class EnemyStateMachine : MonoBehaviour
     }
 
     public float MoveSpeed;
-    public float PatrolSpeed;
-    public float TargetingBuffer;
-    public float EnemyAggroRadius;
-    public float EnemyKillRadius;
-    public float DistractedCalmDuration;
-    public float DistractedRushMultiplier;
 
     public GameObject TargetPlayer => targetPlayer;
     public GameObject Enemy => enemy;
@@ -69,9 +60,9 @@ public class EnemyStateMachine : MonoBehaviour
     private EnemyTeleporting enemyTeleporting = new EnemyTeleporting();
 
     private bool isFrozen = false;
-    private bool prevNavAgentStopped = false;
-    private float prevNavAgentSpeed = 0f;
-    private bool prevNavAgentEnabled = false;
+    //private bool prevNavAgentStopped = false;
+    //private float prevNavAgentSpeed = 0f;
+    //private bool prevNavAgentEnabled = false;
 
     private static readonly HashSet<EnemyStateMachine> AllInstances = new HashSet<EnemyStateMachine>();
 
@@ -91,20 +82,18 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Start()
     {
-        if (navMeshAgent == null && enemy != null)
-        {
-            navMeshAgent = enemy.GetComponent<NavMeshAgent>();
-            if (navMeshAgent == null)
-            {
-                Debug.LogWarning("EnemyStateManager: No NavMeshAgent found on the enemy. Assign one in the inspector or add one to the enemy GameObject.");
-            }
-        }
+        //if (navMeshAgent == null && enemy != null)
+        //{
+        //    navMeshAgent = enemy.GetComponent<NavMeshAgent>();
+        //    if (navMeshAgent == null)
+        //    {
+        //        Debug.LogWarning("EnemyStateManager: No NavMeshAgent found on the enemy. Assign one in the inspector or add one to the enemy GameObject.");
+        //    }
+        //}
 
         if (config != null)
         {
             MoveSpeed = config.moveSpeed;
-            PatrolSpeed = config.patrolSpeed;
-            TargetingBuffer = config.targetingBuffer;
             //EnemyAggroRadius = config.enemyAggroRadius;
             //EnemyKillRadius = config.enemyKillRadius;
             //DistractedCalmDuration = config.distractedCalmDuration;
@@ -114,12 +103,6 @@ public class EnemyStateMachine : MonoBehaviour
         {
             if (!configWarned) WarnMissingConfig();
             MoveSpeed = 3f;
-            PatrolSpeed = 2f;
-            TargetingBuffer = 1f;
-            EnemyAggroRadius = 8f;
-            EnemyKillRadius = 1f;
-            DistractedCalmDuration = 3f;
-            DistractedRushMultiplier = 1.5f;
         }
 
         enemyTeleporting.SetTeleportConfig(teleportPoints, teleportCooldown);
@@ -152,18 +135,18 @@ public class EnemyStateMachine : MonoBehaviour
 
         isFrozen = true;
 
-        if (navMeshAgent != null)
-        {
-            prevNavAgentStopped = navMeshAgent.isStopped;
-            prevNavAgentSpeed = navMeshAgent.speed;
-            prevNavAgentEnabled = navMeshAgent.enabled;
+        //if (navMeshAgent != null)
+        //{
+        //    prevNavAgentStopped = navMeshAgent.isStopped;
+        //    prevNavAgentSpeed = navMeshAgent.speed;
+        //    prevNavAgentEnabled = navMeshAgent.enabled;
 
-            if (navMeshAgent.enabled)
-            {
-                navMeshAgent.isStopped = true;
-                navMeshAgent.ResetPath();
-            }
-        }
+        //    if (navMeshAgent.enabled)
+        //    {
+        //        navMeshAgent.isStopped = true;
+        //        navMeshAgent.ResetPath();
+        //    }
+        //}
 
         if (duration > 0f)
         {
@@ -178,21 +161,21 @@ public class EnemyStateMachine : MonoBehaviour
 
         isFrozen = false;
 
-        if (navMeshAgent != null)
-        {
-            try
-            {
-                navMeshAgent.speed = prevNavAgentSpeed;
-                if (navMeshAgent.enabled)
-                {
-                    navMeshAgent.isStopped = prevNavAgentStopped;
-                }
-            }
-            catch
-            {
-                // ignore restore errors
-            }
-        }
+        //if (navMeshAgent != null)
+        //{
+        //    try
+        //    {
+        //        navMeshAgent.speed = prevNavAgentSpeed;
+        //        if (navMeshAgent.enabled)
+        //        {
+        //            navMeshAgent.isStopped = prevNavAgentStopped;
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        // ignore restore errors
+        //    }
+        //}
     }
 
     private IEnumerator UnfreezeAfter(float seconds)

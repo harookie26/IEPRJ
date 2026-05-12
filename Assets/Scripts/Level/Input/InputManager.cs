@@ -15,7 +15,7 @@ public class InputManager : MonoBehaviour
     private bool corruptedRoomPressed;
     private bool debugModePressed;
 
-    private InputSystem2D inputActions;
+    private InputSystem_Actions inputActions;
 
     private bool onlyAllowLMBOrEnter = false;
 
@@ -24,7 +24,6 @@ public class InputManager : MonoBehaviour
     private bool corruptedRoomMode = false;
 
     public event Action OnInteractPressed;
-    public event Action OnStealthPressed;
 
     // Channeling events
     public event Action OnChannelStarted;
@@ -49,7 +48,7 @@ public class InputManager : MonoBehaviour
             Instance = this;
         }
 
-        inputActions = new InputSystem2D();
+        inputActions = new InputSystem_Actions();
         inputActions.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
         inputActions.Player.Move.canceled += ctx => moveInput = Vector2.zero;
         inputActions.Player.Sprint.performed += ctx =>
