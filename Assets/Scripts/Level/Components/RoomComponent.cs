@@ -46,6 +46,9 @@ public class RoomComponent : MonoBehaviour, IRoom
         UpdateCenterFromCollider();
 
         playerStateMachine = FindFirstObjectByType<PlayerStateMachine>();
+
+        // Register this room in the registry so it can be looked up by ID
+        RoomRegistry.RegisterRoom(this);
     }
 
     public string GetCurrentRoomName()

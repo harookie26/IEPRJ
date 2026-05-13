@@ -12,6 +12,7 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private bool logDebug = false;
 
     private PlayerLocationUpdater playerLocationUpdater;
+    private EnemyStateMachine enemyStateMachine;
     private Coroutine moveToPlayerCoroutine;
 
     public int enemyLocationID;
@@ -35,6 +36,21 @@ public class EnemyAI : MonoBehaviour
         else
         {
             Debug.LogError($"{nameof(EnemyAI)}: `player` is not assigned and could not be found by tag \"Player\".", this);
+        }
+
+        enemyStateMachine = GetComponent<EnemyStateMachine>();
+        if (enemyStateMachine == null)
+        {
+            enemyStateMachine = GetComponentInParent<EnemyStateMachine>();
+        }
+
+        if (enemyStateMachine == null)
+        {
+            Debug.LogError($"{nameof(EnemyAI)}: EnemyStateMachine not found. Teleporting will be disabled.", this);
+        }
+        else if (logDebug)
+        {
+            Debug.Log($"{nameof(EnemyAI)}: EnemyStateMachine initialized for teleporting.", this);
         }
     }
 
@@ -64,12 +80,24 @@ public class EnemyAI : MonoBehaviour
                 if (logDebug) Debug.Log("[EnemyAI] Different room, starting delayed teleport.", this);
                 moveToPlayerCoroutine = StartCoroutine(EnemyMoveTowardsPlayerAfterDelay());
             }
+
         }
         else
         {
             // Same room, out of direct range — still chase normally
             CancelTeleport();
             ChasePlayer();
+        }
+
+        // Debug input handling for teleporting
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            TeleportToRandomRoom();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Y))
+        {
+            TeleportToPlayerRoom();
         }
     }
 
@@ -97,12 +125,18 @@ public class EnemyAI : MonoBehaviour
     {
         yield return new WaitForSeconds(moveDelay);
 
-        if (player != null)
+        if (enemyStateMachine != null)
         {
-            transform.position = player.transform.position;
-            enemyLocationID = playerLocationUpdater.getplayerLocationID();
+            enemyStateMachine.EnemyTeleporting.TeleportToPlayerRoom(enemyStateMachine, playerLocationUpdater);
+            if (logDebug) Debug.Log($"[EnemyAI] Teleport to player's room", this);
 
-            if (logDebug) Debug.Log($"[EnemyAI] Teleported to player. Now in room ID={enemyLocationID}", this);
+            // Log where the enemy ended up (will update after trigger enter)
+            yield return new WaitForEndOfFrame();
+            Debug.Log($"[EnemyAI] Enemy location after teleport: Room ID={enemyLocationID}, Position={transform.position}");
+        }
+        else
+        {
+            Debug.LogError("[EnemyAI] Cannot teleport: EnemyStateMachine is null.", this);
         }
 
         moveToPlayerCoroutine = null;
@@ -146,5 +180,36 @@ public class EnemyAI : MonoBehaviour
             enemyLocationID = room.Id;
             if (logDebug) Debug.Log($"[EnemyAI] In room ID={enemyLocationID}", this);
         }
+    }
+
+    private void TeleportToRandomRoom()
+    {
+        if (enemyStateMachine == null)
+        {
+            Debug.LogError("[EnemyAI] Cannot teleport: EnemyStateMachine is null.", this);
+            return;
+        }
+
+        enemyStateMachine.EnemyTeleporting.ForcedRoom = null;
+        enemyStateMachine.EnemyTeleporting.TeleportNow(enemyStateMachine);
+        if (logDebug) Debug.Log("[EnemyAI] Teleported to random room (T key pressed).", this);
+    }
+
+    private void TeleportToPlayerRoom()
+    {
+        if (enemyStateMachine == null)
+        {
+            Debug.LogError("[EnemyAI] Cannot teleport: EnemyStateMachine is null.", this);
+            return;
+        }
+
+        if (playerLocationUpdater == null)
+        {
+            Debug.LogError("[EnemyAI] Cannot teleport: PlayerLocationUpdater is null.", this);
+            return;
+        }
+
+        enemyStateMachine.EnemyTeleporting.TeleportToPlayerRoom(enemyStateMachine, playerLocationUpdater);
+        if (logDebug) Debug.Log($"[EnemyAI] Teleport to player's room triggered via Y key press.", this);
     }
 }

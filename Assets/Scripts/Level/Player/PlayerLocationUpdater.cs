@@ -12,7 +12,7 @@ public class PlayerLocationUpdater : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
@@ -21,15 +21,16 @@ public class PlayerLocationUpdater : MonoBehaviour
         locationText.text = playerLocationName;
     }
 
-    public int getplayerLocationID() 
+    public int getplayerLocationID()
     {
-        Debug.Log(playerLocationID);
+        //Debug.Log(playerLocationID);
         return playerLocationID;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other != null) {
+        if (other != null)
+        {
             if (other.gameObject.GetComponent<RoomComponent>() != null)
             {
                 playerLocationName = other.gameObject.GetComponent<RoomComponent>().GetCurrentRoomName();

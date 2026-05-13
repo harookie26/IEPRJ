@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Game.Level;
+﻿using Game.Level;
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class RoomRegistry
@@ -26,19 +25,5 @@ public static class RoomRegistry
         rooms.TryGetValue(id, out var room);
         return room;
     }
-
-    //public static void LogAllRoomsAndDoors()
-    //{
-    //    foreach (var room in rooms.Values)
-    //    {
-    //        Debug.Log($"[Room {room.Id}] Connected doors: {room.ConnectedDoors.Count()}");
-
-    //        foreach (var door in room.ConnectedDoors)
-    //        {
-    //            var otherRoom = door.RoomA == room ? door.RoomB : door.RoomA;
-    //            Debug.Log($"  ↳ Connected to Room {otherRoom?.Id} via Door {((MonoBehaviour)door).name}");
-    //        }
-    //    }
-    //}
 
 }

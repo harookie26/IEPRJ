@@ -110,11 +110,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            enemyTeleporting.ForcedRoom = null;
-            enemyTeleporting.TeleportNow(this);
-        }
+
     }
 
     // ----- Freeze / Unfreeze API -----
