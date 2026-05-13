@@ -1,10 +1,12 @@
 using TMPro;
 using UnityEngine;
 
-public class FPSCounter : MonoBehaviour
+public class PerformanceOverlay : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI fpsText;
+    [SerializeField] private TextMeshProUGUI sceneNameText;
+    [SerializeField] private TextMeshProUGUI resolutionText;
 
     [Header("Behavior")]
     private KeyCode toggleKeyControl1 = KeyCode.LeftControl;
@@ -25,7 +27,19 @@ public class FPSCounter : MonoBehaviour
         if (fpsText == null)
             fpsText = GetComponentInChildren<TextMeshProUGUI>(true);
 
+       
+
         ApplyVisibility();
+    }
+
+    private void Start()
+    {
+        if (sceneNameText != null)
+            sceneNameText.text = $"Scene: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}";
+        if (resolutionText != null)
+        {
+            resolutionText.text = $"{Screen.width}x{Screen.height}";
+        }
     }
 
     private void Update()
@@ -77,5 +91,11 @@ public class FPSCounter : MonoBehaviour
     {
         if (fpsText != null)
             fpsText.gameObject.SetActive(isVisible);
+
+        if (sceneNameText != null)
+            sceneNameText.gameObject.SetActive(isVisible);
+
+        if (resolutionText != null)
+            resolutionText.gameObject.SetActive(isVisible);
     }
 }

@@ -7,6 +7,7 @@ using Unity.VisualScripting;
 public class RoomComponent : MonoBehaviour, IRoom
 {
     [SerializeField] private int id;
+    public string roomName;
 
     // Explicit bounds collider (so adding another BoxCollider won't break bounds)
     [SerializeField] private BoxCollider boundsCollider;
@@ -23,7 +24,7 @@ public class RoomComponent : MonoBehaviour, IRoom
     public Bounds Bounds => boundsCollider != null ? boundsCollider.bounds : new Bounds();
     public BoxCollider BoundsCollider => boundsCollider;
 
-    public bool isCorrupted = false; 
+    public bool isCorrupted = false;
 
     public bool IsPlayerInside { get; private set; }
 
@@ -45,6 +46,11 @@ public class RoomComponent : MonoBehaviour, IRoom
         UpdateCenterFromCollider();
 
         playerStateMachine = FindFirstObjectByType<PlayerStateMachine>();
+    }
+
+    public string GetCurrentRoomName()
+    {
+        return roomName;
     }
 
     private void ResolveBoundsCollider()

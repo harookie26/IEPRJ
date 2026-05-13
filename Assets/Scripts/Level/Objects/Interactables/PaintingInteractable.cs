@@ -69,13 +69,13 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
         }
 
         // If this interactable is associated with the main painting, check if it's fully revealed
-        var mainPainting = GetComponent<MainPainting>() ?? GetComponentInParent<MainPainting>() ?? FindFirstObjectByType<MainPainting>();
+        var mainPainting = GetComponent<MainPainting>() ?? GetComponentInParent<MainPainting>();
         var gameState = FindFirstObjectByType<GameStateManager>();
 
         bool revealedByCovers = mainPainting != null && mainPainting.IsFullyRevealed();
-        bool revealedByProgress = gameState != null && gameState.GetCurrentLevelProgress() >= 4;
+        //bool revealedByProgress = gameState != null && gameState.GetCurrentLevelProgress() >= 4;
 
-        if (revealedByCovers || revealedByProgress)
+        if (revealedByCovers) //  || revealedByProgress
         {
             if (gameState != null)
             {
