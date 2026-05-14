@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using static EventNames;
 
 public class EnemyAI : MonoBehaviour
 {
@@ -9,6 +10,8 @@ public class EnemyAI : MonoBehaviour
     [Header("Tuning")]
     [SerializeField] private float chaseSpeed = 3f;
     [SerializeField] private float moveDelay = 2f;
+    [SerializeField] private float captureCooldown = 1.5f;
+    [SerializeField] private float catchDistance = 1.2f;
     [SerializeField] private bool logDebug = false;
 
     private PlayerLocationUpdater playerLocationUpdater;
@@ -16,10 +19,14 @@ public class EnemyAI : MonoBehaviour
     private Coroutine moveToPlayerCoroutine;
 
     public int enemyLocationID;
-    private bool isPlayerInRange = false;   // true while player is inside the enemy's trigger
+    private bool isPlayerInRange = false;
+    private bool hasPostedLoseEvent = false;
+    private bool canCapture = true;
 
     private void Start()
     {
+        canCapture = true;
+
         if (player == null)
         {
             var playerGo = GameObject.FindGameObjectWithTag("Player");
@@ -30,28 +37,11 @@ public class EnemyAI : MonoBehaviour
         if (player != null)
         {
             playerLocationUpdater = player.GetComponent<PlayerLocationUpdater>();
-            if (playerLocationUpdater == null)
-                Debug.LogError($"{nameof(EnemyAI)}: `player` has no `{nameof(PlayerLocationUpdater)}` component.", this);
-        }
-        else
-        {
-            Debug.LogError($"{nameof(EnemyAI)}: `player` is not assigned and could not be found by tag \"Player\".", this);
         }
 
         enemyStateMachine = GetComponent<EnemyStateMachine>();
         if (enemyStateMachine == null)
-        {
             enemyStateMachine = GetComponentInParent<EnemyStateMachine>();
-        }
-
-        if (enemyStateMachine == null)
-        {
-            Debug.LogError($"{nameof(EnemyAI)}: EnemyStateMachine not found. Teleporting will be disabled.", this);
-        }
-        else if (logDebug)
-        {
-            Debug.Log($"{nameof(EnemyAI)}: EnemyStateMachine initialized for teleporting.", this);
-        }
     }
 
     private void Update()
@@ -61,10 +51,6 @@ public class EnemyAI : MonoBehaviour
 
         int playerRoomId = playerLocationUpdater.getplayerLocationID();
 
-        if (logDebug)
-            Debug.Log($"[{nameof(EnemyAI)}] Player room ID={playerRoomId}, Enemy room ID={enemyLocationID}, InRange={isPlayerInRange}", this);
-
-        // Player is nearby just chase, skip room check
         if (isPlayerInRange)
         {
             CancelTeleport();
@@ -74,42 +60,38 @@ public class EnemyAI : MonoBehaviour
 
         if (enemyLocationID != playerRoomId)
         {
-            // Different room and out of range — teleport after delay
             if (moveToPlayerCoroutine == null)
             {
-                if (logDebug) Debug.Log("[EnemyAI] Different room, starting delayed teleport.", this);
                 moveToPlayerCoroutine = StartCoroutine(EnemyMoveTowardsPlayerAfterDelay());
             }
-
         }
         else
         {
-            // Same room, out of direct range — still chase normally
             CancelTeleport();
             ChasePlayer();
         }
 
-        // Debug input handling for teleporting
-        if (Input.GetKeyDown(KeyCode.T))
-        {
-            TeleportToRandomRoom();
-        }
-
-        if (Input.GetKeyDown(KeyCode.Y))
-        {
-            TeleportToPlayerRoom();
-        }
+        // Debug inputs
+        if (Input.GetKeyDown(KeyCode.T)) TeleportToRandomRoom();
+        if (Input.GetKeyDown(KeyCode.Y)) TeleportToPlayerRoom();
     }
 
     private void ChasePlayer()
     {
-        if (logDebug) Debug.Log("[EnemyAI] Chasing player.", this);
+        float distanceToPlayer = Vector3.Distance(transform.position, player.transform.position);
 
         transform.position = Vector3.MoveTowards(
             transform.position,
             player.transform.position,
             chaseSpeed * Time.deltaTime
         );
+
+        if (canCapture && distanceToPlayer <= catchDistance && !hasPostedLoseEvent)
+        {
+            hasPostedLoseEvent = true;
+            EventBroadcaster.Instance.PostEvent(EnemyEvents.ENEMY_CATCHED);
+            if (logDebug) Debug.Log("[EnemyAI] Physically caught the player!", this);
+        }
     }
 
     private void CancelTeleport()
@@ -124,52 +106,45 @@ public class EnemyAI : MonoBehaviour
     private IEnumerator EnemyMoveTowardsPlayerAfterDelay()
     {
         yield return new WaitForSeconds(moveDelay);
+        yield return StartCoroutine(TeleportSequence());
+        moveToPlayerCoroutine = null;
+    }
 
+    private IEnumerator TeleportSequence()
+    {
         if (enemyStateMachine != null)
         {
+            canCapture = false;
+            if (logDebug) Debug.Log("[EnemyAI] Teleporting: Capture Disabled.");
+
             enemyStateMachine.EnemyTeleporting.TeleportToPlayerRoom(enemyStateMachine, playerLocationUpdater);
-            if (logDebug) Debug.Log($"[EnemyAI] Teleport to player's room", this);
 
-            // Log where the enemy ended up (will update after trigger enter)
-            yield return new WaitForEndOfFrame();
-            Debug.Log($"[EnemyAI] Enemy location after teleport: Room ID={enemyLocationID}, Position={transform.position}");
-        }
-        else
-        {
-            Debug.LogError("[EnemyAI] Cannot teleport: EnemyStateMachine is null.", this);
-        }
+            yield return new WaitForSeconds(captureCooldown);
 
-        moveToPlayerCoroutine = null;
+            canCapture = true;
+            if (logDebug) Debug.Log("[EnemyAI] Cooldown finished: Capture Enabled.");
+        }
     }
 
     private void OnTriggerEnter(Collider other)
     {
         UpdateRoomID(other);
-
-        if (other.CompareTag("Player"))
-        {
-            isPlayerInRange = true;
-            if (logDebug) Debug.Log("[EnemyAI] Player entered range.", this);
-        }
+        if (other.CompareTag("Player")) isPlayerInRange = true;
     }
 
-    private void OnTriggerStay(Collider other)
-    {
-        UpdateRoomID(other);
-    }
+    private void OnTriggerStay(Collider other) => UpdateRoomID(other);
 
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
         {
             isPlayerInRange = false;
-            if (logDebug) Debug.Log("[EnemyAI] Player left range.", this);
+            hasPostedLoseEvent = false;
         }
 
         if (other.TryGetComponent<RoomComponent>(out var room) && room.Id == enemyLocationID)
         {
             enemyLocationID = -1;
-            if (logDebug) Debug.Log("[EnemyAI] Left room, room ID reset.", this);
         }
     }
 
@@ -178,38 +153,34 @@ public class EnemyAI : MonoBehaviour
         if (other != null && other.TryGetComponent<RoomComponent>(out var room))
         {
             enemyLocationID = room.Id;
-            if (logDebug) Debug.Log($"[EnemyAI] In room ID={enemyLocationID}", this);
         }
     }
 
     private void TeleportToRandomRoom()
     {
-        if (enemyStateMachine == null)
-        {
-            Debug.LogError("[EnemyAI] Cannot teleport: EnemyStateMachine is null.", this);
-            return;
-        }
-
-        enemyStateMachine.EnemyTeleporting.ForcedRoom = null;
-        enemyStateMachine.EnemyTeleporting.TeleportNow(enemyStateMachine);
-        if (logDebug) Debug.Log("[EnemyAI] Teleported to random room (T key pressed).", this);
+        if (enemyStateMachine == null) return;
+        StartCoroutine(ManualTeleportRoutine(null));
     }
 
     private void TeleportToPlayerRoom()
     {
-        if (enemyStateMachine == null)
-        {
-            Debug.LogError("[EnemyAI] Cannot teleport: EnemyStateMachine is null.", this);
-            return;
-        }
+        if (enemyStateMachine == null || playerLocationUpdater == null) return;
+        StartCoroutine(ManualTeleportRoutine(playerLocationUpdater));
+    }
 
-        if (playerLocationUpdater == null)
+    private IEnumerator ManualTeleportRoutine(PlayerLocationUpdater target)
+    {
+        canCapture = false;
+        if (target == null)
         {
-            Debug.LogError("[EnemyAI] Cannot teleport: PlayerLocationUpdater is null.", this);
-            return;
+            enemyStateMachine.EnemyTeleporting.ForcedRoom = null;
+            enemyStateMachine.EnemyTeleporting.TeleportNow(enemyStateMachine);
         }
-
-        enemyStateMachine.EnemyTeleporting.TeleportToPlayerRoom(enemyStateMachine, playerLocationUpdater);
-        if (logDebug) Debug.Log($"[EnemyAI] Teleport to player's room triggered via Y key press.", this);
+        else
+        {
+            enemyStateMachine.EnemyTeleporting.TeleportToPlayerRoom(enemyStateMachine, target);
+        }
+        yield return new WaitForSeconds(captureCooldown);
+        canCapture = true;
     }
 }

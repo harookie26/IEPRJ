@@ -45239,6 +45239,7 @@ MonoBehaviour:
   lowStaminaThreshold: 0.4
   flickerSpeed: 3
   lowStaminaColor: {r: 1, g: 0, b: 0, a: 1}
+  exhaustedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
 --- !u!1 &933319199
 GameObject:
   m_ObjectHideFlags: 0
@@ -52472,7 +52473,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 715144462282737622, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1323447428346790150, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Speed
@@ -55285,7 +55286,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolume
   mode: 1
-  size: {x: 3, y: 3, z: 3}
+  size: {x: 3.674879, y: 4.063801, z: 3.674879}
   overrideRendererFilters: 0
   minRendererVolumeSize: 0.1
   objectLayerMask:
@@ -55325,7 +55326,7 @@ Transform:
   m_GameObject: {fileID: 1328377526}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 7.059046, y: 9.720596, z: -0.11796063}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

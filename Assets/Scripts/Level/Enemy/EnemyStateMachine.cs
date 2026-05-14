@@ -210,7 +210,7 @@ public class EnemyStateMachine : MonoBehaviour
     {
         ///Insert Kill Animations and calls here
 
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(1);
         EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESTART);
 
         yield return StartCoroutine(checkpoint.ReturnToCheckpoint());
