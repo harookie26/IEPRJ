@@ -12,12 +12,14 @@ public class PlayerCamera : MonoBehaviour
     [Header("Head Bob - Walk")]
     [SerializeField] private float walkBobAmountY = 0.06f;
     [SerializeField] private float walkBobAmountX = 0.03f;
-    [SerializeField] private float walkBobSpeed = 6f;
 
     [Header("Head Bob - Run")]
     [SerializeField] private float runBobAmountY = 0.1f;
     [SerializeField] private float runBobAmountX = 0.05f;
-    [SerializeField] private float runBobSpeed = 10f;
+
+    [Header("Head Bob - Speed")]
+    [SerializeField] private float baseBobSpeed = 6f;
+    [SerializeField] private float maxBobSpeed = 12f;
 
     [Header("Rotation Sway")]
     [SerializeField] private float swayRollAmount = 5f;
@@ -273,10 +275,21 @@ public class PlayerCamera : MonoBehaviour
     {
         if (horizontalVelocity < walkSpeedThreshold)
             return 0f;
-        else if (horizontalVelocity < runSpeedThreshold)
-            return walkBobSpeed;
-        else
-            return runBobSpeed;
+
+        // Calculate bob speed dynamically based on current velocity
+        // Normalized velocity: 0 at walkSpeedThreshold, 1.0 at runSpeedThreshold, beyond 1.0 when sprinting
+        float normalizedVelocity = (horizontalVelocity - walkSpeedThreshold) / (runSpeedThreshold - walkSpeedThreshold);
+        normalizedVelocity = Mathf.Clamp01(normalizedVelocity); // Clamp for non-sprinting
+
+        // For sprinting (velocity > runSpeedThreshold), allow speed to exceed clamp
+        if (horizontalVelocity > runSpeedThreshold)
+        {
+            normalizedVelocity = horizontalVelocity / runSpeedThreshold;
+        }
+
+        // Interpolate between baseBobSpeed and maxBobSpeed based on normalized velocity
+        float dynamicBobSpeed = Mathf.Lerp(baseBobSpeed, maxBobSpeed, normalizedVelocity);
+        return dynamicBobSpeed;
     }
 
     private Vector3 CalculateHeadBobOffset()

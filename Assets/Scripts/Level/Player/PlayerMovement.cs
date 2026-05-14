@@ -14,7 +14,7 @@ public class PlayerMovement : MonoBehaviour
     private InputAction jumpAction;
     private InputAction lookAction;
 
-    [Header("Movement Settings")]
+    [Header("Movement Settings")]   
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float mouseSensitivity = 0.1f;
 
@@ -24,6 +24,14 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Corruption Effects")]
     [SerializeField] private float corruptedSpeedMultiplier = 0.6f;
+
+    [Header("Sprint & Stamina")]
+    [SerializeField] private float sprintSpeedMultiplier = 1.5f;
+    [SerializeField] private float maxStamina = 100f;
+    [SerializeField] private float staminaDrainRate = 25f;
+    [SerializeField] private float staminaRegenRate = 15f;
+    [SerializeField] private float minStaminaToSprint = 5f;
+    [SerializeField] private float exhaustedSpeedMultiplier = 0.6f;
 
     [Header("Jumping")]
     [SerializeField] float jumpForce = 2f;
@@ -63,6 +71,11 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector3 currentHorizontalVelocity = Vector3.zero;
 
+    private float currentStamina = 0f;
+    private bool isCurrentlySprinting = false;
+    private bool isExhausted = false;
+    private float exhaustedRecoveryTimeRemaining = 0f;
+
     [Header("Look Interpolation")]
     [SerializeField] private float lookInterpolationSpeed = 0.15f;
 
@@ -84,6 +97,9 @@ public class PlayerMovement : MonoBehaviour
     public bool IsTouchingWalls { get; private set; }
     public bool IsAtRoomCorner { get; private set; }
     public bool IsGrounded => isGrounded;
+    public float CurrentStamina => currentStamina;
+    public float MaxStamina => maxStamina;
+    public bool IsCurrentlySprinting => isCurrentlySprinting;
 
     public bool isGamePaused = false;
 
@@ -108,6 +124,19 @@ public class PlayerMovement : MonoBehaviour
 
         bodyYaw = transform.eulerAngles.y;
         coyoteTimeRemaining = 0f;
+        currentStamina = maxStamina;
+    }
+
+    private void OnDisable()
+    {
+        EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
+        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
+        EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
+        EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
+        EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_PAUSE, GameIsPaused);
+        EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_RESUME, GameIsResumed);
+        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STARTED_SPRINT, OnSprintStarted);
+        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STOPPED_SPRINT, OnSprintStopped);
     }
 
     private void Start() => ResolveCurrentRoomAtPosition();
@@ -120,6 +149,8 @@ public class PlayerMovement : MonoBehaviour
         EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
         EventBroadcaster.Instance.AddObserver(ON_GAME_PAUSE, GameIsPaused);
         EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, GameIsResumed);
+        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_STARTED_SPRINT, OnSprintStarted);
+        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_STOPPED_SPRINT, OnSprintStopped);
     }
 
     private void Update()
@@ -161,10 +192,20 @@ public class PlayerMovement : MonoBehaviour
         DetectLanding();
         UpdateCoyoteTime();
         UpdateLandingRecovery();
+        UpdateStamina();
 
         bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
         bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
         float effectiveSpeed = moveSpeed * ((roomCorrupted && !hasMop) ? corruptedSpeedMultiplier : 1f);
+
+        if (isExhausted)
+        {
+            effectiveSpeed *= exhaustedSpeedMultiplier;
+        }
+        else if (isCurrentlySprinting && currentStamina >= minStaminaToSprint && moveInput.magnitude > 0.1f)
+        {
+            effectiveSpeed *= sprintSpeedMultiplier;
+        }
 
         Vector3 targetVelocity = cachedMoveDirection * effectiveSpeed;
 
@@ -373,6 +414,49 @@ public class PlayerMovement : MonoBehaviour
     private void ContinueMoving() => canMove = true;
     public void SetCanMove(bool value) => canMove = value;
 
+    private void OnSprintStarted()
+    {
+        isCurrentlySprinting = true;
+    }
+
+    private void OnSprintStopped()
+    {
+        isCurrentlySprinting = false;
+    }
+
+    private void UpdateStamina()
+    {
+        if (isExhausted)
+        {
+            currentStamina += staminaRegenRate * Time.fixedDeltaTime;
+            currentStamina = Mathf.Min(maxStamina, currentStamina);
+
+            if (currentStamina >= maxStamina)
+            {
+                currentStamina = maxStamina;
+                isExhausted = false;
+            }
+
+            return;
+        }
+
+        if (isCurrentlySprinting && currentStamina > 0 && moveInput.magnitude > 0.1f)
+        {
+            currentStamina -= staminaDrainRate * Time.fixedDeltaTime;
+
+            if (currentStamina <= 0f)
+            {
+                currentStamina = 0f;
+                isExhausted = true;
+            }
+        }
+        else
+        {
+            currentStamina += staminaRegenRate * Time.fixedDeltaTime;
+            currentStamina = Mathf.Min(maxStamina, currentStamina);
+        }
+    }
+
     public float CameraPitch => cameraPitch;
 
     private void GameIsPaused()
@@ -388,9 +472,6 @@ public class PlayerMovement : MonoBehaviour
         lookInputCurrent = Vector2.zero;
     }
 
-    /// <summary>
-    /// Resets the player's velocity to zero. Used after teleportation to prevent physics artifacts.
-    /// </summary>
     public void ResetVelocity()
     {
         rb.linearVelocity = Vector3.zero;
