@@ -1,7 +1,7 @@
+using DG.Tweening;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections;
-using DG.Tweening;
 
 public class ScreenFader : MonoBehaviour
 {
@@ -93,7 +93,7 @@ public class ScreenFader : MonoBehaviour
         KillCurrentTween();
 
         PrepareForFade(true);
-        
+
         if (fadeImage != null)
         {
             var col = fadeImage.color;
