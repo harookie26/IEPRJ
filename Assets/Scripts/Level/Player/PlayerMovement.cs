@@ -100,6 +100,7 @@ public class PlayerMovement : MonoBehaviour
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
     public bool IsCurrentlySprinting => isCurrentlySprinting;
+    public bool IsExhausted => isExhausted;
 
     public bool isGamePaused = false;
 
