@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.XR;
+using Game.Level;
+
 using static EventNames;
 
 [FoldableInspector(hideFieldHeaders: true)]
@@ -145,19 +147,13 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void ReactToFootsteps(int roomId)
     {
-        // If we are currently roaming, warp to that room's location
-        // and continue the Roam state logic from there.
         if (currentState == RoamState)
         {
             var targetRoom = RoomRegistry.GetRoom(roomId) as RoomComponent;
             if (targetRoom != null)
             {
-                // Use your existing teleport logic to find a point in that room
                 Vector3 warpPos = enemyTeleporting.GetForcedTeleportPoint(this, targetRoom);
                 NavAgent.Warp(warpPos);
-
-                // After warping, the RoamState.Update() will naturally 
-                // pick a new destination nearby.
             }
         }
     }
@@ -165,7 +161,6 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void Freeze(float duration = 0f)
     {
-        // Immediate stop to prevent the "sliding" jank
         if (navMeshAgent != null && navMeshAgent.enabled)
         {
             navMeshAgent.isStopped = true;
@@ -175,7 +170,6 @@ public class EnemyStateMachine : MonoBehaviour
 
         if (isFrozen)
         {
-            // Reset the stun timer if already frozen
             StopCoroutine(nameof(UnfreezeAfter));
             StartCoroutine(UnfreezeAfter(duration));
             return;
@@ -194,7 +188,6 @@ public class EnemyStateMachine : MonoBehaviour
             navMeshAgent.isStopped = false;
         }
 
-        // CRITICAL: Re-enter RoamState so the ghost starts moving and resets its TP timer
         ChangeState(RoamState);
     }
 
@@ -241,5 +234,55 @@ public class EnemyStateMachine : MonoBehaviour
 
         enemyCaught = false;
 
+    }
+
+    public void ReactToSprinting(Vector3 playerPos)
+    {
+        if (isFrozen) return;
+        if (currentState == ChaseState) return;
+
+        IRoom playerRoom = RoomUtils.GetRoomForPosition(new Vector2(playerPos.x, playerPos.y));
+        IRoom ghostRoom = RoomUtils.GetRoomForPosition(new Vector2(transform.position.x, transform.position.y));
+
+        if (playerRoom != null && ghostRoom != null && playerRoom.Equals(ghostRoom))
+        {
+            ChangeState(ChaseState);
+            NavAgent.SetDestination(playerPos);
+            return;
+        }
+
+        List<(Transform point, float distance)> validPoints = new List<(Transform, float)>();
+
+        foreach (Transform point in teleportPoints)
+        {
+            if (point == null) continue;
+
+            if (Mathf.Abs(point.position.y - playerPos.y) < 2.0f)
+            {
+                float distX = Mathf.Abs(point.position.x - playerPos.x);
+                validPoints.Add((point, distX));
+            }
+        }
+
+        validPoints.Sort((a, b) => a.distance.CompareTo(b.distance));
+
+        Transform targetPoint = null;
+
+        if (validPoints.Count >= 2)
+        {
+            targetPoint = validPoints[1].point;
+        }
+        else if (validPoints.Count == 1)
+        {
+            targetPoint = validPoints[0].point;
+        }
+
+        if (targetPoint != null)
+        {
+            NavAgent.Warp(targetPoint.position);
+            ChangeState(ChaseState);
+            NavAgent.SetDestination(playerPos);
+            Debug.Log($"Ghost heard sprinting! TP'd to 2nd closest point: {targetPoint.name}");
+        }
     }
 }

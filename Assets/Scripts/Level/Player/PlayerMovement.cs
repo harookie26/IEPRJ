@@ -90,6 +90,9 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector3 cachedMoveDirection = Vector3.zero;
 
+    [SerializeField] private float sprintNoiseThreshold = 0.8f;
+    private float sprintTimer = 0f;
+
     [Header("Ground Detection")]
     [SerializeField] private float groundDetectionDistance = 0.1f;
     [SerializeField] private LayerMask groundLayer = -1;
@@ -206,6 +209,21 @@ public class PlayerMovement : MonoBehaviour
         else if (isCurrentlySprinting && currentStamina >= minStaminaToSprint && moveInput.magnitude > 0.1f)
         {
             effectiveSpeed *= sprintSpeedMultiplier;
+        }
+
+        if (isCurrentlySprinting && !isExhausted && moveInput.magnitude > 0.1f && isGrounded)
+        {
+            sprintTimer += Time.fixedDeltaTime;
+
+            if (sprintTimer >= sprintNoiseThreshold)
+            {
+                TriggerGhostNoise();
+                sprintTimer = 0f; 
+            }
+        }
+        else
+        {
+            sprintTimer = 0f;
         }
 
         Vector3 targetVelocity = cachedMoveDirection * effectiveSpeed;
@@ -480,5 +498,15 @@ public class PlayerMovement : MonoBehaviour
         isJumpAscending = false;
         jumpRequested = false;
         Debug.Log("[PlayerMovement] Velocity reset after teleportation.");
+    }
+
+    private void TriggerGhostNoise()
+    {
+        EnemyStateMachine ghost = Object.FindFirstObjectByType<EnemyStateMachine>();
+
+        if (ghost != null)
+        {
+            ghost.ReactToSprinting(transform.position);
+        }
     }
 }

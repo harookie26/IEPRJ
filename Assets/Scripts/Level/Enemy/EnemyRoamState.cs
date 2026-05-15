@@ -15,14 +15,12 @@ public class EnemyRoamState : EnemyState
 
     public override void UpdateState(EnemyStateMachine state)
     {
-        // 1. Detection (FOV)
         if (state.GetComponentInChildren<EnemyFOV>().PlayerInSight)
         {
             state.ChangeState(state.ChaseState);
             return;
         }
 
-        // 2. Teleport Timer (Only counts while NOT frozen)
         teleportTimer += Time.deltaTime;
         if (teleportTimer >= nextTeleportDuration)
         {
@@ -31,7 +29,6 @@ public class EnemyRoamState : EnemyState
             nextTeleportDuration = Random.Range(8f, 12f);
         }
 
-        // 3. Movement Check
         if (!state.NavAgent.pathPending && state.NavAgent.remainingDistance <= state.NavAgent.stoppingDistance)
         {
             SetNewDestination(state);
@@ -46,8 +43,6 @@ public class EnemyRoamState : EnemyState
 
     private void TeleportToNewRoom(EnemyStateMachine state)
     {
-        // Since you aren't using the Teleporting script, 
-        // use NavMesh.Warp to move to one of your points
         Vector3 randomPoint = state.GetRandomPoint();
         state.NavAgent.Warp(randomPoint);
     }
