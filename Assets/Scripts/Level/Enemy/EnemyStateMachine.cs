@@ -33,6 +33,10 @@ public class EnemyStateMachine : MonoBehaviour
 
     [Header("Stun Configuration")]
     [SerializeField] private float stunDuration = 5f;
+
+    [Header("Animation")]
+    public Animator animator;
+    
     public float StunDuration => stunDuration;
 
     private EnemyState currentState;
@@ -72,6 +76,8 @@ public class EnemyStateMachine : MonoBehaviour
     public EnemyChaseState ChaseState = new EnemyChaseState();
 
     private bool isFrozen = false;
+    public bool isEnemyActivated = false;
+    private int corruptedPaintingsChanneled = 0;
     //private bool prevNavAgentStopped = false;
     //private float prevNavAgentSpeed = 0f;
     //private bool prevNavAgentEnabled = false;
@@ -84,12 +90,14 @@ public class EnemyStateMachine : MonoBehaviour
     {
         AllInstances.Add(this);
         EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
+        EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
     }
 
     private void OnDisable()
     {
         AllInstances.Remove(this);
         EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
+        EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
     }
 
     private void Start()
@@ -119,15 +127,41 @@ public class EnemyStateMachine : MonoBehaviour
 
         enemyTeleporting.SetTeleportConfig(teleportPoints, teleportCooldown);
 
+        if (!isEnemyActivated)
+        {
+            if (navMeshAgent != null)
+            {
+                navMeshAgent.isStopped = true;
+                navMeshAgent.velocity = Vector3.zero;
+                navMeshAgent.ResetPath();
+            }
+            return; // don't enter any state yet
+        }
+
         ChangeState(RoamState);
     }
 
     private void Update()
     {
+        if (!isEnemyActivated) return; //if enemy has not been activated yet
+
         if (isFrozen) return;
 
         if (currentState != null)
             currentState.UpdateState(this);
+
+        if (currentState == RoamState)
+        {
+            animator.SetBool("isWalking", true);
+            animator.SetBool("isStunned", false);
+            animator.SetBool("isRunning", false);
+        }
+        else if (currentState == ChaseState)
+        {
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isStunned", false);
+            animator.SetBool("isRunning", true);
+        }
     }
 
     public void ChangeState(EnemyState newState)
@@ -147,6 +181,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void ReactToFootsteps(int roomId)
     {
+        if (!isEnemyActivated) return;
         if (currentState == RoamState)
         {
             var targetRoom = RoomRegistry.GetRoom(roomId) as RoomComponent;
@@ -193,6 +228,9 @@ public class EnemyStateMachine : MonoBehaviour
 
     private IEnumerator UnfreezeAfter(float seconds)
     {
+        animator.SetBool("isWalking", false);
+        animator.SetBool("isStunned", true);
+        animator.SetBool("isRunning", false);
         yield return new WaitForSeconds(seconds);
         Unfreeze();
     }
@@ -238,6 +276,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void ReactToSprinting(Vector3 playerPos)
     {
+        if (!isEnemyActivated) return;
         if (isFrozen) return;
         if (currentState == ChaseState) return;
 
@@ -283,6 +322,47 @@ public class EnemyStateMachine : MonoBehaviour
             ChangeState(ChaseState);
             NavAgent.SetDestination(playerPos);
             Debug.Log($"Ghost heard sprinting! TP'd to 2nd closest point: {targetPoint.name}");
+        }
+    }
+
+    private void AddRestoredPainting()
+    {
+        corruptedPaintingsChanneled++;
+
+        if (corruptedPaintingsChanneled > 0 && !isEnemyActivated)
+        {
+            isEnemyActivated = true;
+
+            if (navMeshAgent != null)
+                navMeshAgent.isStopped = false;
+
+            ChangeState(RoamState); // only start moving now
+        }
+        if (corruptedPaintingsChanneled > 1)
+        {
+            // method to adjust ghost aggressiveness level based on how many paintings have been restored
+            AdjustEnemeyAggressiveness(corruptedPaintingsChanneled);
+        }
+
+    }
+
+    //UNTESTED, PLAYTEST FIRST, THIS WILL NEED BALANCING//
+    private void AdjustEnemeyAggressiveness(int corruptedPaintingsChanneled)
+    {
+        if(corruptedPaintingsChanneled == 2)
+        {
+            // example: increase move speed by 20%
+            MoveSpeed *= 1.2f;
+        }
+        else if (corruptedPaintingsChanneled == 3)
+        {
+            // example: increase move speed by another 20%
+            MoveSpeed *= 1.2f;
+        }
+        else if (corruptedPaintingsChanneled == 4)
+        {
+            // example: increase move speed by another 20%
+            MoveSpeed *= 1.2f;
         }
     }
 }

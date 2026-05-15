@@ -95,9 +95,12 @@ public class StairsInputManager : MonoBehaviour
         }
 
         _playerMovement.SetCanMove(false);
-        enemy.Freeze();
+        if(enemy.isEnemyActivated)
+        {
+            enemy.Freeze();
+        }   
         yield return StartCoroutine(screenFader.FadeOutSequence(0.25f));
-
+            
         if (postFadeDelaySeconds > 0f)
         {
             yield return new WaitForSecondsRealtime(postFadeDelaySeconds);
@@ -114,7 +117,10 @@ public class StairsInputManager : MonoBehaviour
 
         yield return StartCoroutine(screenFader.FadeInSequence(0.25f));
 
-        enemy.Unfreeze();
+        if (enemy.isEnemyActivated)
+        {
+            enemy.Unfreeze();
+        }
         _playerMovement.SetCanMove(true);
         _isTransferring = false;
     }

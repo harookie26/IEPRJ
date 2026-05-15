@@ -47,7 +47,7 @@ public class Flashlight : MonoBehaviour
 
     private void HandleInput()
     {
-        if (Input.GetKeyDown(KeyCode.F) && currentBattery > 0)
+        if (Input.GetMouseButtonDown(0) && currentBattery > 0)
         {
             isOn = !isOn;
             UpdateBeamState();

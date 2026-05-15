@@ -1,4 +1,5 @@
 using UnityEngine;
+
 using static EventNames;
 
 public class EnemyChaseState : EnemyState
@@ -25,7 +26,6 @@ public class EnemyChaseState : EnemyState
             Debug.Log("Chase timed out! Teleporting away and returning to Roam.");
 
             state.EnemyTeleporting.TeleportNow(state);
-
             state.ChangeState(state.RoamState);
             return;
         }
