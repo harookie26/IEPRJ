@@ -43999,6 +43999,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 02ec266795a1d844f80473406eb009ea, type: 3}
+--- !u!1 &863119168 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 02ec266795a1d844f80473406eb009ea, type: 3}
+  m_PrefabInstance: {fileID: 863119167}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &867875946
 Mesh:
   m_ObjectHideFlags: 0
@@ -61737,6 +61742,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f921bfc3ee548dd4cb70f541772ff520, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CorruptPaintingRandomizer
+  corruptedPaintingCover: {fileID: 5259041035665718072, guid: 3e33b2537595fe24c8cde7ae5c76ff5e, type: 3}
+  corruptedPaintingsTexture:
+  - {fileID: -3925887497561887157, guid: fcc082c179ce0bd49b254abd8dcd099e, type: 3}
+  - {fileID: 5683054237272212753, guid: 01a9d0ea732c77b4b8e0f00780320f8b, type: 3}
+  - {fileID: 3181819424553509685, guid: 8e9f99f013e82264a91a974b55f890e4, type: 3}
+  - {fileID: 1861185738333174015, guid: 0551d2766d7ccd84d9d433f6f8afc6e1, type: 3}
+  channelableLayerName: Channelable
+  Room1paintings:
+  - {fileID: 1341130238}
+  - {fileID: 863119168}
+  Room2paintings:
+  - {fileID: 1225010451}
+  - {fileID: 70233693}
+  - {fileID: 563632819}
+  - {fileID: 1570504863}
+  - {fileID: 1892064063}
+  Room3paintings:
+  - {fileID: 3925406899448180632}
+  Room4paintings:
+  - {fileID: 3925406899448180632}
+  - {fileID: 911221554}
+  - {fileID: 1078183630}
+  - {fileID: 1152550933}
+  - {fileID: 694338286}
+  Room5paintings:
+  - {fileID: 412782028}
+  - {fileID: 664404227}
+  isDebugMode: 0
 --- !u!4 &1612597698
 Transform:
   m_ObjectHideFlags: 0
@@ -73119,6 +73152,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ee645fdcac6a48f4fb0299552b5a1edf, type: 3}
+--- !u!1 &3925406899448180632 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 437703989750180183, guid: ee645fdcac6a48f4fb0299552b5a1edf, type: 3}
+  m_PrefabInstance: {fileID: 3925406899448180631}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &4135066244124773024
 MonoBehaviour:
   m_ObjectHideFlags: 0
