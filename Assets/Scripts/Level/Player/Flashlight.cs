@@ -1,25 +1,94 @@
 using UnityEngine;
+using TMPro; // Add this for the battery text
 
 public class Flashlight : MonoBehaviour
 {
+    [Header("References")]
     [SerializeField] private GameObject flashlightBeam;
+    [SerializeField] private TextMeshProUGUI batteryText; // Assign a UI Text element here
+    [SerializeField] private Transform camTransform; // Assign the main camera or flashlight tip
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [Header("Battery Settings")]
+    [SerializeField] private float maxBattery = 100f;
+    [SerializeField] private float drainRate = 2f; // Percent per second
+    private float currentBattery;
+
+    [Header("Stun Settings")]
+    [SerializeField] private float stunRange = 10f;
+    [SerializeField] private LayerMask enemyLayer; // Set this to the layer your Ghost is on
+
+    private bool isOn = true;
+
     void Start()
     {
-        if (flashlightBeam != null)
-            flashlightBeam.SetActive(true);
+        currentBattery = maxBattery;
+        if (camTransform == null) camTransform = Camera.main.transform;
+
+        UpdateBeamState();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if(Input.GetKeyUp(KeyCode.F))
+        HandleInput();
+
+        if (isOn && currentBattery > 0)
         {
-            if (flashlightBeam != null)
+            DrainBattery();
+            CheckForGhost();
+        }
+        else if (currentBattery <= 0 && isOn)
+        {
+            isOn = false;
+            UpdateBeamState();
+        }
+
+        UpdateUI();
+    }
+
+    private void HandleInput()
+    {
+        if (Input.GetKeyDown(KeyCode.F) && currentBattery > 0)
+        {
+            isOn = !isOn;
+            UpdateBeamState();
+        }
+    }
+
+    private void DrainBattery()
+    {
+        currentBattery -= drainRate * Time.deltaTime;
+        currentBattery = Mathf.Clamp(currentBattery, 0, maxBattery);
+    }
+
+    private void CheckForGhost()
+    {
+        int layerMask = enemyLayer | (1 << LayerMask.NameToLayer("Default"));
+
+        if (Physics.Raycast(camTransform.position, camTransform.forward, out RaycastHit hit, stunRange, enemyLayer))
+        {
+            // Use GetComponentInParent in case the collider is on a child object
+            var ghost = hit.collider.GetComponentInParent<EnemyStateMachine>();
+
+            if (ghost != null)
             {
-                flashlightBeam.SetActive(!flashlightBeam.activeSelf);
+                // Call the Freeze function with your custom duration
+                ghost.Freeze(ghost.StunDuration);
+                Debug.Log("Ghost is caught in light - Stun timer paused.");
             }
+        }
+    }
+
+    private void UpdateBeamState()
+    {
+        if (flashlightBeam != null)
+            flashlightBeam.SetActive(isOn);
+    }
+
+    private void UpdateUI()
+    {
+        if (batteryText != null)
+        {
+            batteryText.text = $"Battery: {Mathf.CeilToInt(currentBattery)}%";
         }
     }
 }

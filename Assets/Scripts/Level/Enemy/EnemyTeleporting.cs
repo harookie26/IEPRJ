@@ -125,7 +125,7 @@ public class EnemyTeleporting : EnemyState
         Transform randomPoint = pointsToUse[Random.Range(0, pointsToUse.Count)];
         return randomPoint.position;
     }
-    private Vector3 GetForcedTeleportPoint(EnemyStateMachine state, RoomComponent forcedRoom)
+    public Vector3 GetForcedTeleportPoint(EnemyStateMachine state, RoomComponent forcedRoom)
     {
         if (forcedRoom == null || teleportPoints == null || teleportPoints.Count == 0)
         {

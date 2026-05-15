@@ -12,10 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 517ce6a604302c7429332e6304961dac, type: 3}
   m_Name: EnemyConfigs
   m_EditorClassIdentifier: 
-  moveSpeed: 2
+  moveSpeed: 1.25
   patrolSpeed: 1.25
   targetingBuffer: 1
-  enemyAggroRadius: 4
-  enemyKillRadius: 1
-  distractedCalmDuration: 3
-  distractedRushMultiplier: 1.75
