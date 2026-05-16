@@ -35201,6 +35201,10 @@ PrefabInstance:
       propertyPath: collectibleText
       value: 
       objectReference: {fileID: 995780389}
+    - target: {fileID: 1155761151236701987, guid: 8f812eaf27a28c44d818c4dc1e839619, type: 3}
+      propertyPath: forceRespawnAtLobby
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1590913650118520997, guid: 8f812eaf27a28c44d818c4dc1e839619, type: 3}
       propertyPath: currentLevelProgress
       value: 0
@@ -69166,7 +69170,7 @@ PrefabInstance:
     - target: {fileID: 1631519664962373928, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
       propertyPath: fadeImage
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 995573129}
     - target: {fileID: 1876700815997442083, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
       propertyPath: m_text
       value: Move Up
@@ -69363,10 +69367,10 @@ PrefabInstance:
       addedObject: {fileID: 1252459451}
     - targetCorrespondingSourceObject: {fileID: 3271892533214988812, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 995573128}
+      addedObject: {fileID: 1592600675}
     - targetCorrespondingSourceObject: {fileID: 3271892533214988812, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1592600675}
+      addedObject: {fileID: 995573128}
     - targetCorrespondingSourceObject: {fileID: 5425839490648008090, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
       insertIndex: 2
       addedObject: {fileID: 2118623512}
