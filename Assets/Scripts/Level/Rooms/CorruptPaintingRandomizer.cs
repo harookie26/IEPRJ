@@ -41,6 +41,7 @@ public class CorruptPaintingRandomizer : MonoBehaviour
         // 1. Initial Pass: Remember originals and turn off old covers
         foreach (List<GameObject> room in allRooms)
         {
+            if (room == null) continue;
             foreach (GameObject painting in room)
             {
                 if (painting == null) continue;
@@ -73,17 +74,36 @@ public class CorruptPaintingRandomizer : MonoBehaviour
 
         int corruptedCount = 4;
         List<GameObject> chosenPaintings = new List<GameObject>();
+        int roomIndex = 0;
 
-        for (int i = 0; i < corruptedCount; i++)
+        while (chosenPaintings.Count < corruptedCount && roomIndex < shuffledRooms.Count)
         {
-            if (i >= shuffledRooms.Count) break;
+            List<GameObject> currentRoom = shuffledRooms[roomIndex];
+            roomIndex++;
 
-            List<GameObject> currentRoom = shuffledRooms[i];
-            if (currentRoom.Count == 0) continue;
+            // Filter out null entries first
+            List<GameObject> validPaintings = currentRoom.FindAll(p => p != null);
+            if (validPaintings.Count == 0) continue;
 
-            int randomPaintingIndex = Random.Range(0, currentRoom.Count);
-            chosenPaintings.Add(currentRoom[randomPaintingIndex]);
+            // Shuffle valid paintings so we can try each one without bias
+            ShuffleList(validPaintings);
+            bool added = false;
+            foreach (GameObject candidate in validPaintings)
+            {
+                if (!chosenPaintings.Contains(candidate))
+                {
+                    chosenPaintings.Add(candidate);
+                    added = true;
+                    break;
+                }
+            }
+
+            if (!added && isDebugMode)
+                Debug.LogWarning($"[CorruptPaintingRandomizer] All paintings in a room were already chosen (duplicates across rooms). Skipping room.");
         }
+
+        if (isDebugMode)
+            Debug.Log($"[CorruptPaintingRandomizer] Chose {chosenPaintings.Count} paintings out of target {corruptedCount}.");
 
         // NOTE: We no longer shuffle the materials! 
         // This ensures Index 0 = Main1, Index 1 = Main2, etc.
@@ -115,6 +135,12 @@ public class CorruptPaintingRandomizer : MonoBehaviour
                 assignedCover = Instantiate(corruptedPaintingCover, painting.transform.position, painting.transform.rotation, painting.transform.parent);
                 assignedCover.name = corruptedPaintingCover.name + "_" + painting.name;
                 assignedCover.SetActive(true);
+            }
+
+            if (assignedCover == null)
+            {
+                Debug.LogError($"[CorruptPaintingRandomizer] assignedCover is null for painting '{painting.name}'. Skipping — check that corruptedPaintingCover is assigned in the Inspector.");
+                continue;
             }
 
             assignedCover.transform.rotation = Quaternion.Euler(0, assignedCover.transform.rotation.eulerAngles.y, assignedCover.transform.rotation.eulerAngles.z);
@@ -149,7 +175,7 @@ public class CorruptPaintingRandomizer : MonoBehaviour
             // Set Tag and Layer
             painting.tag = "ChannelablePainting";
 
-            // Use the string from the Inspector to avoid typo bugs
+            // Use the string from the Inspector to avoid typo bugs 
             int layerIndex = LayerMask.NameToLayer(channelableLayerName);
             if (layerIndex != -1)
             {

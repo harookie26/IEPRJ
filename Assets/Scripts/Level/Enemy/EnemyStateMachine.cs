@@ -334,7 +334,25 @@ public class EnemyStateMachine : MonoBehaviour
 
         StopChaseAudio();
 
+        // Teleport enemy to a random room that isn't the player's current room,
+        // preventing an immediate re-catch after the player respawns.
+        TeleportToRandomRoom();
+
+        ChangeState(RoamState);
         StartCoroutine(KillSequence());
+    }
+
+    private void TeleportToRandomRoom()
+    {
+        if (navMeshAgent == null) return;
+
+        Vector3 destination = GetRandomPointExcludingPlayerRoom();
+
+        // Warp moves the agent instantly, bypassing pathfinding so it can't get stuck.
+        navMeshAgent.Warp(destination);
+        navMeshAgent.ResetPath();
+
+        Debug.Log($"[EnemyStateMachine] PlayerCaught: enemy teleported to {destination}");
     }
 
     private IEnumerator KillSequence()
@@ -344,7 +362,7 @@ public class EnemyStateMachine : MonoBehaviour
         yield return new WaitForSeconds(1);
         EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESTART);
 
-        yield return StartCoroutine(checkpoint.ReturnToCheckpoint());
+        checkpoint.ReturnToCheckpoint();
 
         enemyCaught = false;
 
@@ -427,7 +445,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     }
 
-    //UNTESTED, PLAYTEST FIRST, THIS WILL NEED BALANCING//
+    //UNTESTED, PLAYTEST FIRST, THIS WILL NEED BALANCING// 
     private void AdjustEnemeyAggressiveness(int corruptedPaintingsChanneled)
     {
         if(corruptedPaintingsChanneled == 2)

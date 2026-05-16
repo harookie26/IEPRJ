@@ -8,7 +8,8 @@ public class CheckpointManager : MonoBehaviour
 {
     private int _currentCheckpointIndex;
 
-    [SerializeField] private bool forceRespawnAtLobby = false;
+    [SerializeField] private bool forceRespawnAtLobby = true;
+    [SerializeField] private Transform playerSpawnPoint;
 
     private GameStateManager _gameState => FindFirstObjectByType<GameStateManager>();
 
@@ -18,6 +19,7 @@ public class CheckpointManager : MonoBehaviour
     private Vector3 _initialPlayerPosition;
     private Vector3 _initialPlayerRotation;
     private PlayerMovement _playerMovement => FindFirstObjectByType<PlayerMovement>();
+    private PBController _pbController => FindFirstObjectByType<PBController>();
 
     private GameObject _enemy;
     private Vector3 _enemySavedPosition;
@@ -88,65 +90,65 @@ public class CheckpointManager : MonoBehaviour
 
     public void StartReturnToCheckpoint()
     {
-        StartCoroutine(ReturnToCheckpoint());
+        ReturnToCheckpoint();
     }
 
-    public IEnumerator ReturnToCheckpoint()
+    public void ReturnToCheckpoint() // respawn logic
     {
         if (forceRespawnAtLobby)
         {
-            yield return StartCoroutine(ReturnToInitialSpawn());
-            yield break;
+            StartCoroutine(ReturnToInitialSpawn());
+        }
+        else
+        {
+            StartCoroutine(ReturnToCheckpointInternal());
         }
 
-        yield return StartCoroutine(ReturnToCheckpointInternal());
+        //yield return StartCoroutine(ReturnToCheckpointInternal());
     }
 
     private IEnumerator ReturnToInitialSpawn()
     {
+        GameObject player = _player;
+
+        // 1. Freeze movement and fade to black
+        _pbController.OnGameRestartReset();
         _playerMovement.SetCanMove(false);
         yield return StartCoroutine(_screenFader.FadeOutSequence(0.5f));
 
-        // Show respawn HUD while waiting for _player input
         if (_uiManager != null)
         {
             _uiManager.HideAll();
+            // You can still show a brief respawn indicator if you like, 
+            // or just comment this out if it's no longer needed without input
             _uiManager.ShowRespawnHUD();
         }
 
-        Debug.Log($"[CheckpointManager] Respawning at initial position: {_initialPlayerPosition}, rotation: {_initialPlayerRotation}");
+        // 2. Disable CharacterController to prevent physics rubber-banding
+        CharacterController cc = player.GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
 
-        // Freeze rigidbody to prevent physics from moving the player
-        Rigidbody playerRb = _player.GetComponent<Rigidbody>();
-        RigidbodyConstraints originalConstraints = RigidbodyConstraints.None;
-        if (playerRb != null)
-        {
-            originalConstraints = playerRb.constraints;
-            playerRb.constraints = RigidbodyConstraints.FreezePosition | RigidbodyConstraints.FreezeRotation;
-        }
-
-        _player.transform.position = _initialPlayerPosition;
-        _player.transform.eulerAngles = _initialPlayerRotation;
-
-        // Reset rigidbody velocity
+        // 3. Reset Rigidbody velocities and physics state
+        Rigidbody playerRb = player.GetComponent<Rigidbody>();
         if (playerRb != null)
         {
             playerRb.linearVelocity = Vector3.zero;
             playerRb.angularVelocity = Vector3.zero;
+            playerRb.isKinematic = true;
         }
 
-        // Reset enemy to initial position as well
+        // 4. Instantly teleport the player to the spawn point
+        player.transform.position = playerSpawnPoint.position;
+        player.transform.eulerAngles = _initialPlayerRotation;
+
+        // 5. Reset enemy position and NavMesh pathing
         if (_enemy != null)
         {
             _enemy.transform.position = _enemySavedPosition;
             NavMeshAgent agent = _enemyStateMachine?.NavAgent;
             if (agent != null)
             {
-                try
-                {
-                    agent.Warp(_enemySavedPosition);
-                    agent.ResetPath();
-                }
+                try { agent.Warp(_enemySavedPosition); agent.ResetPath(); }
                 catch
                 {
                     try
@@ -161,29 +163,26 @@ public class CheckpointManager : MonoBehaviour
             }
         }
 
-        // Wait for player input before fading back in
-        if (InputManager.Instance != null)
-        {
-            bool gotInput = false;
-            yield return StartCoroutine(InputManager.Instance.WaitForInputCoroutine(() => gotInput = true));
-            if (_uiManager != null) _uiManager.HideAll();
-        }
-        else
-        {
-            yield return new WaitForSecondsRealtime(0.05f);
-            if (_uiManager != null) _uiManager.HideAll();
-        }
+        // 6. Wait a frame for Unity physics to catch up to the new position
+        yield return new WaitForFixedUpdate();
 
-        // Restore rigidbody constraints
+        // 7. Restore physics state & clean up UI
         if (playerRb != null)
         {
-            playerRb.constraints = originalConstraints;
+            playerRb.isKinematic = false;
+            playerRb.linearVelocity = Vector3.zero;
+            playerRb.angularVelocity = Vector3.zero;
         }
 
+        if (cc != null) cc.enabled = true;
+
+        if (_uiManager != null) _uiManager.HideAll();
+
+        // 8. Fade back in and restore control
         yield return StartCoroutine(_screenFader.FadeInSequence(0.5f));
         _playerMovement.SetCanMove(true);
 
-        Debug.Log($"[CheckpointManager] Respawned at initial spawn. PlayerPos: {_player.transform.position}");
+        Debug.Log($"[CheckpointManager] Instant respawn completed. PlayerPos: {player.transform.position}");
     }
 
     private IEnumerator ReturnToCheckpointInternal()

@@ -181,7 +181,7 @@ public class LevelDebugger : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.P))
         {
-            StartCoroutine(checkpoint.ReturnToCheckpoint());
+            checkpoint.ReturnToCheckpoint();
         }
 
         if (Input.GetKey(KeyCode.Q))

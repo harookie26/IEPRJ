@@ -1,4 +1,5 @@
 using UnityEngine;
+using static EventNames;
 
 [FoldableInspector]
 public class PBController : MonoBehaviour
@@ -19,6 +20,11 @@ public class PBController : MonoBehaviour
             pbManual = GetComponent<PBManual>();
     }
 
+    public void OnGameRestartReset()
+    {
+        SetMode(Mode.Follow);
+    }
+
     private void Start()
     {
         SetMode(CurrentMode);
@@ -32,17 +38,27 @@ public class PBController : MonoBehaviour
 
     private void ToggleMode()
     {
-        CurrentMode = (CurrentMode == Mode.Follow) ? Mode.Manual : Mode.Follow;
-        SetMode(CurrentMode);
+        SetMode(CurrentMode == Mode.Follow ? Mode.Manual : Mode.Follow);
     }
 
-    private void SetMode(Mode mode)
+    public void SetMode(Mode mode)
     {
+        CurrentMode = mode;
+        IsCompanionManualModeActive = (mode == Mode.Manual);
+
         if (pbFollow != null)
             pbFollow.enabled = (mode == Mode.Follow);
-        if (pbManual != null)
-            pbManual.enabled = (mode == Mode.Manual);
 
-        IsCompanionManualModeActive = (mode == Mode.Manual);
+        if (pbManual != null)
+        {
+            if (mode == Mode.Follow)
+            {
+                // BYPASS UNITY QUIRK: Force the player to unglue right now, 
+                // regardless of whether the GameObject is active or inactive.
+                pbManual.ForceReleasePlayer();
+            }
+
+            pbManual.enabled = (mode == Mode.Manual);
+        }
     }
 }

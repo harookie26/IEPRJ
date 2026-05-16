@@ -41,7 +41,7 @@ public class EnemyRoamState : EnemyState
         state.NavAgent.SetDestination(target);
     }
 
-    private void TeleportToNewRoom(EnemyStateMachine state)
+    public void TeleportToNewRoom(EnemyStateMachine state)
     {
         Vector3 safeRoamTarget = state.GetRandomPointExcludingPlayerRoom();
 

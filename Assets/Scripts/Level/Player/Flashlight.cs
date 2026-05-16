@@ -17,6 +17,10 @@ public class Flashlight : MonoBehaviour
     [SerializeField] private float stunRange = 10f;
     [SerializeField] private LayerMask enemyLayer; // Set this to the layer your Ghost is on
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip flashlightAudioClip;
+    private AudioSource sfxAudioSource;
+
     private bool isOn = true;
 
     void Start()
@@ -25,6 +29,8 @@ public class Flashlight : MonoBehaviour
         if (camTransform == null) camTransform = Camera.main.transform;
 
         UpdateBeamState();
+
+        sfxAudioSource = GetComponent<AudioSource>();
     }
 
     void Update()
@@ -49,6 +55,10 @@ public class Flashlight : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0) && currentBattery > 0)
         {
+            if (flashlightAudioClip != null && sfxAudioSource != null)
+            {
+                sfxAudioSource.PlayOneShot(flashlightAudioClip);
+            }
             isOn = !isOn;
             UpdateBeamState();
         }

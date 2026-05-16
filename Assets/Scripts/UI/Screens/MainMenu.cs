@@ -13,7 +13,7 @@ public class MainMenu : MonoBehaviour
     private ScreenFader _screenFader;
     private SceneLoader _sceneLoader;
 
-    private GameStateManager _gameState => FindFirstObjectByType<GameStateManager>();
+    private GameStateManager _gameState;
 
     private bool _settingsOpen = false;
 
@@ -49,6 +49,15 @@ public class MainMenu : MonoBehaviour
         {
             Debug.LogError("SceneLoader not found in the scene. Please add one and assign it.");
         }
+
+        if(SceneManager.GetActiveScene().name != "MainMenu")
+        {
+            _gameState = FindFirstObjectByType<GameStateManager>();
+            if (_gameState == null)
+            {
+                Debug.LogError("GameStateManager not found in the scene. Please add one and assign it.");
+            }
+        }   
     }
 
     public void ToggleSettings()
@@ -65,8 +74,11 @@ public class MainMenu : MonoBehaviour
         _settingsOpen = true;
         if (settingsPanel != null) settingsPanel.SetActive(true);
 
+        if (SceneManager.GetActiveScene().name != "MainMenu")
+        {
+            _gameState.PauseGame();
+        }
 
-        _gameState.PauseGame();
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
 
         UpdateCursorVisibility();
@@ -78,7 +90,12 @@ public class MainMenu : MonoBehaviour
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
         // Keep game paused while back on pause menu
-        _gameState.PauseGame();
+
+        if (SceneManager.GetActiveScene().name != "MainMenu")
+        {
+            _gameState.PauseGame();
+        }
+
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
 
         UpdateCursorVisibility();

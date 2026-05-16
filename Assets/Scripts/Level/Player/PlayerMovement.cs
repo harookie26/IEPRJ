@@ -10,6 +10,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PlayerInput playerInput;
     [SerializeField] private Camera playerCamera;
 
+    [Header("Paintbrush References")]
+    [SerializeField] private PBController pbController;
+
     private InputAction moveAction;
     private InputAction jumpAction;
     private InputAction lookAction;
@@ -39,6 +42,17 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private AnimationCurve jumpAscentCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     [SerializeField] private float jumpAscendMultiplier = 1.5f;
     [SerializeField] private float fallMultiplier = 1.2f;
+
+    [Header("Audio")]
+    [SerializeField] private AudioClip footstepAudioClip;
+    private AudioSource sfxAudioSource;
+
+    [Header("Footstep Settings")]
+    [SerializeField] private float walkStepInterval = 0.4f;
+    [SerializeField] private float sprintStepInterval = 0.25f;
+    [SerializeField] private float walkPitch = 1.0f;
+    [SerializeField] private float sprintPitch = 1.2f; 
+    private float stepTimer = 0f;
 
     [Header("Coyote Time & Air Control")]
     [SerializeField] private float coyoteTimeDuration = 0.2f;
@@ -129,24 +143,17 @@ public class PlayerMovement : MonoBehaviour
         bodyYaw = transform.eulerAngles.y;
         coyoteTimeRemaining = 0f;
         currentStamina = maxStamina;
+
+        sfxAudioSource = GameObject.FindWithTag("SFXAudioSource").GetComponent<AudioSource>();
+        if (sfxAudioSource == null)
+            sfxAudioSource = gameObject.AddComponent<AudioSource>();
     }
 
-    private void OnDisable()
+    private void Start()
     {
-        EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
-        EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
-        EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
-        EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
-        EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_PAUSE, GameIsPaused);
-        EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_RESUME, GameIsResumed);
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STARTED_SPRINT, OnSprintStarted);
-        EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STOPPED_SPRINT, OnSprintStopped);
-    }
+        ResolveCurrentRoomAtPosition();
 
-    private void Start() => ResolveCurrentRoomAtPosition();
-
-    private void OnEnable()
-    {
+        // Move event subscriptions here so they aren't lost during temporary deactivations
         EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
         EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
         EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
@@ -155,6 +162,22 @@ public class PlayerMovement : MonoBehaviour
         EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, GameIsResumed);
         EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_STARTED_SPRINT, OnSprintStarted);
         EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_STOPPED_SPRINT, OnSprintStopped);
+    }
+
+    private void OnDestroy()
+    {
+        // Clean up listeners when the player is actually destroyed (e.g., scene change)
+        if (EventBroadcaster.Instance != null)
+        {
+            EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
+            EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
+            EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
+            EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
+            EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_PAUSE, GameIsPaused);
+            EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_RESUME, GameIsResumed);
+            EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STARTED_SPRINT, OnSprintStarted);
+            EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STOPPED_SPRINT, OnSprintStopped);
+        }
     }
 
     private void Update()
@@ -185,6 +208,8 @@ public class PlayerMovement : MonoBehaviour
 
         if (jumpAction.triggered && (isGrounded || coyoteTimeRemaining > 0))
             jumpRequested = true;
+
+        HandleFootsteps();
     }
 
     private void FixedUpdate()
@@ -497,7 +522,23 @@ public class PlayerMovement : MonoBehaviour
         currentHorizontalVelocity = Vector3.zero;
         isJumpAscending = false;
         jumpRequested = false;
-        Debug.Log("[PlayerMovement] Velocity reset after teleportation.");
+
+        // 1. FORCE UNLOCK THE PLAYER: 
+        // Just in case PBManual or the death sequence permanently locked your constraints or input
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        canMove = true;
+
+        if (pbController != null)
+        {
+            pbController.SetMode(PBController.Mode.Follow);
+            Debug.Log("[PlayerMovement] Found PBController (Active or Inactive) and forced Follow Mode.");
+        }
+        else
+        {
+            Debug.LogError("[PlayerMovement] CRITICAL: Could not find PBController anywhere in the scene!");
+        }
+
+        Debug.Log("[PlayerMovement] Velocity reset after teleportation and PB detached.");
     }
 
     private void TriggerGhostNoise()
@@ -507,6 +548,39 @@ public class PlayerMovement : MonoBehaviour
         if (ghost != null)
         {
             ghost.ReactToSprinting(transform.position);
+        }
+    }
+
+    private void HandleFootsteps()
+    {
+        // Only play footsteps if grounded and moving
+        if (isGrounded && currentHorizontalVelocity.magnitude > 0.1f)
+        {
+            stepTimer -= Time.deltaTime;
+
+            if (stepTimer <= 0f)
+            {
+                // Check if we are successfully sprinting
+                bool isSprintingNow = isCurrentlySprinting && !isExhausted && currentStamina >= minStaminaToSprint;
+
+                // Set interval and base pitch based on movement state
+                float currentInterval = isSprintingNow ? sprintStepInterval : walkStepInterval;
+                float basePitch = isSprintingNow ? sprintPitch : walkPitch;
+
+                if (footstepAudioClip != null && sfxAudioSource != null)
+                {
+                    // Add a tiny bit of randomness (+/- 0.05) so it sounds like real, organic footsteps
+                    sfxAudioSource.pitch = basePitch + Random.Range(-0.05f, 0.05f);
+                    sfxAudioSource.PlayOneShot(footstepAudioClip);
+                }
+
+                stepTimer = currentInterval;
+            }
+        }
+        else
+        {
+            // Reset timer so the moment we move, a step triggers instantly
+            stepTimer = 0f;
         }
     }
 }
