@@ -43,8 +43,14 @@ public class EnemyRoamState : EnemyState
 
     private void TeleportToNewRoom(EnemyStateMachine state)
     {
-        Vector3 randomPoint = state.GetRandomPoint();
-        state.NavAgent.Warp(randomPoint);
+        Vector3 safeRoamTarget = state.GetRandomPointExcludingPlayerRoom();
+
+        state.NavAgent.Warp(safeRoamTarget);
+
+        Debug.Log("Ghost randomly teleported to a new room (Safely avoiding the player's current room).");
+
+        //Vector3 randomPoint = state.GetRandomPoint();
+        //state.NavAgent.Warp(randomPoint);
     }
 
     private void ResetTeleportTimer()

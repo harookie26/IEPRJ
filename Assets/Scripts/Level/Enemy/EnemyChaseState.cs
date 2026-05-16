@@ -5,7 +5,7 @@ using static EventNames;
 public class EnemyChaseState : EnemyState
 {
     private float chaseTimer = 0f;
-    private const float maxChaseDuration = 10f;
+    private const float maxChaseDuration = 30f;
     private float catchDistance = 1.2f;
 
     public override void EnterState(EnemyStateMachine state)
@@ -13,8 +13,7 @@ public class EnemyChaseState : EnemyState
         chaseTimer = 0f;
 
         state.NavAgent.isStopped = false;
-        state.NavAgent.speed = state.MoveSpeed * 1.6f;
-        Debug.Log("CHASING PLAYER - 10s limit started.");
+        Debug.Log("CHASING PLAYER - 30s limit started.");
     }
 
     public override void UpdateState(EnemyStateMachine state)
