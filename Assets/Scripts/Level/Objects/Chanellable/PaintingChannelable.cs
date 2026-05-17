@@ -36,6 +36,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [SerializeField] private string paintingId = "";
 
     private AudioSource sfxAudioSource;
+    private AudioSource bgmAudioSource;
     private AudioSource restorationMusicAudioSource;
     private AudioList audioList;
 
@@ -56,6 +57,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         audioList = FindAnyObjectByType<AudioList>();
         //Find the SFX audio source object in the scene by its tag
         GameObject audioObject1 = GameObject.FindWithTag("SFXAudioSource");
+        GameObject audioObject2 = GameObject.FindWithTag("MusicAudioSource");
 
         if (audioObject1 != null)
         {
@@ -64,6 +66,16 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         else
         {
             Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
+        }
+
+        // Get the BGM audio source by tag
+        if (audioObject2 != null)
+        {
+            bgmAudioSource = audioObject2.GetComponent<AudioSource>();
+        }
+        else
+        {
+            Debug.LogWarning("No GameObject with tag 'MusicAudioSource' found in scene.");
         }
 
         // Get the restoration music audio source from AudioList
@@ -101,6 +113,15 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         // keep isCompleted unchanged here (should remain false until completed)
         channelTimer = 0f;
         Debug.Log($"[PaintingChannelable] Channel START on '{gameObject.name}' (instance id {GetInstanceID()}).");
+
+        // Pause the BGM
+        if (bgmAudioSource != null && bgmAudioSource.isPlaying)
+        {
+            bgmAudioSource.Pause();
+            Debug.Log("[PaintingChannelable] BGM paused.");
+        }
+
+        // Play the restoration music
         if (restorationMusicAudioSource != null && audioList != null && audioList.paintingRestorationMusic != null)
             restorationMusicAudioSource.PlayOneShot(audioList.paintingRestorationMusic); // play the restoration music
     }
@@ -109,6 +130,13 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     {
         if (restorationMusicAudioSource != null)
             restorationMusicAudioSource.Stop(); // stop the restoration music if still playing
+
+        // Resume the BGM
+        if (bgmAudioSource != null && !bgmAudioSource.isPlaying)
+        {
+            bgmAudioSource.UnPause();
+            Debug.Log("[PaintingChannelable] BGM resumed.");
+        }
 
         if (!isChanneling) return;
 
@@ -152,6 +180,13 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     {
         if (restorationMusicAudioSource != null)
             restorationMusicAudioSource.Stop(); // stop the restoration music if still playing
+
+        // Resume the BGM
+        if (bgmAudioSource != null && !bgmAudioSource.isPlaying)
+        {
+            bgmAudioSource.UnPause();
+            Debug.Log("[PaintingChannelable] BGM resumed.");
+        }
 
         // Disable the cover child object upon completion.
         if (coverObject != null && coverObject.activeSelf)
