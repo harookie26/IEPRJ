@@ -1,7 +1,5 @@
-using System;
-using UnityEngine;
 using Game.ObjectTypes;
-using System.Collections;
+using UnityEngine;
 
 // Optional completion notification interface channelables can implement.
 public interface INotifiesChannelCompletion
@@ -123,7 +121,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
 
         // Play the restoration music
         if (restorationMusicAudioSource != null && audioList != null && audioList.paintingRestorationMusic != null)
-            restorationMusicAudioSource.PlayOneShot(audioList.paintingRestorationMusic); // play the restoration music
+            restorationMusicAudioSource.PlayOneShot(audioList.paintingRestorationMusic);
     }
 
     public void StopChannel()
@@ -217,7 +215,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         if (sfxAudioSource != null && audioList != null && audioList.paintingRestorationCompleteSFX != null)
             sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
 
-            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.ADD_PAINTING_RESTORED);
+        EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.ADD_PAINTING_RESTORED);
 
         checkpointManager.SaveCheckpoint();
     }

@@ -36263,6 +36263,10 @@ PrefabInstance:
       propertyPath: maxDistance
       value: 0.65
       objectReference: {fileID: 0}
+    - target: {fileID: 1562824913301178948, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      propertyPath: interactMask.m_Bits
+      value: 32768
+      objectReference: {fileID: 0}
     - target: {fileID: 1647169213426600134, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -36488,6 +36492,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5741290819575314272, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1614538805}
+    - targetCorrespondingSourceObject: {fileID: 5741290819575314272, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1614538819}
     - targetCorrespondingSourceObject: {fileID: 5741290819575314272, guid: 8d0b003d6e8571f41b95e117516c65d5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1614538812}
@@ -56644,7 +56651,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1338498454}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b36fe0a9b65677445aa42a65cc880a4f, type: 3}
   m_Name: 
@@ -62455,6 +62462,7 @@ MonoBehaviour:
   - {fileID: 412782028}
   - {fileID: 664404227}
   isDebugMode: 0
+  debugText: {fileID: 0}
 --- !u!4 &1612597698
 Transform:
   m_ObjectHideFlags: 0
@@ -62622,6 +62630,32 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1614538819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1614538770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b36fe0a9b65677445aa42a65cc880a4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PaintbrushChanneller
+  proximityOrigin: {fileID: 1614538798}
+  proximityRadius: 1.5
+  channelMask:
+    serializedVersion: 2
+    m_Bits: 65536
+  missGraceFrames: 5
+  requireReleaseAfterCompletion: 1
+  rechannelCooldown: 0.35
+  paintbrushVFX: {fileID: 1756396360}
+  paintbrushLight: {fileID: 15788002}
+  paintbrushRenderer: {fileID: 1915125443}
+  emissionPropertyName: _EmissionColor
+  glowColor: {r: 0.2783019, g: 1, b: 0.2783019, a: 1}
+  emissionFadeSpeed: 4.2
 --- !u!1 &1619881146
 GameObject:
   m_ObjectHideFlags: 0
@@ -68474,6 +68508,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2609202608898808619, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3411696342751303460, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3411696342751303460, guid: 90f9583940b052440bd96c1d7ffb277c, type: 3}
       propertyPath: maxDistance
       value: 1.5

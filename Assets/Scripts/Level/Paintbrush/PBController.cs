@@ -1,5 +1,4 @@
 using UnityEngine;
-using static EventNames;
 
 [FoldableInspector]
 public class PBController : MonoBehaviour
@@ -32,8 +31,8 @@ public class PBController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Tab))
-            ToggleMode();
+        //if (Input.GetKeyDown(KeyCode.Tab))
+        //    ToggleMode();
     }
 
     private void ToggleMode()

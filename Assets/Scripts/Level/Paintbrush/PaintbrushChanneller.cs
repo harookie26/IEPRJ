@@ -1,9 +1,9 @@
+using Assets.Scripts.Level.Paintbrush;
+using Game.ObjectTypes;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Game.ObjectTypes;
-using System.Collections.Generic;
-using Assets.Scripts.Level.Paintbrush;
 
 [DisallowMultipleComponent]
 [FoldableInspector]
@@ -52,7 +52,7 @@ public class PaintbrushChanneller : MonoBehaviour
 
     private void Awake()
     {
-        stateMachine = GetComponent<PaintbrushStateMachine>();
+        stateMachine = FindFirstObjectByType<PaintbrushStateMachine>();
         if (stateMachine == null) Debug.LogWarning("[PlayerChanneller] PlayerStateMachine not found.");
 
         collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
@@ -204,8 +204,10 @@ public class PaintbrushChanneller : MonoBehaviour
     // --- UPDATED LOGIC: OverlapSphere instead of Raycast ---
     private IEnumerator ChannelRoutine()
     {
+        int frameCount = 0;
         while (true)
         {
+            frameCount++;
             if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
             {
                 yield return null;
@@ -215,6 +217,9 @@ public class PaintbrushChanneller : MonoBehaviour
             // Find all colliders within the sphere
             Collider[] hits = Physics.OverlapSphere(proximityOrigin.position, proximityRadius, channelMask, QueryTriggerInteraction.Collide);
 
+            if (frameCount % 60 == 0) // Log every ~1 second at 60fps
+                Debug.Log($"[ChannelRoutine] Found {hits.Length} colliders within radius {proximityRadius} at {proximityOrigin.position}");
+
             IChannelable hitTarget = null;
             float closestDistance = float.MaxValue;
 
@@ -222,6 +227,9 @@ public class PaintbrushChanneller : MonoBehaviour
             foreach (Collider hit in hits)
             {
                 IChannelable channelable = hit.GetComponentInParent<IChannelable>();
+                if (frameCount % 60 == 0 && hit != null)
+                    Debug.Log($"  - Hit collider: {hit.name}, Has IChannelable: {channelable != null}");
+
                 if (channelable != null)
                 {
                     float dist = Vector3.Distance(proximityOrigin.position, hit.transform.position);
@@ -245,10 +253,17 @@ public class PaintbrushChanneller : MonoBehaviour
 
                     if (!CanBeginNewChannel())
                     {
+                        if (frameCount % 60 == 0)
+                        {
+                            Debug.Log($"[ChannelRoutine] Found target but CanBeginNewChannel returned false. RechargeAvailableAt={rechannelAvailableAt}, Time={Time.unscaledTime}, HasPaintbucket={collectibles?.HasCollected("Paintbucket")}");
+                        }
                         currentChannelTarget = null;
                         yield return null;
                         continue;
                     }
+
+                    if (frameCount % 60 == 0)
+                        Debug.Log($"[ChannelRoutine] Starting channel on target: {(hitTarget as MonoBehaviour).name}");
 
                     currentChannelTarget = hitTarget;
 

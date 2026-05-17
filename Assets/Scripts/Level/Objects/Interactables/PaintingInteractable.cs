@@ -61,7 +61,7 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
 
         if (sfxAudioSource != null && audioList != null && audioList.enemyDistractedSFX != null)
         {
-            sfxAudioSource.PlayOneShot(audioList.enemyDistractedSFX);
+            // sfxAudioSource.PlayOneShot(audioList.enemyDistractedSFX);
         }
         else
         {

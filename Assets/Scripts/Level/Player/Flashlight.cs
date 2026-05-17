@@ -1,5 +1,6 @@
-using UnityEngine;
 using TMPro; // Add this for the battery text
+using UnityEngine;
+using static EventNames.GameStateEvents;
 
 public class Flashlight : MonoBehaviour
 {
@@ -21,10 +22,15 @@ public class Flashlight : MonoBehaviour
     [SerializeField] private AudioClip flashlightAudioClip;
     private AudioSource sfxAudioSource;
 
-    private bool isOn = true;
+    private bool canToggle = true;
+
+    private bool isOn = false;
 
     void Start()
     {
+        EventBroadcaster.Instance.AddObserver(ON_GAME_PAUSE, GamePaused);
+        EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, GameResumed);
+
         currentBattery = maxBattery;
         if (camTransform == null) camTransform = Camera.main.transform;
 
@@ -33,8 +39,23 @@ public class Flashlight : MonoBehaviour
         sfxAudioSource = GetComponent<AudioSource>();
     }
 
+    private void OnDestroy()
+    {
+        if (EventBroadcaster.Instance != null)
+        {
+            EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_PAUSE, GamePaused);
+            EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_RESUME, GameResumed);
+        }
+    }
+
+    private void GamePaused() => canToggle = false;
+
+    private void GameResumed() => canToggle = true;
+
     void Update()
     {
+        if (!canToggle) return;
+
         HandleInput();
 
         if (isOn && currentBattery > 0)
