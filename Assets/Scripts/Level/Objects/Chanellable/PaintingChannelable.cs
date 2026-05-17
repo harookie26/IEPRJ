@@ -36,7 +36,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [SerializeField] private string paintingId = "";
 
     private AudioSource sfxAudioSource;
-    private AudioSource musicAudioSource;
+    private AudioSource restorationMusicAudioSource;
     private AudioList audioList;
 
     private CheckpointManager checkpointManager => FindFirstObjectByType<CheckpointManager>();
@@ -56,7 +56,6 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         audioList = FindAnyObjectByType<AudioList>();
         //Find the SFX audio source object in the scene by its tag
         GameObject audioObject1 = GameObject.FindWithTag("SFXAudioSource");
-        GameObject audioObject2 = GameObject.FindWithTag("MusicAudioSource");
 
         if (audioObject1 != null)
         {
@@ -67,13 +66,18 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
         }
 
-        if (audioObject2 != null)
+        // Get the restoration music audio source from AudioList
+        if (audioList != null)
         {
-            musicAudioSource = audioObject2.GetComponent<AudioSource>();
+            restorationMusicAudioSource = audioList.restorationMusicAudioSource;
+            if (restorationMusicAudioSource == null)
+            {
+                Debug.LogWarning("No restoration music AudioSource assigned in AudioList.");
+            }
         }
         else
         {
-            Debug.LogWarning("No GameObject with tag 'MusicAudioSource' found in scene.");
+            Debug.LogWarning("No AudioList instance found in scene.");
         }
 
         // Auto-assign first child as cover if not explicitly set.
@@ -97,14 +101,14 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         // keep isCompleted unchanged here (should remain false until completed)
         channelTimer = 0f;
         Debug.Log($"[PaintingChannelable] Channel START on '{gameObject.name}' (instance id {GetInstanceID()}).");
-        if (musicAudioSource != null && audioList != null && audioList.paintingRestorationMusic != null)
-            musicAudioSource.PlayOneShot(audioList.paintingRestorationMusic); // play the restoration music
+        if (restorationMusicAudioSource != null && audioList != null && audioList.paintingRestorationMusic != null)
+            restorationMusicAudioSource.PlayOneShot(audioList.paintingRestorationMusic); // play the restoration music
     }
 
     public void StopChannel()
     {
-        if (musicAudioSource != null)
-            musicAudioSource.Stop(); // stop the restoration music if still playing
+        if (restorationMusicAudioSource != null)
+            restorationMusicAudioSource.Stop(); // stop the restoration music if still playing
 
         if (!isChanneling) return;
 
@@ -146,8 +150,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
 
     private void HandleCompletion()
     {
-        if (musicAudioSource != null)
-            musicAudioSource.Stop(); // stop the restoration music if still playing
+        if (restorationMusicAudioSource != null)
+            restorationMusicAudioSource.Stop(); // stop the restoration music if still playing
 
         // Disable the cover child object upon completion.
         if (coverObject != null && coverObject.activeSelf)
