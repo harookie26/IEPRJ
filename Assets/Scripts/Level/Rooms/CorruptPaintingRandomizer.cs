@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Reflection;
+using TMPro;
 using UnityEngine;
 
 public class CorruptPaintingRandomizer : MonoBehaviour
@@ -22,12 +23,21 @@ public class CorruptPaintingRandomizer : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] private bool isDebugMode = false;
+    [SerializeField] private TextMeshProUGUI debugText;
 
     private Dictionary<GameObject, Material> originalMaterials = new Dictionary<GameObject, Material>();
 
-    private void Awake()
+    private void Start()
     {
         RandomizeCorruptedPaintings();
+    }
+
+    private void Update()
+    {
+        if (debugText != null)
+        {
+            debugText.text = GameObject.FindAnyObjectByType<PaintingChannelable>() != null ? "ChannelablePaintings Present: " + GameObject.FindObjectsOfType<PaintingChannelable>().Length : "No ChannelablePaintings found.";
+        }
     }
 
     private void RandomizeCorruptedPaintings()
