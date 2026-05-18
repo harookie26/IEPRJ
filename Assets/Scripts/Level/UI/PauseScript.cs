@@ -58,13 +58,10 @@ public class PauseScript : MonoBehaviour
     {
         _pauseOpen = true;
         if (pausePanel != null) pausePanel.SetActive(true);
-
         _settingsOpen = false;
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
-        _gameState.PauseGame();
-        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
-
+        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE); // GameStateManager handles the rest
         UpdateCursorVisibility();
     }
 
@@ -73,16 +70,7 @@ public class PauseScript : MonoBehaviour
         _pauseOpen = false;
         if (pausePanel != null) pausePanel.SetActive(false);
 
-        if (!_settingsOpen)
-        {
-            _gameState.ResumeGame();
-            EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-        }
-        else
-        {
-            if (settingsPanel != null) settingsPanel.SetActive(true);
-        }
-
+        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
         UpdateCursorVisibility();
     }
 
@@ -103,13 +91,10 @@ public class PauseScript : MonoBehaviour
     {
         _settingsOpen = true;
         if (settingsPanel != null) settingsPanel.SetActive(true);
-
         _pauseOpen = false;
         if (pausePanel != null) pausePanel.SetActive(false);
 
-        _gameState.PauseGame();
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
-
         UpdateCursorVisibility();
     }
 
@@ -117,13 +102,10 @@ public class PauseScript : MonoBehaviour
     {
         _settingsOpen = false;
         if (settingsPanel != null) settingsPanel.SetActive(false);
-
         _pauseOpen = true;
         if (pausePanel != null) pausePanel.SetActive(true);
 
-        _gameState.PauseGame();
-        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
-
+        // No event fired here — game stays paused, just swapping panels
         UpdateCursorVisibility();
     }
 

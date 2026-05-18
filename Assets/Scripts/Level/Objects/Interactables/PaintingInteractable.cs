@@ -70,6 +70,11 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
 
         // If this interactable is associated with the main painting, check if it's fully revealed
         var mainPainting = GetComponent<MainPainting>() ?? GetComponentInParent<MainPainting>();
+
+        if (mainPainting != null)
+        {
+            Debug.Log("PaintingInteractable.Interact: Found MainPainting component. Checking if fully revealed.");
+        }
         var gameState = FindFirstObjectByType<GameStateManager>();
 
         bool revealedByCovers = mainPainting != null && mainPainting.IsFullyRevealed();
@@ -80,6 +85,7 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
             if (gameState != null)
             {
                 gameState.TriggerWinSequence();
+                Debug.Log("PaintingInteractable.Interact: WIN SEQUENCE TRIGGERED");
                 // No need to distract _enemy if win sequence will start
                 return;
             }

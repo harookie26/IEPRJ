@@ -7,13 +7,17 @@ public class MainPainting : MonoBehaviour
     [SerializeField] private GameObject cover3;
     [SerializeField] private GameObject cover4;
 
-    private PaintbrushChanneller paintbrushChanneller;
+    [SerializeField] PaintbrushChanneller paintbrushChanneller;
     private TrailFollowDynamic trailFollow;
 
     private void Start()
     {
         // assign to fields (do not shadow)
-        paintbrushChanneller = FindFirstObjectByType<PaintbrushChanneller>();
+        if(paintbrushChanneller == null)
+        {   
+            paintbrushChanneller = GameObject.FindGameObjectWithTag("Player")?.GetComponent<PaintbrushChanneller>();
+        }   
+
         trailFollow = FindFirstObjectByType<TrailFollowDynamic>();
     }
 
@@ -33,6 +37,8 @@ public class MainPainting : MonoBehaviour
         if (cover2 != null) cover2.SetActive(!paintbrushChanneller.HasCompletedPainting("paint2"));
         if (cover3 != null) cover3.SetActive(!paintbrushChanneller.HasCompletedPainting("paint3"));
         if (cover4 != null) cover4.SetActive(!paintbrushChanneller.HasCompletedPainting("paint4"));
+
+        Debug.Log("MainPainting.UpdatePaintingCovers: Updating cover states.");
     }
 
     private void UpdateTrailTarget()
