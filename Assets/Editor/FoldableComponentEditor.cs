@@ -1,8 +1,8 @@
-using UnityEngine;
-using UnityEditor;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEditor;
+using UnityEngine;
 
 /// <summary>
 /// Generic foldable inspector. Opt-in by adding [FoldableInspector] to your MonoBehaviour.

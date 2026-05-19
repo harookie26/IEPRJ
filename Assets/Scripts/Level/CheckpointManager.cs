@@ -83,7 +83,7 @@ public class CheckpointManager : MonoBehaviour
         //    _enemySavedStateName = "NoEnemyStateMachine";
         //}
 
-        _savedCompletedDialogues = new HashSet<string>(DialogueManager.Instance.GetCompletedDialogues());
+        // _savedCompletedDialogues = new HashSet<string>(DialogueManager.Instance.GetCompletedDialogues());
 
         Debug.Log($"[CheckpointManager] Checkpoint saved at index {_currentCheckpointIndex}. PlayerPos: {_playerSavedPosition}, EnemyPos: {_enemySavedPosition}, EnemyState: {_enemySavedStateName}");
     }
@@ -199,7 +199,7 @@ public class CheckpointManager : MonoBehaviour
 
         if (_savedCompletedDialogues != null)
         {
-            DialogueManager.Instance.RestoreCompletedDialogues(_savedCompletedDialogues);
+            //DialogueManager.Instance.RestoreCompletedDialogues(_savedCompletedDialogues);
 
             EventBroadcaster.Instance.PostEvent(EventNames.GameStateEvents.ON_LEVEL_RELOAD);
         }
