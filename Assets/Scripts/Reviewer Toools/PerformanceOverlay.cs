@@ -9,9 +9,6 @@ public class PerformanceOverlay : MonoBehaviour
     [SerializeField] private TextMeshProUGUI resolutionText;
 
     [Header("Behavior")]
-    private KeyCode toggleKeyControl1 = KeyCode.LeftControl;
-    private KeyCode toggleKeyControl2 = KeyCode.RightControl;
-    private KeyCode toggleKey = KeyCode.F;
     [SerializeField, Tooltip("How often (seconds) to update the text.")]
     private float updateInterval = 0.25f;
     [SerializeField, Tooltip("If true, shows ms/frame and FPS.")]
@@ -26,8 +23,6 @@ public class PerformanceOverlay : MonoBehaviour
         // Optional convenience: if not wired in Inspector, try to find one in children.
         if (fpsText == null)
             fpsText = GetComponentInChildren<TextMeshProUGUI>(true);
-
-       
 
         ApplyVisibility();
     }
@@ -44,9 +39,6 @@ public class PerformanceOverlay : MonoBehaviour
 
     private void Update()
     {
-        // Toggle on/off
-        if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(toggleKey))
-            ToggleFPS();
 
         if (!isVisible || fpsText == null)
             return;
@@ -78,12 +70,6 @@ public class PerformanceOverlay : MonoBehaviour
     public void ToggleFPS()
     {
         isVisible = !isVisible;
-        ApplyVisibility();
-    }
-
-    public void SetVisible(bool visible)
-    {
-        isVisible = visible;
         ApplyVisibility();
     }
 

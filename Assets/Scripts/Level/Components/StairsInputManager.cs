@@ -27,6 +27,12 @@ public class StairsInputManager : MonoBehaviour
         _playerMovement = FindFirstObjectByType<PlayerMovement>();
     }
 
+    private void OnDisable()
+    {
+        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
+        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
+    }
+
     private void Update()
     {
         if (_isCutsceneActive || _player == null)

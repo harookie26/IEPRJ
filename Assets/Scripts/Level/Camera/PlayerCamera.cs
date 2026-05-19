@@ -90,6 +90,12 @@ public class PlayerCamera : MonoBehaviour
         EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, GameIsResumed);
     }
 
+    private void OnDisable()
+    {
+        EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_PAUSE, GameIsPaused);
+        EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_RESUME, GameIsResumed);
+    }
+
     private void GameIsPaused()
     {
         isGamePaused = true;
