@@ -26,4 +26,8 @@ public class AudioList : MonoBehaviour
     [SerializeField] public AudioClip testMusic;
     [SerializeField] public AudioClip testSFX;
 
+    [Header("Audio Sources")]
+    [Tooltip("Dedicated AudioSource for restoration music. Must be assigned in the inspector.")]
+    [SerializeField] public AudioSource restorationMusicAudioSource;
+
 }

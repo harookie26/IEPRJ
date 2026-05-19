@@ -3,12 +3,8 @@ using UnityEngine;
 
 public class BuildVersionToggle : MonoBehaviour
 {
-    [SerializeField] private string buildVersion = "Artist Realm Studio Sprint # v1.0";
+    [SerializeField] private string buildVersion = "Artist Realm Studio Sprint 1 v1.7";
     [SerializeField] private TextMeshProUGUI buildVersionText;
-
-    private KeyCode toggleKeyControl1 = KeyCode.LeftControl;
-    private KeyCode toggleKeyControl2 = KeyCode.RightControl;
-    private KeyCode toggleKey = KeyCode.B;
 
     private bool isVisible = true;
 
@@ -30,16 +26,12 @@ public class BuildVersionToggle : MonoBehaviour
 
     private void Update()
     {
-        // Toggle on/off
-        if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(toggleKey))
-            ToggleFPS();
-
         if (!isVisible || buildVersionText == null)
             return;
     }
 
     // For UI Button OnClick() hookup or other scripts. 
-    public void ToggleFPS()
+    public void ToggleBuildVersion()
     {
         isVisible = !isVisible;
         ApplyVisibility();

@@ -79,7 +79,7 @@ public class GameStateManager : MonoBehaviour
 
         Time.timeScale = 0f;
 
-        if (_enemy != null)
+        if (_enemy != null && _enemy.isEnemyActivated)
             _enemy.Freeze();
     }
 
@@ -91,7 +91,7 @@ public class GameStateManager : MonoBehaviour
 
         Time.timeScale = 1f;
 
-        if (_enemy != null)
+        if (_enemy != null && _enemy.isEnemyActivated)
             _enemy.Unfreeze();
     }
 

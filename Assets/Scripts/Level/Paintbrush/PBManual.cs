@@ -75,6 +75,8 @@ public class PBManual : MonoBehaviour
 
     private void OnDisable()
     {
+        ForceReleasePlayer();
+
         // Restore _player movement and physics state when manual mode ends
         if (_playerWasDisabledByPB && playerMovement != null)
         {
@@ -212,5 +214,24 @@ public class PBManual : MonoBehaviour
                 Mathf.Clamp(position.z, bounds.min.z, bounds.max.z)
             );
         }
+    }
+
+    // Create a public method so PBController can forcefully trigger this cleanup
+    public void ForceReleasePlayer()
+    {
+        if (_playerWasDisabledByPB && playerMovement != null)
+        {
+            playerMovement.SetCanMove(true);
+            _playerWasDisabledByPB = false;
+        }
+
+        if (_playerRb != null)
+        {
+            // Hard reset to FreezeRotation so the player is guaranteed to be able to walk again
+            _playerRb.constraints = RigidbodyConstraints.FreezeRotation;
+            _playerRb = null;
+        }
+
+        _isGluingPlayer = false;
     }
 }

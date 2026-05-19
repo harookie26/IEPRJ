@@ -75,6 +75,15 @@ public class EnemyTeleporting : EnemyState
         teleportInProgress = false;
     }
 
+    private bool IsPositionInsideRoom(Vector3 position, RoomComponent room)
+    {
+        if (room == null)
+            return false;
+
+        Bounds roomBounds = room.Bounds;
+        return roomBounds.Contains(new Vector3(position.x, position.y, roomBounds.center.z));
+    }
+
     private Vector3 GetRandomTeleportPoint(EnemyStateMachine state)
     {
         if (teleportPoints == null || teleportPoints.Count == 0)
@@ -116,37 +125,50 @@ public class EnemyTeleporting : EnemyState
         Transform randomPoint = pointsToUse[Random.Range(0, pointsToUse.Count)];
         return randomPoint.position;
     }
-    private Vector3 GetForcedTeleportPoint(EnemyStateMachine state, RoomComponent forcedRoom)
+    public Vector3 GetForcedTeleportPoint(EnemyStateMachine state, RoomComponent forcedRoom)
     {
         if (forcedRoom == null || teleportPoints == null || teleportPoints.Count == 0)
         {
             return Vector3.zero;
         }
 
-        Bounds roomBounds = forcedRoom.Bounds;
-
-        Transform closestPoint = null;
-        float closestDistance = Mathf.Infinity;
+        List<Transform> pointsInsideRoom = new List<Transform>();
+        List<Transform> pointsOutsideRoom = new List<Transform>();
 
         foreach (var point in teleportPoints)
         {
             if (point == null) continue;
 
-            float distance = Vector3.Distance(point.position, roomBounds.center);
-            if (distance < closestDistance)
+            if (IsPositionInsideRoom(point.position, forcedRoom))
             {
-                closestDistance = distance;
-                closestPoint = point;
+                pointsInsideRoom.Add(point);
+            }
+            else
+            {
+                pointsOutsideRoom.Add(point);
             }
         }
 
-        if (closestPoint == null)
+        List<Transform> pointsToUse = pointsInsideRoom.Count > 0 ? pointsInsideRoom : pointsOutsideRoom;
+
+        if (pointsToUse.Count == 0)
         {
             Debug.LogWarning("EnemyTeleporting: No valid teleport points available for forced room.");
             return Vector3.zero;
         }
 
-        return closestPoint.position;
+        Transform selectedPoint = pointsToUse[Random.Range(0, pointsToUse.Count)];
+
+        if (pointsInsideRoom.Count > 0)
+        {
+            Debug.Log($"EnemyTeleporting: Randomly selected teleport point inside room (ID: {forcedRoom.Id}, {pointsInsideRoom.Count} available). Selected: {selectedPoint.name} at position {selectedPoint.position}");
+        }
+        else
+        {
+            Debug.LogWarning($"EnemyTeleporting: No points inside room bounds (ID: {forcedRoom.Id}); randomly selected from {pointsOutsideRoom.Count} points outside. Selected: {selectedPoint.name} at position {selectedPoint.position}");
+        }
+
+        return selectedPoint.position;
     }
 
     private void TeleportToPoint(EnemyStateMachine state, Vector3 targetPosition)
@@ -161,8 +183,10 @@ public class EnemyTeleporting : EnemyState
         GameObject enemyGameObject = state.Enemy;
         Transform enemyTransform = enemyGameObject.transform;
 
-        float desiredY = enemyTransform.position.y;
-        targetPosition.y = desiredY;
+        // Use the teleport point's Y coordinate, not the enemy's current Y
+        // This ensures we land at the correct location
+
+        Debug.Log($"EnemyTeleporting: Target teleport position: {targetPosition}");
 
         try
         {
@@ -213,5 +237,40 @@ public class EnemyTeleporting : EnemyState
             return;
         }
         Debug.Log($"EnemyTeleporting: Forced teleport target set to {targetTransform.name}");
+    }
+
+    public void TeleportToPlayerRoom(EnemyStateMachine state, PlayerLocationUpdater playerUpdater)
+    {
+        if (state == null)
+        {
+            Debug.LogError("EnemyTeleporting.TeleportToPlayerRoom: State is null.");
+            return;
+        }
+
+        if (playerUpdater == null)
+        {
+            Debug.LogError("EnemyTeleporting.TeleportToPlayerRoom: PlayerLocationUpdater is null.");
+            return;
+        }
+
+        int playerRoomId = playerUpdater.playerLocationID;
+
+        Game.Level.IRoom playerRoom = RoomRegistry.GetRoom(playerRoomId);
+
+        if (playerRoom == null)
+        {
+            Debug.LogError($"EnemyTeleporting.TeleportToPlayerRoom: Player's room (ID={playerRoomId}) not found in registry.");
+            return;
+        }
+
+        ForcedRoom = playerRoom as RoomComponent;
+        if (ForcedRoom == null)
+        {
+            Debug.LogError($"EnemyTeleporting.TeleportToPlayerRoom: Cannot cast IRoom to RoomComponent.");
+            return;
+        }
+
+        TeleportNow(state);
+        Debug.Log($"EnemyTeleporting.TeleportToPlayerRoom: Teleported to player's room (ID: {playerRoomId})");
     }
 }

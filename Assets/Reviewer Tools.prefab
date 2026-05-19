@@ -43,6 +43,7 @@ GameObject:
   - component: {fileID: 6530229710662217510}
   - component: {fileID: 5385682680499021645}
   - component: {fileID: 6786454071807742201}
+  - component: {fileID: 3463890179179974542}
   m_Layer: 0
   m_Name: Reviewer Tools Manager
   m_TagString: Untagged
@@ -78,6 +79,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FPSCounter
   fpsText: {fileID: 0}
+  sceneNameText: {fileID: 0}
+  resolutionText: {fileID: 0}
   updateInterval: 0.25
   showMs: 1
 --- !u!114 &6786454071807742201
@@ -94,3 +97,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BuildVersionToggle
   buildVersion: Artist_Realm Studios_Sprint 1_v1.7
   buildVersionText: {fileID: 0}
+--- !u!114 &3463890179179974542
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6405793012487516765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a1324a1d0c9b3343a40db1d30ba86c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReviewerToolsManager
+  reviewerMenuPanel: {fileID: 0}

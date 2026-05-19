@@ -10,11 +10,14 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PlayerInput playerInput;
     [SerializeField] private Camera playerCamera;
 
+    [Header("Paintbrush References")]
+    [SerializeField] private PBController pbController;
+
     private InputAction moveAction;
     private InputAction jumpAction;
     private InputAction lookAction;
 
-    [Header("Movement Settings")]
+    [Header("Movement Settings")]   
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float mouseSensitivity = 0.1f;
 
@@ -25,12 +28,31 @@ public class PlayerMovement : MonoBehaviour
     [Header("Corruption Effects")]
     [SerializeField] private float corruptedSpeedMultiplier = 0.6f;
 
+    [Header("Sprint & Stamina")]
+    [SerializeField] private float sprintSpeedMultiplier = 1.5f;
+    [SerializeField] private float maxStamina = 100f;
+    [SerializeField] private float staminaDrainRate = 25f;
+    [SerializeField] private float staminaRegenRate = 15f;
+    [SerializeField] private float minStaminaToSprint = 5f;
+    [SerializeField] private float exhaustedSpeedMultiplier = 0.6f;
+
     [Header("Jumping")]
     [SerializeField] float jumpForce = 2f;
     [SerializeField] private float jumpAccelerationDuration = 0.4f;
     [SerializeField] private AnimationCurve jumpAscentCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
     [SerializeField] private float jumpAscendMultiplier = 1.5f;
     [SerializeField] private float fallMultiplier = 1.2f;
+
+    [Header("Audio")]
+    [SerializeField] private AudioClip footstepAudioClip;
+    private AudioSource sfxAudioSource;
+
+    [Header("Footstep Settings")]
+    [SerializeField] private float walkStepInterval = 0.4f;
+    [SerializeField] private float sprintStepInterval = 0.25f;
+    [SerializeField] private float walkPitch = 1.0f;
+    [SerializeField] private float sprintPitch = 1.2f; 
+    private float stepTimer = 0f;
 
     [Header("Coyote Time & Air Control")]
     [SerializeField] private float coyoteTimeDuration = 0.2f;
@@ -63,6 +85,11 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector3 currentHorizontalVelocity = Vector3.zero;
 
+    private float currentStamina = 0f;
+    private bool isCurrentlySprinting = false;
+    private bool isExhausted = false;
+    private float exhaustedRecoveryTimeRemaining = 0f;
+
     [Header("Look Interpolation")]
     [SerializeField] private float lookInterpolationSpeed = 0.15f;
 
@@ -77,6 +104,9 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector3 cachedMoveDirection = Vector3.zero;
 
+    [SerializeField] private float sprintNoiseThreshold = 0.8f;
+    private float sprintTimer = 0f;
+
     [Header("Ground Detection")]
     [SerializeField] private float groundDetectionDistance = 0.1f;
     [SerializeField] private LayerMask groundLayer = -1;
@@ -84,6 +114,10 @@ public class PlayerMovement : MonoBehaviour
     public bool IsTouchingWalls { get; private set; }
     public bool IsAtRoomCorner { get; private set; }
     public bool IsGrounded => isGrounded;
+    public float CurrentStamina => currentStamina;
+    public float MaxStamina => maxStamina;
+    public bool IsCurrentlySprinting => isCurrentlySprinting;
+    public bool IsExhausted => isExhausted;
 
     public bool isGamePaused = false;
 
@@ -108,18 +142,42 @@ public class PlayerMovement : MonoBehaviour
 
         bodyYaw = transform.eulerAngles.y;
         coyoteTimeRemaining = 0f;
+        currentStamina = maxStamina;
+
+        sfxAudioSource = GameObject.FindWithTag("SFXAudioSource").GetComponent<AudioSource>();
+        if (sfxAudioSource == null)
+            sfxAudioSource = gameObject.AddComponent<AudioSource>();
     }
 
-    private void Start() => ResolveCurrentRoomAtPosition();
-
-    private void OnEnable()
+    private void Start()
     {
+        ResolveCurrentRoomAtPosition();
+
+        // Move event subscriptions here so they aren't lost during temporary deactivations
         EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
         EventBroadcaster.Instance.AddObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
         EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
         EventBroadcaster.Instance.AddObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
         EventBroadcaster.Instance.AddObserver(ON_GAME_PAUSE, GameIsPaused);
         EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, GameIsResumed);
+        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_STARTED_SPRINT, OnSprintStarted);
+        EventBroadcaster.Instance.AddObserver(PlayerEvents.PLAYER_STOPPED_SPRINT, OnSprintStopped);
+    }
+
+    private void OnDestroy()
+    {
+        // Clean up listeners when the player is actually destroyed (e.g., scene change)
+        if (EventBroadcaster.Instance != null)
+        {
+            EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, StopMoving);
+            EventBroadcaster.Instance.RemoveActionAtObserver(GameStateEvents.ON_GAME_RESTART, ContinueMoving);
+            EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_START, StopMoving);
+            EventBroadcaster.Instance.RemoveActionAtObserver(UIEvents.PLAY_DIALOGUE_END, ContinueMoving);
+            EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_PAUSE, GameIsPaused);
+            EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_RESUME, GameIsResumed);
+            EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STARTED_SPRINT, OnSprintStarted);
+            EventBroadcaster.Instance.RemoveActionAtObserver(PlayerEvents.PLAYER_STOPPED_SPRINT, OnSprintStopped);
+        }
     }
 
     private void Update()
@@ -150,6 +208,8 @@ public class PlayerMovement : MonoBehaviour
 
         if (jumpAction.triggered && (isGrounded || coyoteTimeRemaining > 0))
             jumpRequested = true;
+
+        HandleFootsteps();
     }
 
     private void FixedUpdate()
@@ -161,10 +221,35 @@ public class PlayerMovement : MonoBehaviour
         DetectLanding();
         UpdateCoyoteTime();
         UpdateLandingRecovery();
+        UpdateStamina();
 
         bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
         bool hasMop = collectibleManager != null && collectibleManager.HasCollected("Mop");
         float effectiveSpeed = moveSpeed * ((roomCorrupted && !hasMop) ? corruptedSpeedMultiplier : 1f);
+
+        if (isExhausted)
+        {
+            effectiveSpeed *= exhaustedSpeedMultiplier;
+        }
+        else if (isCurrentlySprinting && currentStamina >= minStaminaToSprint && moveInput.magnitude > 0.1f)
+        {
+            effectiveSpeed *= sprintSpeedMultiplier;
+        }
+
+        if (isCurrentlySprinting && !isExhausted && moveInput.magnitude > 0.1f && isGrounded)
+        {
+            sprintTimer += Time.fixedDeltaTime;
+
+            if (sprintTimer >= sprintNoiseThreshold)
+            {
+                TriggerGhostNoise();
+                sprintTimer = 0f; 
+            }
+        }
+        else
+        {
+            sprintTimer = 0f;
+        }
 
         Vector3 targetVelocity = cachedMoveDirection * effectiveSpeed;
 
@@ -373,6 +458,49 @@ public class PlayerMovement : MonoBehaviour
     private void ContinueMoving() => canMove = true;
     public void SetCanMove(bool value) => canMove = value;
 
+    private void OnSprintStarted()
+    {
+        isCurrentlySprinting = true;
+    }
+
+    private void OnSprintStopped()
+    {
+        isCurrentlySprinting = false;
+    }
+
+    private void UpdateStamina()
+    {
+        if (isExhausted)
+        {
+            currentStamina += staminaRegenRate * Time.fixedDeltaTime;
+            currentStamina = Mathf.Min(maxStamina, currentStamina);
+
+            if (currentStamina >= maxStamina)
+            {
+                currentStamina = maxStamina;
+                isExhausted = false;
+            }
+
+            return;
+        }
+
+        if (isCurrentlySprinting && currentStamina > 0 && moveInput.magnitude > 0.1f)
+        {
+            currentStamina -= staminaDrainRate * Time.fixedDeltaTime;
+
+            if (currentStamina <= 0f)
+            {
+                currentStamina = 0f;
+                isExhausted = true;
+            }
+        }
+        else
+        {
+            currentStamina += staminaRegenRate * Time.fixedDeltaTime;
+            currentStamina = Mathf.Min(maxStamina, currentStamina);
+        }
+    }
+
     public float CameraPitch => cameraPitch;
 
     private void GameIsPaused()
@@ -388,15 +516,71 @@ public class PlayerMovement : MonoBehaviour
         lookInputCurrent = Vector2.zero;
     }
 
-    /// <summary>
-    /// Resets the player's velocity to zero. Used after teleportation to prevent physics artifacts.
-    /// </summary>
     public void ResetVelocity()
     {
         rb.linearVelocity = Vector3.zero;
         currentHorizontalVelocity = Vector3.zero;
         isJumpAscending = false;
         jumpRequested = false;
-        Debug.Log("[PlayerMovement] Velocity reset after teleportation.");
+
+        // 1. FORCE UNLOCK THE PLAYER: 
+        // Just in case PBManual or the death sequence permanently locked your constraints or input
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        canMove = true;
+
+        if (pbController != null)
+        {
+            pbController.SetMode(PBController.Mode.Follow);
+            Debug.Log("[PlayerMovement] Found PBController (Active or Inactive) and forced Follow Mode.");
+        }
+        else
+        {
+            Debug.LogError("[PlayerMovement] CRITICAL: Could not find PBController anywhere in the scene!");
+        }
+
+        Debug.Log("[PlayerMovement] Velocity reset after teleportation and PB detached.");
+    }
+
+    private void TriggerGhostNoise()
+    {
+        EnemyStateMachine ghost = Object.FindFirstObjectByType<EnemyStateMachine>();
+
+        if (ghost != null)
+        {
+            ghost.ReactToSprinting(transform.position);
+        }
+    }
+
+    private void HandleFootsteps()
+    {
+        // Only play footsteps if grounded and moving
+        if (isGrounded && currentHorizontalVelocity.magnitude > 0.1f)
+        {
+            stepTimer -= Time.deltaTime;
+
+            if (stepTimer <= 0f)
+            {
+                // Check if we are successfully sprinting
+                bool isSprintingNow = isCurrentlySprinting && !isExhausted && currentStamina >= minStaminaToSprint;
+
+                // Set interval and base pitch based on movement state
+                float currentInterval = isSprintingNow ? sprintStepInterval : walkStepInterval;
+                float basePitch = isSprintingNow ? sprintPitch : walkPitch;
+
+                if (footstepAudioClip != null && sfxAudioSource != null)
+                {
+                    // Add a tiny bit of randomness (+/- 0.05) so it sounds like real, organic footsteps
+                    sfxAudioSource.pitch = basePitch + Random.Range(-0.05f, 0.05f);
+                    sfxAudioSource.PlayOneShot(footstepAudioClip);
+                }
+
+                stepTimer = currentInterval;
+            }
+        }
+        else
+        {
+            // Reset timer so the moment we move, a step triggers instantly
+            stepTimer = 0f;
+        }
     }
 }

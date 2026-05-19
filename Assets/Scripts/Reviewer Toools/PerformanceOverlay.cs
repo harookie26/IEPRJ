@@ -1,15 +1,14 @@
 using TMPro;
 using UnityEngine;
 
-public class FPSCounter : MonoBehaviour
+public class PerformanceOverlay : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI fpsText;
+    [SerializeField] private TextMeshProUGUI sceneNameText;
+    [SerializeField] private TextMeshProUGUI resolutionText;
 
     [Header("Behavior")]
-    private KeyCode toggleKeyControl1 = KeyCode.LeftControl;
-    private KeyCode toggleKeyControl2 = KeyCode.RightControl;
-    private KeyCode toggleKey = KeyCode.F;
     [SerializeField, Tooltip("How often (seconds) to update the text.")]
     private float updateInterval = 0.25f;
     [SerializeField, Tooltip("If true, shows ms/frame and FPS.")]
@@ -28,11 +27,18 @@ public class FPSCounter : MonoBehaviour
         ApplyVisibility();
     }
 
+    private void Start()
+    {
+        if (sceneNameText != null)
+            sceneNameText.text = $"Scene: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}";
+        if (resolutionText != null)
+        {
+            resolutionText.text = $"{Screen.width}x{Screen.height}";
+        }
+    }
+
     private void Update()
     {
-        // Toggle on/off
-        if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(toggleKey))
-            ToggleFPS();
 
         if (!isVisible || fpsText == null)
             return;
@@ -67,15 +73,15 @@ public class FPSCounter : MonoBehaviour
         ApplyVisibility();
     }
 
-    public void SetVisible(bool visible)
-    {
-        isVisible = visible;
-        ApplyVisibility();
-    }
-
     private void ApplyVisibility()
     {
         if (fpsText != null)
             fpsText.gameObject.SetActive(isVisible);
+
+        if (sceneNameText != null)
+            sceneNameText.gameObject.SetActive(isVisible);
+
+        if (resolutionText != null)
+            resolutionText.gameObject.SetActive(isVisible);
     }
 }
