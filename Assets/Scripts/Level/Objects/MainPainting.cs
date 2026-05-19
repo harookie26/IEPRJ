@@ -38,7 +38,7 @@ public class MainPainting : MonoBehaviour
         if (cover3 != null) cover3.SetActive(!paintbrushChanneller.HasCompletedPainting("paint3"));
         if (cover4 != null) cover4.SetActive(!paintbrushChanneller.HasCompletedPainting("paint4"));
 
-        Debug.Log("MainPainting.UpdatePaintingCovers: Updating cover states.");
+        //Debug.Log("MainPainting.UpdatePaintingCovers: Updating cover states.");
     }
 
     private void UpdateTrailTarget()

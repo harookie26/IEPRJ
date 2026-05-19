@@ -26,6 +26,12 @@ public class PlayerInteractor : MonoBehaviour
     [Tooltip("Optional: assign the scene UIManager in the inspector. Will FindObjectOfType if null.")]
     [SerializeField] private UIManager uIManager;
 
+    [Header("Channel HUD")]
+    [Tooltip("Must reference the PaintbrushChanneller so we can mirror its proximity check.")]
+    public PaintbrushChanneller paintbrushChanneller;
+
+    private PlayerCollectibleManager collectibles;
+
     private string currentHudKey;
 
     private AudioSource sfxAudioSource;
@@ -62,6 +68,9 @@ public class PlayerInteractor : MonoBehaviour
         {
             Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
         }
+
+        collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
+        if (collectibles == null) Debug.LogWarning("[PlayerChanneller] PlayerCollectibleManager not found.");
     }
 
     private void OnEnable()
@@ -159,7 +168,39 @@ public class PlayerInteractor : MonoBehaviour
             {
                 if (FindCollectibleOnCollider(hitCol) != null)
                     desiredKey = UIManager.Keys.Interact;
+
+                if (FindChannelableOnCollider(hitCol) != null)
+                    desiredKey = UIManager.Keys.Channel;
             }
+        }
+
+        // Proximity channel check
+        if (desiredKey == null && paintbrushChanneller != null && collectibles.HasCollected("Paintbucket"))
+        {
+            Transform proximityOrigin = paintbrushChanneller.proximityOrigin != null
+                ? paintbrushChanneller.proximityOrigin
+                : paintbrushChanneller.transform;
+
+
+            Collider[] hits = Physics.OverlapSphere(
+                proximityOrigin.position,
+                paintbrushChanneller.proximityRadius,
+                paintbrushChanneller.channelMask,
+                QueryTriggerInteraction.Collide);
+
+            foreach (var col in hits)
+            {
+                var channelable = col.GetComponentInParent<IChannelable>();
+                if (channelable != null)
+                {
+                    desiredKey = UIManager.Keys.Channel;
+                    break;
+                }
+            }
+        }
+        else if (paintbrushChanneller == null)
+        {
+            Debug.LogWarning("[HUD] paintbrushChanneller is null — assign it in the inspector!");
         }
 
         if (currentHudKey == desiredKey)
@@ -197,10 +238,13 @@ public class PlayerInteractor : MonoBehaviour
         int rayCount = Physics.RaycastNonAlloc(ray, s_HitBuffer, maxDistance, combinedMask, QueryTriggerInteraction.Collide);
         float bestInteractDist = float.MaxValue;
         float bestCollectDist = float.MaxValue;
+        float bestChannelDist = float.MaxValue;
         Collider bestInteractCol = null;
         Collider bestCollectCol = null;
+        Collider bestChannelCol = null;
         Vector3 bestInteractPoint = Vector3.zero;
         Vector3 bestCollectPoint = Vector3.zero;
+        Vector3 bestChannelPoint = Vector3.zero;
 
         for (int i = 0; i < rayCount; i++)
         {
@@ -230,6 +274,17 @@ public class PlayerInteractor : MonoBehaviour
                     bestCollectPoint = h.point;
                 }
             }
+
+            var channelComp = h.collider.GetComponentInParent<IChannelable>();
+            if (channelComp != null)
+            {
+                if (h.distance < bestChannelDist)
+                {
+                    bestChannelDist = h.distance;
+                    bestChannelCol = h.collider;
+                    bestChannelPoint = h.point;
+                }
+            }
         }
 
         if (bestInteractCol != null)
@@ -248,6 +303,14 @@ public class PlayerInteractor : MonoBehaviour
             return true;
         }
 
+        if (bestChannelCol != null)
+        {
+            hitCollider = bestChannelCol;
+            hitPoint = bestChannelPoint;
+            isInteract = false;
+            return true;
+        }
+
         // Step2: forgiving overlap check at an aim point along the view ray.
         // Use a sample distance that's not further than maxDistance; prefer a short distance for aiming feel.
         float sampleDistance = Mathf.Min(maxDistance, 2f);
@@ -256,6 +319,7 @@ public class PlayerInteractor : MonoBehaviour
         int colCount = Physics.OverlapSphereNonAlloc(aimPoint, aimSphereRadius, s_ColliderBuffer, combinedMask, QueryTriggerInteraction.Collide);
         float bestIAimDist = float.MaxValue;
         float bestCAimDist = float.MaxValue;
+        float bestChannelAimDist = float.MaxValue;
         Collider bestIAimCol = null;
         Collider bestCAimCol = null;
         Vector3 bestIAimPoint = Vector3.zero;
@@ -266,10 +330,10 @@ public class PlayerInteractor : MonoBehaviour
             var col = s_ColliderBuffer[i];
             if (col == null) continue;
 
-            var interactComp = col.GetComponentInParent<IInteractable>();
             Vector3 closest = col.ClosestPoint(aimPoint);
             float distToAim = Vector3.Distance(aimPoint, closest);
 
+            var interactComp = col.GetComponentInParent<IInteractable>();
             if (interactComp != null)
             {
                 if (distToAim < bestIAimDist)
@@ -290,9 +354,22 @@ public class PlayerInteractor : MonoBehaviour
                     bestCAimCol = col;
                     bestCAimPoint = closest;
                 }
+                continue;
+            }
+
+            var channelComp = col.GetComponentInParent<IChannelable>();
+            if (channelComp != null)
+            {
+                if (distToAim < bestChannelAimDist)
+                {
+                    bestChannelAimDist = distToAim;
+                    bestChannelCol = col;
+                    bestChannelPoint = closest;
+                }
             }
         }
 
+        // Returns are OUTSIDE the loop, after all candidates are evaluated
         if (bestIAimCol != null)
         {
             hitCollider = bestIAimCol;
@@ -305,6 +382,14 @@ public class PlayerInteractor : MonoBehaviour
         {
             hitCollider = bestCAimCol;
             hitPoint = bestCAimPoint;
+            isInteract = false;
+            return true;
+        }
+
+        if (bestChannelCol != null)
+        {
+            hitCollider = bestChannelCol;
+            hitPoint = bestChannelPoint;
             isInteract = false;
             return true;
         }
@@ -367,6 +452,14 @@ public class PlayerInteractor : MonoBehaviour
         var comp = col.GetComponentInParent<IInteractable>();
         if (comp != null) return comp;
         return col.GetComponentInChildren<IInteractable>();
+    }
+
+    private static IChannelable FindChannelableOnCollider(Collider col)
+    {
+        if (col == null) return null;
+        var comp = col.GetComponentInParent<IChannelable>();
+        if (comp != null) return comp;
+        return col.GetComponentInChildren<IChannelable>();
     }
 
     // Helper that tries to find an ICollectible on the collider's object, its parents, or its children

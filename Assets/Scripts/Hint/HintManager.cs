@@ -14,6 +14,7 @@ public class HintManager : MonoBehaviour
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.HINT1_START, SetHint1);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.HINT2_START, SetHint2);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.HINT3_START, SetHint3);
+        EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.HINT_PAINTING_START, SetHintCorruptedPaintingTutorial);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.HINT4_START, SetHint4);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.HINT5_START, SetHint5);
 
@@ -33,6 +34,7 @@ public class HintManager : MonoBehaviour
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.HINT1_START, SetHint1);
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.HINT2_START, SetHint2);
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.HINT3_START, SetHint3);
+        EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.HINT_PAINTING_START, SetHintCorruptedPaintingTutorial);
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.HINT4_START, SetHint4);
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.HINT5_START, SetHint5);
 
@@ -69,6 +71,11 @@ public class HintManager : MonoBehaviour
         hintText.text = "Collect the Paintbucket";
     }
 
+    private void SetHintCorruptedPaintingTutorial()
+    {
+        hintText.text = "Channel the Corrupted Painting in the Main Gallery";
+    }
+
     private void SetHint4()
     {
         hintText.text = "Find and restore all 4 corrupted paintings and learn its secrets\n" +
@@ -77,6 +84,7 @@ public class HintManager : MonoBehaviour
 
     private void SetHint5()
     {
+        DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
         hintText.text = "Go back to the main gallery"; 
     }
 

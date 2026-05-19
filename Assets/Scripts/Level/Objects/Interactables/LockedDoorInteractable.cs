@@ -38,6 +38,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         else
         {
             Debug.Log("Door is locked. You need a key to open it.");
+            DialogueTriggerManager.Instance.TriggerLockedDoorDialogue();
             sfxAudioSource.PlayOneShot(audioList.unlockDoorSFX);
 
         }

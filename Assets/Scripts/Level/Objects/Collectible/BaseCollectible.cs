@@ -73,10 +73,17 @@ public class BaseCollectible : MonoBehaviour, ICollectible
 
         OnCollect();
 
-        if(GetID == "Paintbucket")
+        if(GetID == "Key")
         {
-            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+            DialogueTriggerManager.Instance.TriggerKeyFoundDialogue();
         }
+
+        if (GetID == "Paintbucket")
+        {
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT_PAINTING_START);
+            DialogueTriggerManager.Instance.TriggerChannelDialogue();
+        }
+
 
         Destroy(gameObject);
     }

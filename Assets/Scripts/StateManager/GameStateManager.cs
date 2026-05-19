@@ -16,6 +16,8 @@ public class GameStateManager : MonoBehaviour
 
     private PaintbrushChanneller paintbrushChanneller;
 
+    private DialogueTriggerManager dialogueTriggerManager;
+
     private ScreenFader _screenFader => FindFirstObjectByType<ScreenFader>();
 
     private SceneLoader _sceneLoader => FindFirstObjectByType<SceneLoader>();
@@ -46,6 +48,10 @@ public class GameStateManager : MonoBehaviour
     void Start()
     {
         _isGamePaused = false;
+
+        dialogueTriggerManager = FindAnyObjectByType<DialogueTriggerManager>();
+
+        dialogueTriggerManager.TriggerIntroDialogue();
     }
 
     void Update()

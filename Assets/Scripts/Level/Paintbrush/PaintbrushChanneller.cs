@@ -90,6 +90,11 @@ public class PaintbrushChanneller : MonoBehaviour
                 if (paintbrushVFX != null && paintbrushVFX.activeSelf) paintbrushVFX.SetActive(false);
             }
         }
+
+        if (InputManager.Instance != null && InputManager.Instance.IsChanneling())
+        {
+            Debug.Log($"[Channeller] IsChanneling=true | HasBucket={collectibles?.HasCollected("Paintbucket")} | CoroutineRunning={channelCoroutine != null} | HoldGate={holdGateActive} | Cooldown={rechannelAvailableAt - Time.unscaledTime}");
+        }
     }
 
     private void OnEnable() => TrySubscribe();

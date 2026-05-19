@@ -22,8 +22,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [Tooltip("If TRUE, pause the game when the object has been completed consecutively this many times.")]
     [SerializeField] private bool pauseOnConsecutiveCompletions = true;
 
-    [Tooltip("Number of consecutive completions required to trigger pause.")]
-    [SerializeField] private int consecutiveCompletionsToPause = 2;
+    //[Tooltip("Number of consecutive completions required to trigger pause.")]
+    //[SerializeField] private int consecutiveCompletionsToPause = 2;
 
     [Header("Cover Object")]
     [Tooltip("Optional child object that acts as a cover and should be disabled upon completion.")]
@@ -205,17 +205,26 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             Debug.LogWarning("[PaintingChannelable] No CorruptedRoomsManager instance found to restore room.");
         }
 
-        if (pauseOnConsecutiveCompletions && consecutiveCompletions >= Mathf.Max(1, consecutiveCompletionsToPause))
+        /*if (pauseOnConsecutiveCompletions && consecutiveCompletions >= Mathf.Max(1, consecutiveCompletionsToPause))
         {
             Debug.Log($"[PaintingChannelable] Consecutive completions threshold reached ({consecutiveCompletions}). Pausing game (Time.timeScale = 0).");
             Time.timeScale = 0f;
-        }
+        }*/
 
         // Additional completion effects can be added here.
         if (sfxAudioSource != null && audioList != null && audioList.paintingRestorationCompleteSFX != null)
             sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
 
-        EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.ADD_PAINTING_RESTORED);
+        if(paintingId != "000") // Only post the event if a valid painting ID is assigned.
+        {
+            DialogueTriggerManager.Instance.TriggerPaintingBGDialogue(paintingId);
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.ADD_PAINTING_RESTORED);
+        }
+        else if(paintingId == "000")
+        {
+            DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+        }
 
         checkpointManager.SaveCheckpoint();
     }
