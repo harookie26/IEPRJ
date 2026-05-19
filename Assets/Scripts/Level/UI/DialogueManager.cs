@@ -10,9 +10,21 @@ namespace Level.UI
         [Header("Setup")]
         [SerializeField] private RectTransform parentCanvas; // where labels will be placed
         [SerializeField] private DialogueLabel labelPrefab;
-        [SerializeField] private int initialPool = 4;
+        [SerializeField] private int initialPool = 2;
+
+        private struct DialogueRequest
+        {
+            public string characterName;
+            public string text;
+            public float fadeIn;
+            public float displayDuration;
+            public float fadeOut;
+        }
 
         private readonly Queue<DialogueLabel> pool = new Queue<DialogueLabel>();
+        private readonly Queue<DialogueRequest> dialogueQueue = new Queue<DialogueRequest>();
+        private DialogueLabel currentLabel;
+        private bool isPlaying = false;
 
         void Awake()
         {
@@ -77,20 +89,20 @@ namespace Level.UI
                 return;
             }
 
-            var label = GetLabel();
-
-            // position at center of parent
-            if (label.transform is RectTransform rt && parentCanvas != null)
+            var request = new DialogueRequest
             {
-                rt.SetParent(parentCanvas, false);
-                rt.anchoredPosition = Vector2.zero;
-            }
+                characterName = characterName,
+                text = text,
+                fadeIn = fadeIn,
+                displayDuration = hold,
+                fadeOut = fadeOut
+            };
 
-            label.gameObject.SetActive(true);
-            label.Show(characterName, text, fadeIn, hold, fadeOut);
+            dialogueQueue.Enqueue(request);
 
-            // schedule return to pool after total duration
-            StartCoroutine(ReturnAfter(label, fadeIn + hold + fadeOut + 0.05f));
+            // If nothing is playing, start processing the queue
+            if (!isPlaying)
+                ProcessQueue();
         }
 
         // Display by explicit values (text only, no character name)
@@ -99,10 +111,45 @@ namespace Level.UI
             Display("", text, fadeIn, hold, fadeOut);
         }
 
-        System.Collections.IEnumerator ReturnAfter(DialogueLabel label, float seconds)
+        private void ProcessQueue()
+        {
+            if (dialogueQueue.Count == 0 || isPlaying)
+                return;
+
+            var request = dialogueQueue.Dequeue();
+            isPlaying = true;
+
+            currentLabel = GetLabel();
+
+            // position at center of parent
+            if (currentLabel.transform is RectTransform rt && parentCanvas != null)
+            {
+                rt.SetParent(parentCanvas, false);
+                rt.anchoredPosition = Vector2.zero;
+            }
+
+            currentLabel.gameObject.SetActive(true);
+            currentLabel.Show(request.characterName, request.text, request.fadeIn, request.displayDuration, request.fadeOut);
+
+            // schedule display finish and then process next dialogue
+            float totalDuration = request.fadeIn + request.displayDuration + request.fadeOut + 0.05f;
+            StartCoroutine(FinishCurrentDialogue(totalDuration));
+        }
+
+        System.Collections.IEnumerator FinishCurrentDialogue(float seconds)
         {
             yield return new WaitForSecondsRealtime(seconds);
-            ReturnLabel(label);
+
+            // Return current label to pool
+            if (currentLabel != null)
+                ReturnLabel(currentLabel);
+
+            currentLabel = null;
+            isPlaying = false;
+
+            // Process next dialogue if any are queued
+            if (dialogueQueue.Count > 0)
+                ProcessQueue();
         }
     }
 }
