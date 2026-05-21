@@ -7,6 +7,7 @@ public class ReviewerToolsManager : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private GameObject reviewerMenuPanel;
+    [SerializeField] private GameObject gameSavedText;
 
     [Header("Behavior")]
     private KeyCode toggleKeyControl1 = KeyCode.LeftAlt;
@@ -19,12 +20,15 @@ public class ReviewerToolsManager : MonoBehaviour
     PerformanceOverlay performanceOverlay;
     BuildVersionToggle buildVersionToggle;
 
+    SaveManager saveManager;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         checkpointSelectManager = FindObjectOfType<CheckpointSelectManager>();
         performanceOverlay = FindObjectOfType<PerformanceOverlay>();
         buildVersionToggle = FindObjectOfType<BuildVersionToggle>();
+        saveManager = FindObjectOfType<SaveManager>();
 
         if (reviewerMenuPanel != null)
         {
@@ -56,7 +60,20 @@ public class ReviewerToolsManager : MonoBehaviour
 
     public void OnGameSaved()
     {
-        // Placeholder for any actions to take when the game is saved, such as updating UI or logging.
+        saveManager.ToggleSaveGame();
+        if (gameSavedText != null)
+        {
+            gameSavedText.SetActive(true);
+            Invoke("HideGameSavedText", 2f); // Hide the text after 2 seconds
+        }
+    }
+
+    private void HideGameSavedText()
+    {
+        if (gameSavedText != null)
+        {
+            gameSavedText.SetActive(false);
+        }
     }
 
     public void OnCheckpointSelect(int index)

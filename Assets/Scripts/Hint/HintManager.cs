@@ -1,15 +1,27 @@
+using NUnit.Framework;
 using TMPro;
 using UnityEngine;
 
+using System.Collections.Generic;
+using System.Collections;
+
 public class HintManager : MonoBehaviour
 {
+
     [SerializeField] private GameObject hintPanel;
     [SerializeField] private TextMeshProUGUI hintText;
 
     private int corruptedPaintingsChanneled = 0;
 
+    private List<int> triggeredHintIDs;
+
     void Start()
     {
+        if (triggeredHintIDs == null)
+        {
+            triggeredHintIDs = new List<int>();
+        }
+
         // Subscribe to the hint events defined in EventNames[cite: 2, 3]
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.HINT1_START, SetHint1);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.HINT2_START, SetHint2);
@@ -23,9 +35,21 @@ public class HintManager : MonoBehaviour
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.OPEN_HINT, OpenHint);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.CLOSE_HINT, CloseHint);
 
-        // Set initial state[cite: 1]
-        OpenHint();
-        SetHint1();
+        StartCoroutine(StartHintDisplay());
+    }
+
+    private IEnumerator StartHintDisplay()
+    {
+        yield return new WaitForSeconds(0.25f);
+        if (triggeredHintIDs.Count == 0)
+        {
+            OpenHint();
+            SetHint1();
+        }
+        else
+        {
+            UpdateDisplayedHint();
+        }
     }
 
     void OnDestroy()
@@ -58,32 +82,47 @@ public class HintManager : MonoBehaviour
 
     private void SetHint1()
     {
+        triggeredHintIDs.Add(1);
         hintText.text = "Find the missing key to the locked door of the museum";
     }
 
     private void SetHint2()
     {
+        triggeredHintIDs.Add(2);
         hintText.text = "Go to the Main Gallery";
     }
 
     private void SetHint3()
     {
+        triggeredHintIDs.Add(3);
         hintText.text = "Collect the Paintbucket";
     }
 
     private void SetHintCorruptedPaintingTutorial()
     {
+        triggeredHintIDs.Add(4);
         hintText.text = "Channel the Corrupted Painting in the Main Gallery";
     }
 
     private void SetHint4()
     {
-        hintText.text = "Find and restore all 4 corrupted paintings and learn its secrets\n" +
+        if (!triggeredHintIDs.Contains(5))
+        {
+            triggeredHintIDs.Add(5);
+        }
+
+        if (corruptedPaintingsChanneled < 4)
+        {
+            hintText.text = "Find and restore all 4 corrupted paintings and learn its secrets\n" +
             corruptedPaintingsChanneled + "/4 paintings restored";
+        }
+
     }
 
     private void SetHint5()
     {
+        triggeredHintIDs.Add(6);
+
         DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
         hintText.text = "Go back to the main gallery"; 
     }
@@ -96,5 +135,71 @@ public class HintManager : MonoBehaviour
     public void CloseHint()
     {
         this.hintPanel.SetActive(false);
+    }
+
+    public void UpdateDisplayedHint()
+    {
+        if (triggeredHintIDs == null || triggeredHintIDs.Count == 0) return;
+
+        // Look at the LAST hint added to the list to figure out what text to show
+        int currentHint = triggeredHintIDs[triggeredHintIDs.Count - 1];
+
+        switch (currentHint)
+        {
+            case 1:
+                hintText.text = "Find the missing key to the locked door of the museum";
+                break;
+            case 2:
+                hintText.text = "Go to the Main Gallery";
+                break;
+            case 3:
+                hintText.text = "Collect the Paintbucket";
+                break;
+            case 4:
+                hintText.text = "Channel the Corrupted Painting in the Main Gallery";
+                break;
+            case 5:
+                hintText.text = "Find and restore all 4 corrupted paintings and learn its secrets\n" +
+                                corruptedPaintingsChanneled + "/4 paintings restored";
+                break;
+            case 6:
+                hintText.text = "Go back to the main gallery";
+                break;
+        }
+    }
+
+    public HintSaveData GetSaveData()
+    {
+        return new HintSaveData
+        {
+            triggeredHintIds = new List<int>(this.triggeredHintIDs),
+            // YOU MUST ADD THIS TO YOUR HintSaveData CLASS!
+            savedCorruptedPaintingsChanneled = this.corruptedPaintingsChanneled
+        };
+    }
+
+    public void LoadSaveData(HintSaveData data)
+    {
+        if (data == null)
+        {
+            triggeredHintIDs = new List<int>();
+            corruptedPaintingsChanneled = 0;
+            return;
+        }
+
+        if (data.triggeredHintIds != null)
+        {
+            triggeredHintIDs = new List<int>(data.triggeredHintIds);
+        }
+        else
+        {
+            triggeredHintIDs = new List<int>();
+        }
+
+        // Load the painting progress!
+        corruptedPaintingsChanneled = data.savedCorruptedPaintingsChanneled;
+
+        // Now it's safe to update the UI
+        UpdateDisplayedHint();
     }
 }

@@ -48,7 +48,7 @@ public class PaintbrushChanneller : MonoBehaviour
     private int consecutiveMisses;
     private bool holdGateActive;
     private float rechannelAvailableAt;
-    private HashSet<string> completedPaintingIds = new HashSet<string>();
+    public HashSet<string> completedPaintingIds = new HashSet<string>();
 
     private void Awake()
     {
@@ -363,5 +363,37 @@ public class PaintbrushChanneller : MonoBehaviour
         Transform origin = proximityOrigin != null ? proximityOrigin : transform;
         Gizmos.color = new Color(1, 0, 0, 0.5f);
         Gizmos.DrawWireSphere(origin.position, proximityRadius);
+    }
+
+    public PaintbrushSaveData GetSaveData()
+    {
+        return new PaintbrushSaveData
+        {
+            // Convert the runtime HashSet into a List for the save file
+            completedPaintingIds = new List<string>(this.completedPaintingIds)
+        };
+    }
+
+    public void LoadSaveData(PaintbrushSaveData data)
+    {
+        Debug.Log($"[Save System] Paintbrush load triggered. Is data null? {data == null}");
+
+        if (data == null)
+        {
+            completedPaintingIds = new HashSet<string>();
+            return;
+        }
+
+        if (data.completedPaintingIds != null)
+        {
+            // Convert the saved List back into a HashSet for fast gameplay lookups
+            completedPaintingIds = new HashSet<string>(data.completedPaintingIds);
+            Debug.Log($"[Save System] Loaded {completedPaintingIds.Count} completed paintings.");
+        }
+        else
+        {
+            completedPaintingIds = new HashSet<string>();
+            Debug.Log("[Save System] No completed paintings found in save, starting fresh.");
+        }
     }
 }

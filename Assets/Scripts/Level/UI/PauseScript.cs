@@ -8,7 +8,11 @@ public class PauseScript : MonoBehaviour
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject settingsPanel;
 
+    [SerializeField] private GameObject gameSavedText;
+
     private GameStateManager _gameState => FindFirstObjectByType<GameStateManager>();
+
+    private SaveManager _saveManager => FindFirstObjectByType<SaveManager>();
 
     private SceneLoader _sceneLoader => FindFirstObjectByType<SceneLoader>();
 
@@ -38,6 +42,24 @@ public class PauseScript : MonoBehaviour
             {
                 OpenPause();
             }
+        }
+    }
+
+    public void SaveGame()
+    {
+        _saveManager.ToggleSaveGame();
+        if (gameSavedText != null)
+        {
+            gameSavedText.SetActive(true);
+            Invoke("HideGameSavedText", 2f); // Hide the text after 2 seconds
+        }
+    }
+
+    private void HideGameSavedText()
+    {
+        if (gameSavedText != null)
+        {
+            gameSavedText.SetActive(false);
         }
     }
 

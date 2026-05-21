@@ -22,7 +22,10 @@ public class EnemyIntroTrigger : MonoBehaviour
 
     void Start()
     {
-
+        if(hasTriggered)
+        {
+            enemyIntroModel.SetActive(false);
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -30,7 +33,29 @@ public class EnemyIntroTrigger : MonoBehaviour
         if (!hasTriggered && other.CompareTag("Player"))
         {
             hasTriggered = true;
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT3_START);
             DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
+            enemyIntroModel.SetActive(false);
+        }
+    }
+
+    public EnemyIntroSaveData GetSaveData()
+    {
+        return new EnemyIntroSaveData
+        {
+            hasTriggered = this.hasTriggered
+        };
+    }
+
+    public void LoadSaveData(EnemyIntroSaveData data)
+    {
+        if (data == null) return;
+
+        this.hasTriggered = data.hasTriggered;
+
+        // Apply the visual state IMMEDIATELY upon loading the save data
+        if (this.hasTriggered && enemyIntroModel != null)
+        {
             enemyIntroModel.SetActive(false);
         }
     }

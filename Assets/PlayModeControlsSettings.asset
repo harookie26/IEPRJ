@@ -1,0 +1,92 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38b1ecfa0be9419aa071c40a10e99998, type: 3}
+  m_Name: PlayModeControlsSettings
+  m_EditorClassIdentifier: Unity.PlatformToolkit.PlayMode.Editor::Unity.PlatformToolkit.PlayMode.PlayModeControlsSettings
+  m_CurrentCapability: {fileID: 11400000, guid: c62fbb7c5f39c4e4db77826693df0c6c, type: 2}
+  m_Environment:
+    m_SimulateLongRunningTaskDelayInMilliseconds: 0
+  m_Accounts:
+    m_SignedInAccounts: []
+    m_AccountData:
+    - rid: 5222809342028284108
+    - rid: 5222809342028284109
+    - rid: 5222809342028284110
+    - rid: 5222809342028284111
+    m_PrimaryAccountData:
+      rid: -2
+  m_InputSystem:
+    m_AccountByControllerId:
+      keys: 
+      values: []
+  m_LocalSaveData:
+    m_SaveData:
+      keys:
+      - save1
+      values:
+      - info:
+          m_Name: save1
+        data: 504b03040a00000800002206b55c3aabac0a31000000310000000a000000666c6173686c696768747b2263757272656e7442617474657279223a36342e36393332343439333430383230332c2269734f6e223a66616c73657d504b03040a00000800003b69b55c6726681463030000630300000a000000706c61796572646174617b22706f736974696f6e223a7b2278223a2d332e383537363239353337353832333937362c2279223a392e30323833323331373335323239352c227a223a2d302e383937303835363636363536343934317d2c22626f6479596177223a31392e3739393836393533373335333531372c2263616d6572615069746368223a332e393030303335313432383938353539372c22636f6c6c6563746564496473223a5b224b6579222c225061696e746275636b6574225d2c22706c617965725374617465223a312c22666c6173686c69676874223a7b2263757272656e7442617474657279223a39332e34323730343737323934393231392c2269734f6e223a747275657d2c226c6f636b6564646f6f725374617465223a7b22686164446f6f724f70656e6564223a747275657d2c226469616c6f677565223a7b227472696767657265644469616c6f677565496473223a5b312c322c332c342c31352c31362c31372c352c362c372c382c392c31335d7d2c22656e656d79496e74726f223a7b22686173547269676765726564223a747275657d2c2268696e74223a7b2274726967676572656448696e74496473223a5b312c322c332c342c355d2c227361766564436f727275707465645061696e74696e67734368616e6e656c6564223a317d2c227475746f7269616c223a7b227472696767657265645475746f7269616c494473223a5b302c315d7d2c22656e656d795374617465223a7b22706f736974696f6e223a7b2278223a332e3237333031323633383039323034312c2279223a302e373738303330333935353037383132352c227a223a2d302e313338393730303332333334333237377d2c226973456e656d79416374697661746564223a747275652c22636f727275707465645061696e74696e67734368616e6e656c6564223a317d2c227061696e746272757368223a7b22636f6d706c657465645061696e74696e67496473223a5b22303030222c227061696e7434225d7d2c2272616e646f6d697a65645061696e74696e6773223a7b2273617665645061696e74696e674e616d6573223a5b227061696e74696e675f706f7274726169745f34222c227061696e74696e675f706f7274726169745f3134222c227061696e74696e675f706f7274726169745f31222c227061696e74696e675f706f7274726169745f39225d7d7d504b010233000a00000800002206b55c3aabac0a31000000310000000a0000000000000000000000000000000000666c6173686c69676874504b010233000a00000800003b69b55c6726681463030000630300000a0000000000000000000000000059000000706c6179657264617461504b0506000000000200020070000000e40300000000
+  m_SetupPrior: 1
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 5222809342028284108
+      type: {class: PlayModeAccountData, ns: Unity.PlatformToolkit.PlayMode, asm: Unity.PlatformToolkit.PlayMode.Editor}
+      data:
+        m_PublicName: Test User 1
+        m_PrivateName: Test User 1 (Private)
+        m_Picture: {fileID: 2800000, guid: 9a8a07bb81fdb994aa4333547aa74a4f, type: 3}
+        Achievements:
+          m_Achievements: []
+        Saves:
+          m_SaveData:
+            keys: []
+            values: []
+    - rid: 5222809342028284109
+      type: {class: PlayModeAccountData, ns: Unity.PlatformToolkit.PlayMode, asm: Unity.PlatformToolkit.PlayMode.Editor}
+      data:
+        m_PublicName: Test User 2
+        m_PrivateName: Test User 2 (Private)
+        m_Picture: {fileID: 2800000, guid: 3f50376a050f8b748a38b92b34dc2802, type: 3}
+        Achievements:
+          m_Achievements: []
+        Saves:
+          m_SaveData:
+            keys: []
+            values: []
+    - rid: 5222809342028284110
+      type: {class: PlayModeAccountData, ns: Unity.PlatformToolkit.PlayMode, asm: Unity.PlatformToolkit.PlayMode.Editor}
+      data:
+        m_PublicName: Test User 3
+        m_PrivateName: Test User 3 (Private)
+        m_Picture: {fileID: 2800000, guid: 0db5084d8b666d3479802f499aaf7d11, type: 3}
+        Achievements:
+          m_Achievements: []
+        Saves:
+          m_SaveData:
+            keys: []
+            values: []
+    - rid: 5222809342028284111
+      type: {class: PlayModeAccountData, ns: Unity.PlatformToolkit.PlayMode, asm: Unity.PlatformToolkit.PlayMode.Editor}
+      data:
+        m_PublicName: Test User 4
+        m_PrivateName: Test User 4 (Private)
+        m_Picture: {fileID: 2800000, guid: 2a2911f4cf5ca8840ab7caefe47f9549, type: 3}
+        Achievements:
+          m_Achievements: []
+        Saves:
+          m_SaveData:
+            keys: []
+            values: []

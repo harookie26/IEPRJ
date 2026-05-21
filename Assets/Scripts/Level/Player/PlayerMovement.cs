@@ -583,4 +583,21 @@ public class PlayerMovement : MonoBehaviour
             stepTimer = 0f;
         }
     }
+
+    public void LoadSaveData(Vector3 loadedPosition, float loadedYaw, float loadedPitch)
+    {
+        // 1. Teleport the Rigidbody safely
+        rb.position = loadedPosition;
+        transform.position = loadedPosition;
+
+        // 2. Restore rotation memory
+        bodyYaw = loadedYaw;
+        cameraPitch = loadedPitch;
+
+        // 3. Apply the horizontal body rotation immediately
+        transform.rotation = Quaternion.Euler(0f, bodyYaw, 0f);
+
+        // 4. Reset velocities so they don't carry falling momentum from before the load
+        ResetVelocity();
+    }
 }

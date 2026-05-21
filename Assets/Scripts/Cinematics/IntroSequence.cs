@@ -79,6 +79,7 @@ public class IntroSequence : MonoBehaviour
             }
         }
 
+        SaveCourier.SaveSlotToLoad = "";
         SceneManager.LoadScene(nextSceneName);
 
         Debug.Log("Wake up sequence complete with blinks.");

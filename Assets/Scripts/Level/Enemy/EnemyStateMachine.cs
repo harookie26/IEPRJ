@@ -500,4 +500,60 @@ public class EnemyStateMachine : MonoBehaviour
             Debug.Log("Player Heartbeat SFX Stopped.");
         }
     }
+
+    public EnemySaveData GetSaveData()
+    {
+        return new EnemySaveData
+        {
+            position = transform.position,
+            isEnemyActivated = this.isEnemyActivated,
+            corruptedPaintingsChanneled = this.corruptedPaintingsChanneled
+        };
+    }
+
+    public void LoadSaveData(EnemySaveData data)
+    {
+        if (data == null) return;
+
+        this.isEnemyActivated = data.isEnemyActivated;
+        this.corruptedPaintingsChanneled = data.corruptedPaintingsChanneled;
+
+        // Safely teleport the NavMeshAgent to the saved location
+        if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled)
+        {
+            navMeshAgent.Warp(data.position);
+        }
+        else
+        {
+            transform.position = data.position;
+        }
+
+        // Restore Stun Tier Limits
+        int tierIndex = Mathf.Clamp(corruptedPaintingsChanneled, 0, stunDurationTiers.Length - 1);
+        currentStunDuration = stunDurationTiers[tierIndex];
+
+        // Restore Speed/Aggressiveness if applicable
+        if (corruptedPaintingsChanneled > 1)
+        {
+            // Note: Because MoveSpeed is reset to base config in Start(), 
+            // calling this here applies the correct multiplier perfectly!
+            AdjustEnemeyAggressiveness(corruptedPaintingsChanneled);
+        }
+
+        // Resume state based on activation
+        if (isEnemyActivated)
+        {
+            if (navMeshAgent != null) navMeshAgent.isStopped = false;
+            ChangeState(RoamState); // Always default to roam on load for fairness
+        }
+        else
+        {
+            if (navMeshAgent != null)
+            {
+                navMeshAgent.isStopped = true;
+                navMeshAgent.velocity = Vector3.zero;
+                navMeshAgent.ResetPath();
+            }
+        }
+    }
 }

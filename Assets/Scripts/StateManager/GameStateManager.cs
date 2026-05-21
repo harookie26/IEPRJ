@@ -51,7 +51,16 @@ public class GameStateManager : MonoBehaviour
 
         dialogueTriggerManager = FindAnyObjectByType<DialogueTriggerManager>();
 
-        dialogueTriggerManager.TriggerIntroDialogue();
+        StartCoroutine(StartIntroDialogue());
+    }
+
+    private IEnumerator StartIntroDialogue()
+    {
+        yield return new WaitForSeconds(0.25f);
+        if (dialogueTriggerManager != null)
+        {
+            dialogueTriggerManager.TriggerIntroDialogue();
+        }
     }
 
     void Update()

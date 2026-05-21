@@ -1,4 +1,7 @@
 using Game.ObjectTypes;
+using NUnit.Framework;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 // Optional completion notification interface channelables can implement.
@@ -97,6 +100,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         }
     }
 
+
     public void StartChannel()
     {
         // Do not allow starting channel if already fully completed for this painting.
@@ -156,7 +160,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     }
 
     private void Update()
-    {
+    {       
         if (isChanneling && !isCompleted)
         {
             channelTimer += Time.deltaTime;
@@ -192,6 +196,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             coverObject.SetActive(false);
             Debug.Log($"[PaintingChannelable] Cover object '{coverObject.name}' deactivated for '{gameObject.name}'.");
         }
+
+        FindFirstObjectByType<CorruptPaintingRandomizer>().OnPaintingCompleted(gameObject);
 
         consecutiveCompletions++;
         Debug.Log($"[PaintingChannelable] Channel COMPLETE on '{gameObject.name}'. Consecutive completions = {consecutiveCompletions}.");

@@ -85,7 +85,7 @@ public class PaintingInteractableAutoAttach : MonoBehaviour
 
             // Adding the component will honor the class's RequireComponent attribute (Unity will add required components automatically).
             go.AddComponent<PaintingInteractable>();
-            Debug.Log($"[PaintingInteractableAutoAttach] Attached PaintingInteractable to '{go.name}'.");
+            //Debug.Log($"[PaintingInteractableAutoAttach] Attached PaintingInteractable to '{go.name}'.");
         }
     }
 

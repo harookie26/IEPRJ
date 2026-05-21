@@ -4635,7 +4635,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: -246.25256, y: 0, z: 0, w: 0}
+  m_margin: {x: -528.4094, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -29753,6 +29753,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b85a3e8219bdd246864eec7eb9b4373, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LockedDoorInteractable
+  doorObject: {fileID: 0}
 --- !u!65 &1504507812
 BoxCollider:
   m_ObjectHideFlags: 0

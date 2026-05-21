@@ -41,6 +41,36 @@ public class BaseCollectible : MonoBehaviour, ICollectible
         isLevitating = startLevitating;
     }
 
+    void Start()
+    {
+        // 1. Subscribe to the load event. If the save file finishes downloading AFTER this object spawns, it will hear the shout.
+        if (PlayerCollectibleManager.Instance != null)
+        {
+            PlayerCollectibleManager.Instance.OnCollectiblesLoaded += CheckIfAlreadyCollected;
+        }
+
+        // 2. Also check immediately, just in case the save file loaded BEFORE this object spawned.
+        CheckIfAlreadyCollected();
+    }
+
+    private void OnDestroy()
+    {
+        // ALWAYS unsubscribe from events to prevent memory leaks!
+        if (PlayerCollectibleManager.Instance != null)
+        {
+            PlayerCollectibleManager.Instance.OnCollectiblesLoaded -= CheckIfAlreadyCollected;
+        }
+    }
+
+    private void CheckIfAlreadyCollected()
+    {
+        if (PlayerCollectibleManager.Instance != null && PlayerCollectibleManager.Instance.HasCollected(collectibleId))
+        {
+            // If the manager remembers we picked this up, destroy the physical 3D object so we can't pick it up again!
+            gameObject.SetActive(false);
+        }
+    }
+
     private void Update()
     {
         if (isLevitating)
