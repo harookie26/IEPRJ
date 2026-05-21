@@ -1,10 +1,8 @@
+using Game.Level;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.XR;
-using Game.Level;
-
 using static EventNames;
 
 [FoldableInspector(hideFieldHeaders: true)]
@@ -85,13 +83,13 @@ public class EnemyStateMachine : MonoBehaviour
     private bool isFrozen = false;
     public bool isEnemyActivated = false;
     private int corruptedPaintingsChanneled = 0;
-    //private bool prevNavAgentStopped = false;
-    //private float prevNavAgentSpeed = 0f;
-    //private bool prevNavAgentEnabled = false;
 
     private static readonly HashSet<EnemyStateMachine> AllInstances = new HashSet<EnemyStateMachine>();
 
     private RoomComponent currentEnemyRoom;
+
+    private Vector3 initialEnemyPosition;
+    private Vector3 initialEnemyRotation;
 
     private void OnEnable()
     {
@@ -118,6 +116,8 @@ public class EnemyStateMachine : MonoBehaviour
         //    }
         //}
         currentStunDuration = stunDurationTiers[0];
+        initialEnemyPosition = enemy.transform.position;
+        initialEnemyRotation = enemy.transform.eulerAngles;
 
         if (config != null)
         {
@@ -182,7 +182,7 @@ public class EnemyStateMachine : MonoBehaviour
         {
             if (currentState == RoamState)
             {
-                navMeshAgent.speed = MoveSpeed; 
+                navMeshAgent.speed = MoveSpeed;
             }
             else if (currentState == ChaseState)
             {
@@ -193,11 +193,11 @@ public class EnemyStateMachine : MonoBehaviour
 
         if (newState == ChaseState)
         {
-            StartChaseAudio(); 
+            StartChaseAudio();
         }
         else if (currentState == ChaseState && newState != ChaseState)
         {
-            StopChaseAudio(); 
+            StopChaseAudio();
         }
 
         currentState.EnterState(this);
@@ -448,7 +448,7 @@ public class EnemyStateMachine : MonoBehaviour
     //UNTESTED, PLAYTEST FIRST, THIS WILL NEED BALANCING// 
     private void AdjustEnemeyAggressiveness(int corruptedPaintingsChanneled)
     {
-        if(corruptedPaintingsChanneled == 2)
+        if (corruptedPaintingsChanneled == 2)
         {
             MoveSpeed *= 1.2f;
         }
@@ -555,5 +555,30 @@ public class EnemyStateMachine : MonoBehaviour
                 navMeshAgent.ResetPath();
             }
         }
+    }
+
+    public void ResetEnemyState()
+    {
+        isEnemyActivated = false;
+
+        enemy.transform.position = initialEnemyPosition;
+        enemy.transform.eulerAngles = initialEnemyRotation;
+
+        if (navMeshAgent != null)
+        {
+            navMeshAgent.Warp(enemy.transform.position);
+            navMeshAgent.isStopped = true;
+            navMeshAgent.velocity = Vector3.zero;
+            navMeshAgent.ResetPath();
+        }
+
+    }
+
+    public void ReactivateEnemyState()
+    {
+        isEnemyActivated = true;
+        if (navMeshAgent != null)
+            navMeshAgent.isStopped = false;
+        ChangeState(RoamState);
     }
 }

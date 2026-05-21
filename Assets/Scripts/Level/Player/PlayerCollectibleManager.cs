@@ -74,4 +74,15 @@ public class PlayerCollectibleManager : MonoBehaviour
 
         Debug.Log($"<color=yellow>Loaded {savedIds?.Count ?? 0} collectibles from save file.</color>");
     }
+
+    public void RemoveCollected(string collectibleId)
+    {
+        if (string.IsNullOrEmpty(collectibleId))
+            return;
+
+        if (_collectedIds.Remove(collectibleId))
+        {
+            Debug.Log($"Collectible removed: {collectibleId}");
+        }
+    }
 }

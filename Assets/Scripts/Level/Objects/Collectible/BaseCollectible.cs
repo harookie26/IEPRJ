@@ -1,5 +1,5 @@
-using UnityEngine;
 using Game.ObjectTypes;
+using UnityEngine;
 
 [FoldableInspector]
 public class BaseCollectible : MonoBehaviour, ICollectible
@@ -103,7 +103,7 @@ public class BaseCollectible : MonoBehaviour, ICollectible
 
         OnCollect();
 
-        if(GetID == "Key")
+        if (GetID == "Key")
         {
             DialogueTriggerManager.Instance.TriggerKeyFoundDialogue();
         }
@@ -115,7 +115,7 @@ public class BaseCollectible : MonoBehaviour, ICollectible
         }
 
 
-        Destroy(gameObject);
+        gameObject.SetActive(false);
     }
 
     // Hook for extra behavior on collect

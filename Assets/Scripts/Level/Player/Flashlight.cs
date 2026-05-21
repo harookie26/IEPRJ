@@ -28,6 +28,8 @@ public class Flashlight : MonoBehaviour
 
     private bool hasLoadedData = false;
 
+    public void SetIsOn(bool value) => isOn = value;
+
     void Start()
     {
         EventBroadcaster.Instance.AddObserver(ON_GAME_PAUSE, GamePaused);

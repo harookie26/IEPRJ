@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static EventNames.GameStateEvents;
@@ -16,7 +15,6 @@ public class ReviewerToolsManager : MonoBehaviour
 
     private bool isVisible = true;
 
-    CheckpointSelectManager checkpointSelectManager;
     PerformanceOverlay performanceOverlay;
     BuildVersionToggle buildVersionToggle;
 
@@ -25,7 +23,6 @@ public class ReviewerToolsManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        checkpointSelectManager = FindObjectOfType<CheckpointSelectManager>();
         performanceOverlay = FindObjectOfType<PerformanceOverlay>();
         buildVersionToggle = FindObjectOfType<BuildVersionToggle>();
         saveManager = FindObjectOfType<SaveManager>();
@@ -76,13 +73,6 @@ public class ReviewerToolsManager : MonoBehaviour
         }
     }
 
-    public void OnCheckpointSelect(int index)
-    {
-
-        CheckpointSelectManager checkpointSelectManager = FindObjectOfType<CheckpointSelectManager>();
-        checkpointSelectManager.LoadCheckpoint(index);
-    }
-
     private void UpdateCursorVisibility()
     {
         if (isVisible || SceneManager.GetActiveScene().name == "MainMenu")
@@ -106,7 +96,7 @@ public class ReviewerToolsManager : MonoBehaviour
             if (buildVersionToggle != null) buildVersionToggle.ToggleBuildVersion();
 
 
-        if (reviewerMenuPanel != null )
+        if (reviewerMenuPanel != null)
         {
             if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(MenutoggleKey))
                 ToggleReviewerMenu();
