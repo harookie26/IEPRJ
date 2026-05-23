@@ -252,4 +252,62 @@ public class CorruptPaintingRandomizer : MonoBehaviour
 
         ApplyCorruptionToChosenList();
     }
+
+    public List<GameObject> GetActiveCorruptedPaintings()
+    {
+        return activeChosenPaintings;
+    }
+
+    public void ApplyCheckpointPhase(int phase)
+    {
+        int completedCount = Mathf.Clamp(phase - 4, 0, activeChosenPaintings.Count);
+
+        for (int i = 0; i < activeChosenPaintings.Count; i++)
+        {
+            GameObject painting = activeChosenPaintings[i];
+
+            bool completed = i < completedCount;
+
+            SetPaintingCompletedState(painting, completed);
+        }
+    }
+
+    private void SetPaintingCompletedState(GameObject painting, bool completed)
+    {
+        if (painting == null) return;
+
+        Transform cover =
+            painting.transform.parent.Find(
+                corruptedPaintingCover.name + "_" + painting.name);
+
+        if (completed)
+        {
+            if (cover != null)
+                cover.gameObject.SetActive(false);
+
+            painting.tag = "Untagged";
+            painting.layer = 0;
+        }
+        else
+        {
+            if (cover != null)
+                cover.gameObject.SetActive(true);
+
+            painting.tag = "ChannelablePainting";
+
+            int layerIndex =
+                LayerMask.NameToLayer(channelableLayerName);
+
+            if (layerIndex != -1)
+                painting.layer = layerIndex;
+        }
+    }
+
+    public Transform GetPaintingSpawnTransform(int index)
+    {
+        if (index < 0 || index >= activeChosenPaintings.Count)
+            return null;
+
+        return activeChosenPaintings[index]?.transform;
+    }
 }

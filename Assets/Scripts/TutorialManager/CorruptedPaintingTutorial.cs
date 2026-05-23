@@ -28,4 +28,31 @@ public class CorruptedPaintingTutorial : MonoBehaviour
             isResolved = true;
         }
     }
+
+    public void ApplyCheckpointPhase(int phase)
+    {
+        bool completed = phase >= 4;
+
+        if (completed)
+        {
+            if (coverObject != null)
+                coverObject.SetActive(false);
+
+            tutorialCorruptedPaintingObject.tag = "Untagged";
+            tutorialCorruptedPaintingObject.layer = 0;
+        }
+        else
+        {
+            if (coverObject != null)
+                coverObject.SetActive(true);
+
+            tutorialCorruptedPaintingObject.tag = "ChannelablePainting";
+
+            int layer =
+                LayerMask.NameToLayer("Chanellable");
+
+            if (layer != -1)
+                tutorialCorruptedPaintingObject.layer = layer;
+        }
+    }
 }

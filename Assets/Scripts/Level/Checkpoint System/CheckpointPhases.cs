@@ -4,257 +4,190 @@ using static EventNames.GameStateEvents;
 
 public class CheckpointPhases : MonoBehaviour
 {
-    private GameObject _player => GameObject.FindWithTag("Player");
-    private EnemyStateMachine _enemyStateMachine => GameObject.FindWithTag("Enemy").GetComponent<EnemyStateMachine>();
-    private PlayerMovement _playerMovement => FindFirstObjectByType<PlayerMovement>();
-    private PBController _pbController => FindFirstObjectByType<PBController>();
-    private ScreenFader _screenFader => FindFirstObjectByType<ScreenFader>();
-    private UIManager _uiManager => FindFirstObjectByType<UIManager>();
-    private Flashlight _flashlight => FindFirstObjectByType<Flashlight>();
+    // Use Cache for performance instead of repetitive Find calls
+    private GameObject _player;
+    private EnemyStateMachine _enemyStateMachine;
+    private PlayerMovement _playerMovement;
+    private PBController _pbController;
+    private ScreenFader _screenFader;
+    private UIManager _uiManager;
+    private Flashlight _flashlight;
+    private CorruptPaintingRandomizer _paintingRandomizer;
+    private CorruptedPaintingTutorial _tutorialPainting;
+    private CharacterController _playerCC;
+    private MainPainting _mainPainting;
 
     [Header("Object References")]
     [SerializeField] private GameObject _door;
     [SerializeField] private GameObject _key;
     [SerializeField] private GameObject _paintbucket;
 
+    [Header("Spawn Settings")]
     [SerializeField] private Vector3[] _spawnPoints;
 
     private int _currentPhase;
+
+    private void Awake()
+    {
+        _player = GameObject.FindWithTag("Player");
+        if (_player != null) _playerCC = _player.GetComponent<CharacterController>();
+
+        _enemyStateMachine = GameObject.FindWithTag("Enemy")?.GetComponent<EnemyStateMachine>();
+        _playerMovement = FindFirstObjectByType<PlayerMovement>();
+        _pbController = FindFirstObjectByType<PBController>();
+        _screenFader = FindFirstObjectByType<ScreenFader>();
+        _uiManager = FindFirstObjectByType<UIManager>();
+        _flashlight = FindFirstObjectByType<Flashlight>();
+        _paintingRandomizer = FindFirstObjectByType<CorruptPaintingRandomizer>();
+        _tutorialPainting = FindFirstObjectByType<CorruptedPaintingTutorial>();
+        _mainPainting = FindFirstObjectByType<MainPainting>();
+    }
 
     private void Start()
     {
         _currentPhase = 0;
 
-        // Optional:
-        // If you want phase 0 to become the player's initial spawn automatically
-        // uncomment this line.
-
-        _spawnPoints[0] = _player.transform.localPosition;
+        // FIX: Use .position (World Space) to match how MoveToPhase works
+        if (_spawnPoints.Length > 0 && _player != null)
+        {
+            _spawnPoints[0] = _player.transform.position;
+        }
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.P)) // Example: Press 'P' to switch phases for testing
+        if (Input.GetKeyDown(KeyCode.P))
         {
-            _currentPhase = (_currentPhase + 1) % _spawnPoints.Length; // Cycle through phases
-            SwitchToPhase(_currentPhase);
+            int nextPhase = (_currentPhase + 1) % _spawnPoints.Length;
+            SwitchToPhase(nextPhase);
         }
     }
 
-    public void MoveToPhase(int phase)
+    private void SetPlayerPosition(int phase)
     {
-        if (phase < 0 || phase >= _spawnPoints.Length)
+        if (phase < 0 || phase >= _spawnPoints.Length) return;
+
+        if (_playerCC != null)
+            _playerCC.enabled = false;
+
+        // Painting phases
+        if (phase >= 5 && phase < 9)
         {
-            Debug.LogError("Invalid phase number.");
-            return;
+            int paintingIndex = phase - 5;
+
+            if (paintingIndex < 0 || paintingIndex >= 4)
+            {
+                Debug.LogError($"Invalid painting index: {paintingIndex}");
+                return;
+            }
+
+            GameObject painting = _paintingRandomizer.GetActiveCorruptedPaintings()[paintingIndex];
+
+            Transform t = _paintingRandomizer.GetPaintingSpawnTransform(paintingIndex);
+
+            if (t != null)
+            {
+                Vector3 dir = t.up;
+                dir.y = 0f;
+                dir.Normalize();
+
+                Vector3 spawnPos = t.position + (-dir * 2.0f);
+
+                Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
+
+                _player.transform.SetPositionAndRotation(spawnPos, rot);
+
+                Debug.Log($"[Checkpoint] Teleported to Painting {paintingIndex}");
+                return;
+            }
         }
 
-        _currentPhase = phase;
-        _player.transform.localPosition = _spawnPoints[phase];
+        // Normal phases
+        _player.transform.position = _spawnPoints[phase];
+
+        if (phase == 9)
+        {
+            Vector3 spawnPos = new Vector3(7.01900005f, 9.03999996f, 1.36099994f);
+
+            _player.transform.position = spawnPos;
+        }
+
+        Rigidbody rb = _player.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
     }
 
     public void AdjustGameState(int phase)
     {
-        MoveToPhase(phase);
+        Time.timeScale = 1f;
+        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
 
-        switch (phase)
+        // We handle position inside the Coroutine now to ensure CC is disabled correctly
+        _flashlight.SetIsOn(false);
+
+        // Key Logic
+        if (phase == 0)
         {
-            // Game start
-            case 0:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
+            PlayerCollectibleManager.Instance.RemoveCollected("Key");
+            if (_key) _key.SetActive(true);
+        }
+        else
+        {
+            PlayerCollectibleManager.Instance.AddCollected("Key");
+            if (_key) _key.SetActive(false);
+        }
 
-                _enemyStateMachine.ResetEnemyState();
+        // Door Logic
+        if (_door) _door.SetActive(phase < 2);
 
-                PlayerCollectibleManager.Instance.RemoveCollected("Key");
-                PlayerCollectibleManager.Instance.RemoveCollected("Paintbucket");
+        // Paintbucket Logic
+        if (phase >= 3)
+        {
+            PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
+            if (_paintbucket) _paintbucket.SetActive(false);
+        }
+        else
+        {
+            PlayerCollectibleManager.Instance.RemoveCollected("Paintbucket");
+            if (_paintbucket) _paintbucket.SetActive(true);
+        }
 
-                _door.SetActive(true);
-                _key.SetActive(false);
-                _paintbucket.SetActive(false);
-                _flashlight.SetIsOn(false);
+        if (_tutorialPainting != null) _tutorialPainting.ApplyCheckpointPhase(phase);
 
-                break;
+        // Enemy Logic
+        if (_enemyStateMachine != null)
+        {
+            if (phase >= 5) _enemyStateMachine.ReactivateEnemyState();
+            else _enemyStateMachine.ResetEnemyState();
+        }
 
-            // Key picked up
-            case 1:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
+        if (_paintingRandomizer != null) _paintingRandomizer.ApplyCheckpointPhase(phase);
 
-                _enemyStateMachine.ResetEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.RemoveCollected("Paintbucket");
-
-                _door.SetActive(true);
-                _key.SetActive(false);
-                _paintbucket.SetActive(true);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            // Door unlocked
-            case 2:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-
-                _enemyStateMachine.ResetEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.RemoveCollected("Paintbucket");
-
-                _door.SetActive(false);
-                _key.SetActive(false);
-                _paintbucket.SetActive(true);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            // Paintbucket picked up
-            case 3:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-
-                _enemyStateMachine.ResetEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
-
-                _door.SetActive(false);
-                _key.SetActive(false);
-                _paintbucket.SetActive(false);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            // Painting tutorial done
-            case 4:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-
-                _enemyStateMachine.ResetEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
-
-                _door.SetActive(false);
-                _key.SetActive(false);
-                _paintbucket.SetActive(false);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            // Corrupted Painting 1 done
-            case 5:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-
-                _enemyStateMachine.ReactivateEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
-
-                _door.SetActive(false);
-                _key.SetActive(false);
-                _paintbucket.SetActive(false);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            // Corrupted Painting 2 done
-            case 6:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-
-                _enemyStateMachine.ReactivateEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
-
-                _door.SetActive(false);
-                _key.SetActive(false);
-                _paintbucket.SetActive(false);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            // Corrupted Painting 3 done
-            case 7:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-
-                _enemyStateMachine.ReactivateEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
-
-                _door.SetActive(false);
-                _key.SetActive(false);
-                _paintbucket.SetActive(false);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            // Corrupted Painting 4 done
-            case 8:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-
-                _enemyStateMachine.ReactivateEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
-
-                _door.SetActive(false);
-                _key.SetActive(false);
-                _paintbucket.SetActive(false);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            // Main Painting done
-            case 9:
-                Time.timeScale = 1f;
-                EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-
-                _enemyStateMachine.ReactivateEnemyState();
-
-                PlayerCollectibleManager.Instance.AddCollected("Key");
-                PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
-
-                _door.SetActive(false);
-                _key.SetActive(false);
-                _paintbucket.SetActive(false);
-                _flashlight.SetIsOn(false);
-
-                break;
-
-            default:
-                Debug.LogWarning("No specific logic defined for this phase.");
-                break;
+        if (_mainPainting != null)
+        {
+            _mainPainting.paint1Done = phase >= 5;
+            _mainPainting.paint2Done = phase >= 6;
+            _mainPainting.paint3Done = phase >= 7;
+            _mainPainting.paint4Done = phase >= 8;
         }
     }
 
     public void SwitchToPhase(int phase)
     {
-        if (phase < 0 || phase >= _spawnPoints.Length)
-        {
-            Debug.LogError("Invalid phase number.");
-            return;
-        }
-
-        _currentPhase = phase;
+        if (phase < 0 || phase >= _spawnPoints.Length) return;
         StartCoroutine(SwitchingCoroutine(phase));
-
     }
 
     private IEnumerator SwitchingCoroutine(int phase)
     {
-
-        GameObject player = _player;
-
-        _pbController.OnGameRestartReset();
+        _currentPhase = phase;
         _playerMovement.SetCanMove(false);
+
+        if (_pbController != null) _pbController.OnGameRestartReset();
+
         yield return StartCoroutine(_screenFader.FadeOutSequence(0.5f));
 
         if (_uiManager != null)
@@ -263,36 +196,34 @@ public class CheckpointPhases : MonoBehaviour
             _uiManager.ShowRespawnHUD();
         }
 
-        CharacterController cc = player.GetComponent<CharacterController>();
-        if (cc != null) cc.enabled = false;
+        // 1. STALL PHYSICS / CC
+        if (_playerCC != null) _playerCC.enabled = false;
 
-        Rigidbody playerRb = player.GetComponent<Rigidbody>();
-        if (playerRb != null)
-        {
-            playerRb.linearVelocity = Vector3.zero;
-            playerRb.angularVelocity = Vector3.zero;
-            playerRb.isKinematic = true;
-        }
+        Rigidbody playerRb = _player.GetComponent<Rigidbody>();
+        if (playerRb != null) playerRb.isKinematic = true;
 
-        MoveToPhase(phase);
+        // 2. MOVE AND ADJUST STATE
+        SetPlayerPosition(phase);
         AdjustGameState(phase);
 
+        // 3. WAIT A FRAME 
+        // This is crucial for the CharacterController to register the new position
         yield return new WaitForFixedUpdate();
+        yield return null;
 
+        // 4. RE-ENABLE
         if (playerRb != null)
         {
             playerRb.isKinematic = false;
             playerRb.linearVelocity = Vector3.zero;
-            playerRb.angularVelocity = Vector3.zero;
         }
 
-        if (cc != null) cc.enabled = true;
-
+        if (_playerCC != null) _playerCC.enabled = true;
         if (_uiManager != null) _uiManager.HideAll();
 
         yield return StartCoroutine(_screenFader.FadeInSequence(0.5f));
         _playerMovement.SetCanMove(true);
 
-        Debug.Log($"[CheckpointManager] Instant respawn completed. PlayerPos: {player.transform.position}");
+        Debug.Log($"Moved to Phase {phase} at {_spawnPoints[phase]}");
     }
 }
