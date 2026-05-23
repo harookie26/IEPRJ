@@ -148,7 +148,7 @@ public class GameStateManager : MonoBehaviour
 
         if (_sceneLoader != null)
         {
-            _sceneLoader.LoadSceneByName("MainMenu");
+            _sceneLoader.LoadSceneByName("Ending Cinematic");
         }
         else
         {
