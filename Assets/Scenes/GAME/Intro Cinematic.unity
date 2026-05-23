@@ -35419,6 +35419,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 962956306}
     - target: {fileID: 6786454071807742201, guid: c666ff1497b4b1b41b95f25d9dd98d7a, type: 3}
+      propertyPath: buildVersion
+      value: Artist_Realm Studios_Sprint 1_v2.0.0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6786454071807742201, guid: c666ff1497b4b1b41b95f25d9dd98d7a, type: 3}
       propertyPath: buildVersionText
       value: 
       objectReference: {fileID: 237593294}
@@ -39634,6 +39638,10 @@ MonoBehaviour:
   cover3: {fileID: 1893926369}
   cover4: {fileID: 839643093}
   paintbrushChanneller: {fileID: 0}
+  paint1Done: 0
+  paint2Done: 0
+  paint3Done: 0
+  paint4Done: 0
 --- !u!1 &2078552406
 GameObject:
   m_ObjectHideFlags: 0
