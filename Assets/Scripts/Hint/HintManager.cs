@@ -1,9 +1,7 @@
-using NUnit.Framework;
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-
-using System.Collections.Generic;
-using System.Collections;
 
 public class HintManager : MonoBehaviour
 {
@@ -11,7 +9,7 @@ public class HintManager : MonoBehaviour
     [SerializeField] private GameObject hintPanel;
     [SerializeField] private TextMeshProUGUI hintText;
 
-    private int corruptedPaintingsChanneled = 0;
+    public int corruptedPaintingsChanneled = 0;
 
     private List<int> triggeredHintIDs;
 
@@ -124,12 +122,12 @@ public class HintManager : MonoBehaviour
         triggeredHintIDs.Add(6);
 
         DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
-        hintText.text = "Go back to the main gallery"; 
+        hintText.text = "Go back to the main gallery";
     }
 
     public void OpenHint()
     {
-        this.hintPanel.SetActive(true); 
+        this.hintPanel.SetActive(true);
     }
 
     public void CloseHint()

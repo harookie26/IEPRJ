@@ -4,7 +4,6 @@ using static EventNames.GameStateEvents;
 
 public class CheckpointPhases : MonoBehaviour
 {
-    // Use Cache for performance instead of repetitive Find calls
     private GameObject _player;
     private EnemyStateMachine _enemyStateMachine;
     private PlayerMovement _playerMovement;
@@ -16,6 +15,8 @@ public class CheckpointPhases : MonoBehaviour
     private CorruptedPaintingTutorial _tutorialPainting;
     private CharacterController _playerCC;
     private MainPainting _mainPainting;
+    private ReviewerToolsManager _reviewerToolsManager;
+    private HintManager _hintManager;
 
     [Header("Object References")]
     [SerializeField] private GameObject _door;
@@ -41,6 +42,8 @@ public class CheckpointPhases : MonoBehaviour
         _paintingRandomizer = FindFirstObjectByType<CorruptPaintingRandomizer>();
         _tutorialPainting = FindFirstObjectByType<CorruptedPaintingTutorial>();
         _mainPainting = FindFirstObjectByType<MainPainting>();
+        _reviewerToolsManager = FindFirstObjectByType<ReviewerToolsManager>();
+        _hintManager = FindFirstObjectByType<HintManager>();
     }
 
     private void Start()
@@ -175,6 +178,58 @@ public class CheckpointPhases : MonoBehaviour
         }
     }
 
+    private void SwitchHint(int phase)
+    {
+        switch (phase)
+        {
+            case 0:
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT1_START);
+                break;
+
+            case 1:
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT2_START);
+                break;
+
+            case 2:
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT3_START);
+                break;
+
+            case 3:
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT_PAINTING_START);
+                break;
+
+            case 4:
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+                break;
+
+            case 5:
+                _hintManager.corruptedPaintingsChanneled = 1;
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+                break;
+
+            case 6:
+                _hintManager.corruptedPaintingsChanneled = 2;
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+                break;
+
+            case 7:
+                _hintManager.corruptedPaintingsChanneled = 3;
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+                break;
+
+            case 8:
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT5_START);
+                break;
+
+            case 9:
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT5_START);
+                break;
+
+            default:
+                break;
+        }
+    }
+
     public void SwitchToPhase(int phase)
     {
         if (phase < 0 || phase >= _spawnPoints.Length) return;
@@ -204,7 +259,9 @@ public class CheckpointPhases : MonoBehaviour
 
         // 2. MOVE AND ADJUST STATE
         SetPlayerPosition(phase);
+        SwitchHint(phase);
         AdjustGameState(phase);
+        _reviewerToolsManager.ToggleReviewerMenu();
 
         // 3. WAIT A FRAME 
         // This is crucial for the CharacterController to register the new position

@@ -84,7 +84,7 @@ public class PauseScript : MonoBehaviour
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE); // GameStateManager handles the rest
-        UpdateCursorVisibility();
+        _gameState.UpdateCursorVisibility(_pauseOpen);
     }
 
     private void ClosePause()
@@ -93,7 +93,7 @@ public class PauseScript : MonoBehaviour
         if (pausePanel != null) pausePanel.SetActive(false);
 
         EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
-        UpdateCursorVisibility();
+        _gameState.UpdateCursorVisibility(_pauseOpen);
     }
 
     public void ToggleSettings()
@@ -117,7 +117,7 @@ public class PauseScript : MonoBehaviour
         if (pausePanel != null) pausePanel.SetActive(false);
 
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
-        UpdateCursorVisibility();
+        _gameState.UpdateCursorVisibility(_settingsOpen);
     }
 
     private void CloseSettings()
@@ -128,20 +128,7 @@ public class PauseScript : MonoBehaviour
         if (pausePanel != null) pausePanel.SetActive(true);
 
         // No event fired here — game stays paused, just swapping panels
-        UpdateCursorVisibility();
+        _gameState.UpdateCursorVisibility(_settingsOpen);
     }
 
-    private void UpdateCursorVisibility()
-    {
-        if (_settingsOpen || _pauseOpen || SceneManager.GetActiveScene().name == "MainMenu")
-        {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
-        }
-        else
-        {
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
-        }
-    }
 }

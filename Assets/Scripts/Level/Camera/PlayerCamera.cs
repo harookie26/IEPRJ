@@ -1,6 +1,5 @@
 using UnityEngine;
 using static EventNames.GameStateEvents;
-using static EventNames;
 
 public class PlayerCamera : MonoBehaviour
 {
@@ -96,12 +95,12 @@ public class PlayerCamera : MonoBehaviour
         EventBroadcaster.Instance.RemoveActionAtObserver(ON_GAME_RESUME, GameIsResumed);
     }
 
-    private void GameIsPaused()
+    public void GameIsPaused()
     {
         isGamePaused = true;
     }
 
-    private void GameIsResumed()
+    public void GameIsResumed()
     {
         isGamePaused = false;
 

@@ -14,38 +14,60 @@ public class ReviewerToolsManager : MonoBehaviour
     private KeyCode MenutoggleKey = KeyCode.Q;
 
     private bool isVisible = true;
+    private bool isGamePaused = false;
 
+    GameStateManager gameStateManager;
     PerformanceOverlay performanceOverlay;
     BuildVersionToggle buildVersionToggle;
+
+    PlayerCamera playerCamera;
+    PlayerMovement playerMovement;
 
     SaveManager saveManager;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        gameStateManager = FindObjectOfType<GameStateManager>();
         performanceOverlay = FindObjectOfType<PerformanceOverlay>();
         buildVersionToggle = FindObjectOfType<BuildVersionToggle>();
         saveManager = FindObjectOfType<SaveManager>();
+
+        playerCamera = FindObjectOfType<PlayerCamera>();
+        playerMovement = FindObjectOfType<PlayerMovement>();
 
         if (reviewerMenuPanel != null)
         {
             isVisible = false;
             reviewerMenuPanel.SetActive(isVisible);
         }
-
     }
+
 
     // Update is called once per frame
     void Update()
     {
         HandleKeyToggles();
+
+        if (playerCamera == null || playerMovement == null) return;
+
     }
 
     public void ToggleReviewerMenu()
     {
         isVisible = !isVisible;
         reviewerMenuPanel.SetActive(isVisible);
-        UpdateCursorVisibility();
+        gameStateManager.UpdateCursorVisibility(isVisible);
+
+        if (isVisible == true)
+        {
+            EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
+        }
+        else
+        {
+            EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
+        }
+
     }
 
     public void OnGameRestart()
@@ -73,19 +95,6 @@ public class ReviewerToolsManager : MonoBehaviour
         }
     }
 
-    private void UpdateCursorVisibility()
-    {
-        if (isVisible || SceneManager.GetActiveScene().name == "MainMenu")
-        {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
-        }
-        else
-        {
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
-        }
-    }
 
     private void HandleKeyToggles()
     {

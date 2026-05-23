@@ -1,7 +1,7 @@
-using UnityEngine;
-using static EventNames.GameStateEvents;
-using UnityEngine.SceneManagement;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using static EventNames.GameStateEvents;
 
 [FoldableInspector]
 public class GameStateManager : MonoBehaviour
@@ -94,6 +94,9 @@ public class GameStateManager : MonoBehaviour
 
         Time.timeScale = 0f;
 
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         if (_enemy != null && _enemy.isEnemyActivated)
             _enemy.Freeze();
     }
@@ -105,6 +108,9 @@ public class GameStateManager : MonoBehaviour
         _isGamePaused = false;
 
         Time.timeScale = 1f;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
         if (_enemy != null && _enemy.isEnemyActivated)
             _enemy.Unfreeze();
@@ -174,4 +180,19 @@ public class GameStateManager : MonoBehaviour
     {
         return currentLevelProgress;
     }
+
+    public void UpdateCursorVisibility(bool state)
+    {
+        if (state || SceneManager.GetActiveScene().name == "MainMenu")
+        {
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
+        else
+        {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+    }
+
 }
