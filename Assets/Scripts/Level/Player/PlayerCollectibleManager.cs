@@ -13,6 +13,8 @@ public class PlayerCollectibleManager : MonoBehaviour
     // Event raised when a collectible is added. Passes the collectible ID.
     public event Action<string> CollectibleAdded;
 
+    public event Action OnCollectiblesLoaded;
+
     // Optional static instance accessor for convenience (not mandatory, remains null if no instance exists)
     private static PlayerCollectibleManager _instance;
     public static PlayerCollectibleManager Instance => _instance;
@@ -57,5 +59,30 @@ public class PlayerCollectibleManager : MonoBehaviour
     public bool HasCollected(string collectibleId)
     {
         return _collectedIds.Contains(collectibleId);
+    }
+
+    public void LoadSaveData(List<string> savedIds)
+    {
+        _collectedIds.Clear();
+        if (savedIds != null)
+        {
+            _collectedIds.AddRange(savedIds);
+        }
+
+        // 3. Fire the event to tell the 3D world to update itself
+        OnCollectiblesLoaded?.Invoke();
+
+        Debug.Log($"<color=yellow>Loaded {savedIds?.Count ?? 0} collectibles from save file.</color>");
+    }
+
+    public void RemoveCollected(string collectibleId)
+    {
+        if (string.IsNullOrEmpty(collectibleId))
+            return;
+
+        if (_collectedIds.Remove(collectibleId))
+        {
+            Debug.Log($"Collectible removed: {collectibleId}");
+        }
     }
 }

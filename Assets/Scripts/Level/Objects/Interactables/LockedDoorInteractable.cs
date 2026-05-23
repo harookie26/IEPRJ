@@ -1,11 +1,16 @@
-using UnityEngine;
 using Game.ObjectTypes;
+using Unity.VisualScripting;
+using UnityEngine;
 
 public class LockedDoorInteractable : MonoBehaviour, IInteractable
 {
+    [SerializeField] private GameObject doorObject;
+
     private PlayerCollectibleManager collectibles;
     private AudioSource sfxAudioSource;
     private AudioList audioList;
+
+    private bool hasOpened = false;
 
     private void Awake()
     {
@@ -26,20 +31,53 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         }
     }
 
+    void Start()
+    {
+        if (hasOpened)
+        {
+            doorObject.gameObject.SetActive(false);
+        }
+    }   
+
     public void Interact()
     {
         if (collectibles != null && collectibles.HasCollected("Key"))
         {
-            Destroy(gameObject);
+            hasOpened = true;
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT2_START);
             sfxAudioSource.PlayOneShot(audioList.lockedDoorSFX);
+
+            doorObject.gameObject.SetActive(false);
 
         }
         else
         {
             Debug.Log("Door is locked. You need a key to open it.");
+            DialogueTriggerManager.Instance.TriggerLockedDoorDialogue();
             sfxAudioSource.PlayOneShot(audioList.unlockDoorSFX);
 
         }
     }
+
+    public LockedDoorSaveData GetSaveData()
+    {
+        return new LockedDoorSaveData
+        {
+            hadDoorOpened = this.hasOpened
+        };
+    }
+
+
+    public void LoadSaveData(LockedDoorSaveData data)
+    {
+        if (data == null) return;
+        this.hasOpened = data.hadDoorOpened;
+
+        if (this.hasOpened)
+        {
+            doorObject.gameObject.SetActive(false);
+        }
+        
+    }
+
 }

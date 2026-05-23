@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static EventNames.GameStateEvents;
@@ -7,6 +6,7 @@ public class ReviewerToolsManager : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private GameObject reviewerMenuPanel;
+    [SerializeField] private GameObject gameSavedText;
 
     [Header("Behavior")]
     private KeyCode toggleKeyControl1 = KeyCode.LeftAlt;
@@ -14,37 +14,60 @@ public class ReviewerToolsManager : MonoBehaviour
     private KeyCode MenutoggleKey = KeyCode.Q;
 
     private bool isVisible = true;
+    private bool isGamePaused = false;
 
-    CheckpointSelectManager checkpointSelectManager;
+    GameStateManager gameStateManager;
     PerformanceOverlay performanceOverlay;
     BuildVersionToggle buildVersionToggle;
+
+    PlayerCamera playerCamera;
+    PlayerMovement playerMovement;
+
+    SaveManager saveManager;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        checkpointSelectManager = FindObjectOfType<CheckpointSelectManager>();
+        gameStateManager = FindObjectOfType<GameStateManager>();
         performanceOverlay = FindObjectOfType<PerformanceOverlay>();
         buildVersionToggle = FindObjectOfType<BuildVersionToggle>();
+        saveManager = FindObjectOfType<SaveManager>();
+
+        playerCamera = FindObjectOfType<PlayerCamera>();
+        playerMovement = FindObjectOfType<PlayerMovement>();
 
         if (reviewerMenuPanel != null)
         {
             isVisible = false;
             reviewerMenuPanel.SetActive(isVisible);
         }
-
     }
+
 
     // Update is called once per frame
     void Update()
     {
         HandleKeyToggles();
+
+        if (playerCamera == null || playerMovement == null) return;
+
     }
 
     public void ToggleReviewerMenu()
     {
         isVisible = !isVisible;
         reviewerMenuPanel.SetActive(isVisible);
-        UpdateCursorVisibility();
+        gameStateManager.UpdateCursorVisibility(isVisible);
+
+        if (isVisible == true)
+        {
+            EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
+        }
+        else
+        {
+            EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
+        }
+
     }
 
     public void OnGameRestart()
@@ -56,29 +79,22 @@ public class ReviewerToolsManager : MonoBehaviour
 
     public void OnGameSaved()
     {
-        // Placeholder for any actions to take when the game is saved, such as updating UI or logging.
-    }
-
-    public void OnCheckpointSelect(int index)
-    {
-
-        CheckpointSelectManager checkpointSelectManager = FindObjectOfType<CheckpointSelectManager>();
-        checkpointSelectManager.LoadCheckpoint(index);
-    }
-
-    private void UpdateCursorVisibility()
-    {
-        if (isVisible || SceneManager.GetActiveScene().name == "MainMenu")
+        saveManager.ToggleSaveGame("save1");
+        if (gameSavedText != null)
         {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
-        }
-        else
-        {
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
+            gameSavedText.SetActive(true);
+            Invoke("HideGameSavedText", 2f); // Hide the text after 2 seconds
         }
     }
+
+    private void HideGameSavedText()
+    {
+        if (gameSavedText != null)
+        {
+            gameSavedText.SetActive(false);
+        }
+    }
+
 
     private void HandleKeyToggles()
     {
@@ -89,7 +105,7 @@ public class ReviewerToolsManager : MonoBehaviour
             if (buildVersionToggle != null) buildVersionToggle.ToggleBuildVersion();
 
 
-        if (reviewerMenuPanel != null )
+        if (reviewerMenuPanel != null)
         {
             if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(MenutoggleKey))
                 ToggleReviewerMenu();

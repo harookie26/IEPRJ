@@ -17,7 +17,7 @@ public class PlayerMovement : MonoBehaviour
     private InputAction jumpAction;
     private InputAction lookAction;
 
-    [Header("Movement Settings")]   
+    [Header("Movement Settings")]
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float mouseSensitivity = 0.1f;
 
@@ -51,8 +51,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float walkStepInterval = 0.4f;
     [SerializeField] private float sprintStepInterval = 0.25f;
     [SerializeField] private float walkPitch = 1.0f;
-    [SerializeField] private float sprintPitch = 1.2f; 
-    private float stepTimer = 0f;
+    [SerializeField] private float sprintPitch = 1.2f;
+    private float stepTimer = 0f;
 
     [Header("Coyote Time & Air Control")]
     [SerializeField] private float coyoteTimeDuration = 0.2f;
@@ -216,6 +216,8 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!canMove) return;
 
+        if (isGamePaused) return;
+
         UpdateGroundStatus();
 
         DetectLanding();
@@ -243,7 +245,7 @@ public class PlayerMovement : MonoBehaviour
             if (sprintTimer >= sprintNoiseThreshold)
             {
                 TriggerGhostNoise();
-                sprintTimer = 0f; 
+                sprintTimer = 0f;
             }
         }
         else
@@ -503,12 +505,12 @@ public class PlayerMovement : MonoBehaviour
 
     public float CameraPitch => cameraPitch;
 
-    private void GameIsPaused()
+    public void GameIsPaused()
     {
         isGamePaused = true;
     }
 
-    private void GameIsResumed()
+    public void GameIsResumed()
     {
         isGamePaused = false;
 
@@ -582,5 +584,22 @@ public class PlayerMovement : MonoBehaviour
             // Reset timer so the moment we move, a step triggers instantly
             stepTimer = 0f;
         }
+    }
+
+    public void LoadSaveData(Vector3 loadedPosition, float loadedYaw, float loadedPitch)
+    {
+        // 1. Teleport the Rigidbody safely
+        rb.position = loadedPosition;
+        transform.position = loadedPosition;
+
+        // 2. Restore rotation memory
+        bodyYaw = loadedYaw;
+        cameraPitch = loadedPitch;
+
+        // 3. Apply the horizontal body rotation immediately
+        transform.rotation = Quaternion.Euler(0f, bodyYaw, 0f);
+
+        // 4. Reset velocities so they don't carry falling momentum from before the load
+        ResetVelocity();
     }
 }

@@ -26,17 +26,27 @@ public class Flashlight : MonoBehaviour
 
     private bool isOn = false;
 
+    private bool hasLoadedData = false;
+
+    public void SetIsOn(bool value) => isOn = value;
+
     void Start()
     {
         EventBroadcaster.Instance.AddObserver(ON_GAME_PAUSE, GamePaused);
         EventBroadcaster.Instance.AddObserver(ON_GAME_RESUME, GameResumed);
 
-        currentBattery = maxBattery;
+        if (!hasLoadedData)
+        {
+            currentBattery = maxBattery;
+        }
+
         if (camTransform == null) camTransform = Camera.main.transform;
 
         UpdateBeamState();
 
         sfxAudioSource = GetComponent<AudioSource>();
+
+        UpdateUI();
     }
 
     private void OnDestroy()
@@ -121,5 +131,30 @@ public class Flashlight : MonoBehaviour
         {
             batteryText.text = $"Battery: {Mathf.CeilToInt(currentBattery)}%";
         }
+    }
+
+
+    public FlashlightSaveData GetSaveData()
+    {
+        return new FlashlightSaveData
+        {
+            currentBattery = this.currentBattery,
+            isOn = this.isOn
+        };
+    }
+
+
+    public void LoadSaveData(FlashlightSaveData data)
+    {
+        if (data == null) return;
+
+        this.currentBattery = data.currentBattery;
+        this.isOn = data.isOn;
+
+        // Mark that we have successfully loaded data
+        this.hasLoadedData = true;
+
+        UpdateBeamState();
+        UpdateUI();
     }
 }

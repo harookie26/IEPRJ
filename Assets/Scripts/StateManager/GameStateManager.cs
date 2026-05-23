@@ -1,7 +1,7 @@
-using UnityEngine;
-using static EventNames.GameStateEvents;
-using UnityEngine.SceneManagement;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using static EventNames.GameStateEvents;
 
 [FoldableInspector]
 public class GameStateManager : MonoBehaviour
@@ -15,6 +15,8 @@ public class GameStateManager : MonoBehaviour
     private EnemyStateMachine _enemy;
 
     private PaintbrushChanneller paintbrushChanneller;
+
+    private DialogueTriggerManager dialogueTriggerManager;
 
     private ScreenFader _screenFader => FindFirstObjectByType<ScreenFader>();
 
@@ -46,6 +48,19 @@ public class GameStateManager : MonoBehaviour
     void Start()
     {
         _isGamePaused = false;
+
+        dialogueTriggerManager = FindAnyObjectByType<DialogueTriggerManager>();
+
+        StartCoroutine(StartIntroDialogue());
+    }
+
+    private IEnumerator StartIntroDialogue()
+    {
+        yield return new WaitForSeconds(0.25f);
+        if (dialogueTriggerManager != null)
+        {
+            dialogueTriggerManager.TriggerIntroDialogue();
+        }
     }
 
     void Update()
@@ -79,6 +94,9 @@ public class GameStateManager : MonoBehaviour
 
         Time.timeScale = 0f;
 
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         if (_enemy != null && _enemy.isEnemyActivated)
             _enemy.Freeze();
     }
@@ -90,6 +108,9 @@ public class GameStateManager : MonoBehaviour
         _isGamePaused = false;
 
         Time.timeScale = 1f;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
         if (_enemy != null && _enemy.isEnemyActivated)
             _enemy.Unfreeze();
@@ -127,7 +148,7 @@ public class GameStateManager : MonoBehaviour
 
         if (_sceneLoader != null)
         {
-            _sceneLoader.LoadSceneByName("MainMenu");
+            _sceneLoader.LoadSceneByName("Ending Cinematic");
         }
         else
         {
@@ -159,4 +180,19 @@ public class GameStateManager : MonoBehaviour
     {
         return currentLevelProgress;
     }
+
+    public void UpdateCursorVisibility(bool state)
+    {
+        if (state || SceneManager.GetActiveScene().name == "MainMenu")
+        {
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+        }
+        else
+        {
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+    }
+
 }

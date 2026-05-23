@@ -43,6 +43,10 @@ public class EventNames {
         public const string HINT2_END = "HINT2_END";
         public const string HINT3_START = "HINT3_START";
         public const string HINT3_END = "HINT3_END";
+
+        public const string HINT_PAINTING_START = "HINT_PAINTING_START";
+        public const string HINT_PAINTING_END = "HINT_PAINTING_END";
+
         public const string HINT4_START = "HINT4_START";
         public const string HINT4_END = "HINT4_END";
         public const string HINT5_START = "HINT5_START";

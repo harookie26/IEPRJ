@@ -10,19 +10,25 @@ public class MainPainting : MonoBehaviour
     [SerializeField] PaintbrushChanneller paintbrushChanneller;
     private TrailFollowDynamic trailFollow;
 
+    public bool paint1Done = false;
+    public bool paint2Done = false;
+    public bool paint3Done = false;
+    public bool paint4Done = false;
+
     private void Start()
     {
         // assign to fields (do not shadow)
-        if(paintbrushChanneller == null)
-        {   
+        if (paintbrushChanneller == null)
+        {
             paintbrushChanneller = GameObject.FindGameObjectWithTag("Player")?.GetComponent<PaintbrushChanneller>();
-        }   
+        }
 
         trailFollow = FindFirstObjectByType<TrailFollowDynamic>();
     }
 
     private void Update()
     {
+        SetProgress();
         UpdatePaintingCovers();
         UpdateTrailTarget();
     }
@@ -33,12 +39,12 @@ public class MainPainting : MonoBehaviour
             return;
 
         // Use explicit painting IDs
-        if (cover1 != null) cover1.SetActive(!paintbrushChanneller.HasCompletedPainting("paint1"));
-        if (cover2 != null) cover2.SetActive(!paintbrushChanneller.HasCompletedPainting("paint2"));
-        if (cover3 != null) cover3.SetActive(!paintbrushChanneller.HasCompletedPainting("paint3"));
-        if (cover4 != null) cover4.SetActive(!paintbrushChanneller.HasCompletedPainting("paint4"));
+        if (cover1 != null) cover1.SetActive(!paint1Done);
+        if (cover2 != null) cover2.SetActive(!paint2Done);
+        if (cover3 != null) cover3.SetActive(!paint3Done);
+        if (cover4 != null) cover4.SetActive(!paint4Done);
 
-        Debug.Log("MainPainting.UpdatePaintingCovers: Updating cover states.");
+        //Debug.Log("MainPainting.UpdatePaintingCovers: Updating cover states.");
     }
 
     private void UpdateTrailTarget()
@@ -60,5 +66,17 @@ public class MainPainting : MonoBehaviour
             && (cover2 != null && !cover2.activeSelf)
             && (cover3 != null && !cover3.activeSelf)
             && (cover4 != null && !cover4.activeSelf);
+    }
+
+    private void SetProgress()
+    {
+        if (paintbrushChanneller.HasCompletedPainting("paint1"))
+            paint1Done = true;
+        if (paintbrushChanneller.HasCompletedPainting("paint2"))
+            paint2Done = true;
+        if (paintbrushChanneller.HasCompletedPainting("paint3"))
+            paint3Done = true;
+        if (paintbrushChanneller.HasCompletedPainting("paint4"))
+            paint4Done = true;
     }
 }

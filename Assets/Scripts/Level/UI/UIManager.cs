@@ -126,8 +126,9 @@ public class UIManager : MonoBehaviour
 
         pendingHudKey = key;
 
-        // Interact HUD should display immediately regardless of idle state
-        if (string.Equals(key, Keys.Interact, StringComparison.OrdinalIgnoreCase))
+        // These HUDs show immediately regardless of idle state
+        if (string.Equals(key, Keys.Interact, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(key, Keys.Channel, StringComparison.OrdinalIgnoreCase))
         {
             ShowHUDImmediate(key);
             pendingHudKey = null;

@@ -11,7 +11,6 @@ public class CorruptPaintingRandomizer : MonoBehaviour
     [SerializeField] private List<Material> corruptedPaintingsTexture;
 
     [Header("Layer Settings")]
-    [Tooltip("Type the EXACT spelling of your layer here (e.g. Chanellable, Channelable, etc.)")]
     [SerializeField] private string channelableLayerName = "Channelable";
 
     [Header("Rooms")]
@@ -22,14 +21,45 @@ public class CorruptPaintingRandomizer : MonoBehaviour
     [SerializeField] private List<GameObject> Room5paintings;
 
     [Header("Debug")]
-    [SerializeField] private bool isDebugMode = false;
+    [SerializeField] private bool isDebugMode = true;
     [SerializeField] private TextMeshProUGUI debugText;
 
     private Dictionary<GameObject, Material> originalMaterials = new Dictionary<GameObject, Material>();
+    private List<GameObject> allPaintingsInLevel = new List<GameObject>();
+    private List<GameObject> activeChosenPaintings = new List<GameObject>();
 
-    private void Start()
+    private void Awake()
     {
-        RandomizeCorruptedPaintings();
+        List<List<GameObject>> allRooms = new List<List<GameObject>>
+        {
+            Room1paintings, Room2paintings, Room3paintings, Room4paintings, Room5paintings
+        };
+
+        foreach (var room in allRooms)
+        {
+            if (room != null)
+            {
+                foreach (var painting in room)
+                {
+                    if (painting != null && !allPaintingsInLevel.Contains(painting))
+                    {
+                        allPaintingsInLevel.Add(painting);
+
+                        Renderer renderer = painting.GetComponent<Renderer>();
+                        if (renderer != null && !originalMaterials.ContainsKey(painting))
+                        {
+                            originalMaterials[painting] = renderer.sharedMaterial;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void InitializeFresh()
+    {
+        if (isDebugMode) Debug.Log("[Randomizer] Fresh start! Running Randomizer.");
+        RunRandomizer();
     }
 
     private void Update()
@@ -40,100 +70,71 @@ public class CorruptPaintingRandomizer : MonoBehaviour
         }
     }
 
-    private void RandomizeCorruptedPaintings()
+    public void RunRandomizer()
     {
+        Debug.Log($"[Randomizer] RunRandomizer called from: {System.Environment.StackTrace}");
+        int corruptedCount = 4;
+        activeChosenPaintings.Clear();
+
         List<List<GameObject>> allRooms = new List<List<GameObject>>
         {
-            Room1paintings, Room2paintings, Room3paintings,
-            Room4paintings, Room5paintings
+            Room1paintings, Room2paintings, Room3paintings, Room4paintings, Room5paintings
         };
 
-        // 1. Initial Pass: Remember originals and turn off old covers
-        foreach (List<GameObject> room in allRooms)
-        {
-            if (room == null) continue;
-            foreach (GameObject painting in room)
-            {
-                if (painting == null) continue;
-
-                Renderer renderer = painting.GetComponent<Renderer>();
-
-                if (renderer != null && !originalMaterials.ContainsKey(painting))
-                {
-                    originalMaterials[painting] = renderer.sharedMaterial;
-                }
-
-                if (renderer != null)
-                {
-                    renderer.material = originalMaterials[painting];
-                }
-
-                Transform existingCover = painting.transform.parent != null ?
-                    painting.transform.parent.Find(corruptedPaintingCover.name + "_" + painting.name) : null;
-
-                if (existingCover != null)
-                {
-                    existingCover.gameObject.SetActive(false);
-                }
-            }
-        }
-
-        // 2. Shuffle the rooms to pick 4 random locations
         List<List<GameObject>> shuffledRooms = new List<List<GameObject>>(allRooms);
         ShuffleList(shuffledRooms);
 
-        int corruptedCount = 4;
-        List<GameObject> chosenPaintings = new List<GameObject>();
-        int roomIndex = 0;
-
-        while (chosenPaintings.Count < corruptedCount && roomIndex < shuffledRooms.Count)
+        // Pass 1
+        foreach (var room in shuffledRooms)
         {
-            List<GameObject> currentRoom = shuffledRooms[roomIndex];
-            roomIndex++;
+            if (activeChosenPaintings.Count >= corruptedCount) break;
+            if (room == null || room.Count == 0) continue;
 
-            // Filter out null entries first
-            List<GameObject> validPaintings = currentRoom.FindAll(p => p != null);
-            if (validPaintings.Count == 0) continue;
-
-            // Shuffle valid paintings so we can try each one without bias
-            ShuffleList(validPaintings);
-            bool added = false;
-            foreach (GameObject candidate in validPaintings)
+            List<GameObject> validPaintings = room.FindAll(p => p != null && !activeChosenPaintings.Contains(p));
+            if (validPaintings.Count > 0)
             {
-                if (!chosenPaintings.Contains(candidate))
-                {
-                    chosenPaintings.Add(candidate);
-                    added = true;
-                    break;
-                }
+                ShuffleList(validPaintings);
+                activeChosenPaintings.Add(validPaintings[0]);
             }
-
-            if (!added && isDebugMode)
-                Debug.LogWarning($"[CorruptPaintingRandomizer] All paintings in a room were already chosen (duplicates across rooms). Skipping room.");
         }
 
-        if (isDebugMode)
-            Debug.Log($"[CorruptPaintingRandomizer] Chose {chosenPaintings.Count} paintings out of target {corruptedCount}.");
-
-        // NOTE: We no longer shuffle the materials! 
-        // This ensures Index 0 = Main1, Index 1 = Main2, etc.
-
-        // 3. Apply the corruption
-        for (int i = 0; i < chosenPaintings.Count; i++)
+        // Pass 2
+        if (activeChosenPaintings.Count < corruptedCount)
         {
-            GameObject painting = chosenPaintings[i];
+            List<GameObject> remainingPool = new List<GameObject>();
+            foreach (var p in allPaintingsInLevel)
+            {
+                if (p != null && !activeChosenPaintings.Contains(p)) remainingPool.Add(p);
+            }
+            ShuffleList(remainingPool);
 
-            // Assign the corresponding material (Main1, Main2...)
+            foreach (var p in remainingPool)
+            {
+                if (activeChosenPaintings.Count >= corruptedCount) break;
+                activeChosenPaintings.Add(p);
+            }
+        }
+        ApplyCorruptionToChosenList();
+    }
+
+    private void ApplyCorruptionToChosenList()
+    {
+        PaintbrushChanneller channeller = FindFirstObjectByType<PaintbrushChanneller>();
+        Debug.Log($"[Randomizer] ApplyCorruptionToChosenList called. Completed IDs: {string.Join(", ", channeller?.completedPaintingIds ?? new System.Collections.Generic.HashSet<string>())}");
+
+        for (int i = 0; i < activeChosenPaintings.Count; i++)
+        {
+            GameObject painting = activeChosenPaintings[i];
+            string assignedID = $"paint{i + 1}";
+
             Renderer renderer = painting.GetComponent<Renderer>();
             if (renderer != null && i < corruptedPaintingsTexture.Count)
             {
                 renderer.material = corruptedPaintingsTexture[i];
             }
 
-            // Spawn the Cover as a Sibling
             GameObject assignedCover = null;
-            Transform existingCover = painting.transform.parent != null ?
-                painting.transform.parent.Find(corruptedPaintingCover.name + "_" + painting.name) : null;
+            Transform existingCover = painting.transform.parent != null ? painting.transform.parent.Find(corruptedPaintingCover.name + "_" + painting.name) : null;
 
             if (existingCover != null)
             {
@@ -144,27 +145,27 @@ public class CorruptPaintingRandomizer : MonoBehaviour
             {
                 assignedCover = Instantiate(corruptedPaintingCover, painting.transform.position, painting.transform.rotation, painting.transform.parent);
                 assignedCover.name = corruptedPaintingCover.name + "_" + painting.name;
-                assignedCover.SetActive(true);
             }
 
-            if (assignedCover == null)
+            if (assignedCover != null) assignedCover.transform.rotation = Quaternion.Euler(0, assignedCover.transform.rotation.eulerAngles.y, assignedCover.transform.rotation.eulerAngles.z);
+
+            PaintingChannelable pc = painting.GetComponent<PaintingChannelable>();
+            if (pc == null) pc = painting.AddComponent<PaintingChannelable>();
+
+            // Check if player already fixed this in a previous save!
+            if (channeller != null && channeller.HasCompletedPainting(assignedID))
             {
-                Debug.LogError($"[CorruptPaintingRandomizer] assignedCover is null for painting '{painting.name}'. Skipping — check that corruptedPaintingCover is assigned in the Inspector.");
+                Transform completedCover = painting.transform.parent != null
+                    ? painting.transform.parent.Find(corruptedPaintingCover.name + "_" + painting.name)
+                    : null;
+                if (completedCover != null) completedCover.gameObject.SetActive(false);
+
+                painting.tag = "Untagged";
+                painting.layer = 0;
                 continue;
             }
 
-            assignedCover.transform.rotation = Quaternion.Euler(0, assignedCover.transform.rotation.eulerAngles.y, assignedCover.transform.rotation.eulerAngles.z);
-
-            // Add the Channelable Component
-            PaintingChannelable pc = painting.GetComponent<PaintingChannelable>();
-            if (pc == null)
-            {
-                pc = painting.AddComponent<PaintingChannelable>();
-            }
-
-            // --- REFLECTION BLOCK ---
             BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
-
             if (assignedCover != null)
             {
                 FieldInfo coverField = typeof(PaintingChannelable).GetField("coverObject", flags);
@@ -177,31 +178,20 @@ public class CorruptPaintingRandomizer : MonoBehaviour
             FieldInfo pauseField = typeof(PaintingChannelable).GetField("pauseOnConsecutiveCompletions", flags);
             if (pauseField != null) pauseField.SetValue(pc, false);
 
-            // Because we didn't shuffle the materials, Index i maps perfectly to paint(i+1)
             FieldInfo idField = typeof(PaintingChannelable).GetField("paintingId", flags);
-            if (idField != null) idField.SetValue(pc, $"paint{i + 1}");
-            // ------------------------
+            if (idField != null) idField.SetValue(pc, assignedID);
 
-            // Set Tag and Layer
             painting.tag = "ChannelablePainting";
 
-            // Use the string from the Inspector to avoid typo bugs 
             int layerIndex = LayerMask.NameToLayer(channelableLayerName);
-            if (layerIndex != -1)
-            {
-                painting.layer = layerIndex;
-            }
-            else
-            {
-                Debug.LogError($"[CorruptPaintingRandomizer] Layer '{channelableLayerName}' does not exist! Please check spelling.");
-            }
-
-            if (isDebugMode)
-            {
-                string matName = (i < corruptedPaintingsTexture.Count && corruptedPaintingsTexture[i] != null) ? corruptedPaintingsTexture[i].name : "UnknownMaterial";
-                Debug.Log($"[CorruptPaintingRandomizer] Corrupted {painting.name}. Material: {matName} | Assigned ID: paint{i + 1}");
-            }
+            if (layerIndex != -1) painting.layer = layerIndex;
         }
+    }
+
+    public void OnPaintingCompleted(GameObject painting)
+    {
+        painting.tag = "Untagged";
+        painting.layer = 0;
     }
 
     private void ShuffleList<T>(List<T> list)
@@ -213,5 +203,111 @@ public class CorruptPaintingRandomizer : MonoBehaviour
             list[i] = list[randomIndex];
             list[randomIndex] = temp;
         }
+    }
+
+    // --- SAVE AND LOAD METHODS ---
+
+    public PaintingRandomizerSaveData GetSaveData()
+    {
+        List<string> namesToSave = new List<string>();
+        foreach (GameObject painting in activeChosenPaintings)
+        {
+            if (painting != null) namesToSave.Add(painting.name);
+        }
+
+        return new PaintingRandomizerSaveData
+        {
+            savedPaintingNames = namesToSave
+        };
+    }
+
+    public void LoadSaveData(PaintingRandomizerSaveData data)
+    {
+        Debug.Log($"[Randomizer] LoadSaveData called from: {System.Environment.StackTrace}");
+
+        if (data == null || data.savedPaintingNames == null || data.savedPaintingNames.Count == 0)
+        {
+            if (isDebugMode) Debug.Log("[Save System] No saved paintings found. Running fresh randomizer.");
+            RunRandomizer();
+            return;
+        }
+
+        if (isDebugMode) Debug.Log($"[Save System] Loaded {data.savedPaintingNames.Count} saved paintings!");
+
+        activeChosenPaintings.Clear();
+
+        // Because names are unique, this easily finds the exact 4 paintings!
+        foreach (string savedName in data.savedPaintingNames)
+        {
+            GameObject foundObj = allPaintingsInLevel.Find(p => p != null && p.name == savedName);
+            if (foundObj != null)
+            {
+                activeChosenPaintings.Add(foundObj);
+            }
+            else
+            {
+                Debug.LogWarning($"[Save System] Could not find painting named {savedName} in the level! Did you rename it?");
+            }
+        }
+
+        ApplyCorruptionToChosenList();
+    }
+
+    public List<GameObject> GetActiveCorruptedPaintings()
+    {
+        return activeChosenPaintings;
+    }
+
+    public void ApplyCheckpointPhase(int phase)
+    {
+        int completedCount = Mathf.Clamp(phase - 4, 0, activeChosenPaintings.Count);
+
+        for (int i = 0; i < activeChosenPaintings.Count; i++)
+        {
+            GameObject painting = activeChosenPaintings[i];
+
+            bool completed = i < completedCount;
+
+            SetPaintingCompletedState(painting, completed);
+        }
+    }
+
+    private void SetPaintingCompletedState(GameObject painting, bool completed)
+    {
+        if (painting == null) return;
+
+        Transform cover =
+            painting.transform.parent.Find(
+                corruptedPaintingCover.name + "_" + painting.name);
+
+        if (completed)
+        {
+            if (cover != null)
+                cover.gameObject.SetActive(false);
+
+            painting.tag = "Untagged";
+            painting.layer = 0;
+        }
+        else
+        {
+            if (cover != null)
+                cover.gameObject.SetActive(true);
+
+            painting.tag = "ChannelablePainting";
+
+            int layerIndex =
+                LayerMask.NameToLayer(channelableLayerName);
+
+            if (layerIndex != -1)
+                painting.layer = layerIndex;
+        }
+    }
+
+    public Transform GetPaintingSpawnTransform(int index)
+    {
+        if (index < 0 || index >= activeChosenPaintings.Count)
+            return null;
+
+        return activeChosenPaintings[index]?.transform;
     }
 }

@@ -1,10 +1,8 @@
+using Game.Level;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.XR;
-using Game.Level;
-
 using static EventNames;
 
 [FoldableInspector(hideFieldHeaders: true)]
@@ -85,13 +83,13 @@ public class EnemyStateMachine : MonoBehaviour
     private bool isFrozen = false;
     public bool isEnemyActivated = false;
     private int corruptedPaintingsChanneled = 0;
-    //private bool prevNavAgentStopped = false;
-    //private float prevNavAgentSpeed = 0f;
-    //private bool prevNavAgentEnabled = false;
 
     private static readonly HashSet<EnemyStateMachine> AllInstances = new HashSet<EnemyStateMachine>();
 
     private RoomComponent currentEnemyRoom;
+
+    private Vector3 initialEnemyPosition;
+    private Vector3 initialEnemyRotation;
 
     private void OnEnable()
     {
@@ -118,6 +116,8 @@ public class EnemyStateMachine : MonoBehaviour
         //    }
         //}
         currentStunDuration = stunDurationTiers[0];
+        initialEnemyPosition = enemy.transform.position;
+        initialEnemyRotation = enemy.transform.eulerAngles;
 
         if (config != null)
         {
@@ -182,7 +182,7 @@ public class EnemyStateMachine : MonoBehaviour
         {
             if (currentState == RoamState)
             {
-                navMeshAgent.speed = MoveSpeed; 
+                navMeshAgent.speed = MoveSpeed;
             }
             else if (currentState == ChaseState)
             {
@@ -193,11 +193,11 @@ public class EnemyStateMachine : MonoBehaviour
 
         if (newState == ChaseState)
         {
-            StartChaseAudio(); 
+            StartChaseAudio();
         }
         else if (currentState == ChaseState && newState != ChaseState)
         {
-            StopChaseAudio(); 
+            StopChaseAudio();
         }
 
         currentState.EnterState(this);
@@ -448,7 +448,7 @@ public class EnemyStateMachine : MonoBehaviour
     //UNTESTED, PLAYTEST FIRST, THIS WILL NEED BALANCING// 
     private void AdjustEnemeyAggressiveness(int corruptedPaintingsChanneled)
     {
-        if(corruptedPaintingsChanneled == 2)
+        if (corruptedPaintingsChanneled == 2)
         {
             MoveSpeed *= 1.2f;
         }
@@ -499,5 +499,86 @@ public class EnemyStateMachine : MonoBehaviour
             playerAudioSource.Stop();
             Debug.Log("Player Heartbeat SFX Stopped.");
         }
+    }
+
+    public EnemySaveData GetSaveData()
+    {
+        return new EnemySaveData
+        {
+            position = transform.position,
+            isEnemyActivated = this.isEnemyActivated,
+            corruptedPaintingsChanneled = this.corruptedPaintingsChanneled
+        };
+    }
+
+    public void LoadSaveData(EnemySaveData data)
+    {
+        if (data == null) return;
+
+        this.isEnemyActivated = data.isEnemyActivated;
+        this.corruptedPaintingsChanneled = data.corruptedPaintingsChanneled;
+
+        // Safely teleport the NavMeshAgent to the saved location
+        if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled)
+        {
+            navMeshAgent.Warp(data.position);
+        }
+        else
+        {
+            transform.position = data.position;
+        }
+
+        // Restore Stun Tier Limits
+        int tierIndex = Mathf.Clamp(corruptedPaintingsChanneled, 0, stunDurationTiers.Length - 1);
+        currentStunDuration = stunDurationTiers[tierIndex];
+
+        // Restore Speed/Aggressiveness if applicable
+        if (corruptedPaintingsChanneled > 1)
+        {
+            // Note: Because MoveSpeed is reset to base config in Start(), 
+            // calling this here applies the correct multiplier perfectly!
+            AdjustEnemeyAggressiveness(corruptedPaintingsChanneled);
+        }
+
+        // Resume state based on activation
+        if (isEnemyActivated)
+        {
+            if (navMeshAgent != null) navMeshAgent.isStopped = false;
+            ChangeState(RoamState); // Always default to roam on load for fairness
+        }
+        else
+        {
+            if (navMeshAgent != null)
+            {
+                navMeshAgent.isStopped = true;
+                navMeshAgent.velocity = Vector3.zero;
+                navMeshAgent.ResetPath();
+            }
+        }
+    }
+
+    public void ResetEnemyState()
+    {
+        isEnemyActivated = false;
+
+        enemy.transform.position = initialEnemyPosition;
+        enemy.transform.eulerAngles = initialEnemyRotation;
+
+        if (navMeshAgent != null)
+        {
+            navMeshAgent.Warp(enemy.transform.position);
+            navMeshAgent.isStopped = true;
+            navMeshAgent.velocity = Vector3.zero;
+            navMeshAgent.ResetPath();
+        }
+
+    }
+
+    public void ReactivateEnemyState()
+    {
+        isEnemyActivated = true;
+        if (navMeshAgent != null)
+            navMeshAgent.isStopped = false;
+        ChangeState(RoamState);
     }
 }

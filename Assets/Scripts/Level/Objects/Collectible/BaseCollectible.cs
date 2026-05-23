@@ -1,5 +1,5 @@
-using UnityEngine;
 using Game.ObjectTypes;
+using UnityEngine;
 
 [FoldableInspector]
 public class BaseCollectible : MonoBehaviour, ICollectible
@@ -41,6 +41,36 @@ public class BaseCollectible : MonoBehaviour, ICollectible
         isLevitating = startLevitating;
     }
 
+    void Start()
+    {
+        // 1. Subscribe to the load event. If the save file finishes downloading AFTER this object spawns, it will hear the shout.
+        if (PlayerCollectibleManager.Instance != null)
+        {
+            PlayerCollectibleManager.Instance.OnCollectiblesLoaded += CheckIfAlreadyCollected;
+        }
+
+        // 2. Also check immediately, just in case the save file loaded BEFORE this object spawned.
+        CheckIfAlreadyCollected();
+    }
+
+    private void OnDestroy()
+    {
+        // ALWAYS unsubscribe from events to prevent memory leaks!
+        if (PlayerCollectibleManager.Instance != null)
+        {
+            PlayerCollectibleManager.Instance.OnCollectiblesLoaded -= CheckIfAlreadyCollected;
+        }
+    }
+
+    private void CheckIfAlreadyCollected()
+    {
+        if (PlayerCollectibleManager.Instance != null && PlayerCollectibleManager.Instance.HasCollected(collectibleId))
+        {
+            // If the manager remembers we picked this up, destroy the physical 3D object so we can't pick it up again!
+            gameObject.SetActive(false);
+        }
+    }
+
     private void Update()
     {
         if (isLevitating)
@@ -73,12 +103,19 @@ public class BaseCollectible : MonoBehaviour, ICollectible
 
         OnCollect();
 
-        if(GetID == "Paintbucket")
+        if (GetID == "Key")
         {
-            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+            DialogueTriggerManager.Instance.TriggerKeyFoundDialogue();
         }
 
-        Destroy(gameObject);
+        if (GetID == "Paintbucket")
+        {
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT_PAINTING_START);
+            DialogueTriggerManager.Instance.TriggerChannelDialogue();
+        }
+
+
+        gameObject.SetActive(false);
     }
 
     // Hook for extra behavior on collect

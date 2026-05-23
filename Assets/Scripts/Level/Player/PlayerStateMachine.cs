@@ -207,4 +207,17 @@ public class PlayerStateMachine : MonoBehaviour
         }
     }
 
+    // --- ADD THIS TO PLAYERSTATEMACHINE.CS ---
+    public void LoadSaveData(PlayerStateKind savedState)
+    {
+        if (savedState == PlayerStateKind.Idle)
+        {
+            SetState(new IdleState(this));
+        }
+        else
+        {
+            SetToDefaultState();
+        }
+    }
+
 }

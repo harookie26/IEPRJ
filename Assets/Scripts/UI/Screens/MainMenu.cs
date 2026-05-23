@@ -8,7 +8,10 @@ public class MainMenu : MonoBehaviour
 {
     [SerializeField] private Button playButton;
     [SerializeField] private Button exitButton;
+    [SerializeField] private Button backButton;
     [SerializeField] private GameObject settingsPanel;
+
+    [SerializeField] private GameObject playPanel;
 
     private ScreenFader _screenFader;
     private SceneLoader _sceneLoader;
@@ -29,7 +32,7 @@ public class MainMenu : MonoBehaviour
 
         if (playButton != null)
         {
-            playButton.onClick.AddListener(() => _sceneLoader.LoadSceneByName(SceneNames.GameScene));
+            playButton.onClick.AddListener(() => playPanel.SetActive(true));
         }
         else
         {
@@ -38,6 +41,14 @@ public class MainMenu : MonoBehaviour
         if (exitButton != null)
         {
             exitButton.onClick.AddListener(() => Application.Quit());
+        }
+        else
+        {
+            Debug.LogError("No button is not assigned in the inspector.");
+        }
+        if (backButton != null)
+        {
+            backButton.onClick.AddListener(() => playPanel.SetActive(false));
         }
         else
         {
@@ -58,6 +69,24 @@ public class MainMenu : MonoBehaviour
                 Debug.LogError("GameStateManager not found in the scene. Please add one and assign it.");
             }
         }   
+    }
+
+    // Called when the player clicks "New Game"
+    public void StartNewGame()
+    {
+        SaveCourier.SaveSlotToLoad = ""; // Clear any previous load commands
+        //SceneManager.LoadScene("Main"); // Replace with your scene's name
+        SceneManager.LoadScene("Intro Cinematic");
+    }
+
+    // Called when the player clicks "Load Game"
+    public void LoadGame(string slotName)
+    {
+        // Tell the courier which file we want
+        SaveCourier.SaveSlotToLoad = slotName;
+
+        // Transition to the game scene
+        SceneManager.LoadScene("Main");
     }
 
     public void ToggleSettings()
