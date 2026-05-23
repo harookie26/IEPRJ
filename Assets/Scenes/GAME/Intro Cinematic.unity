@@ -23312,9 +23312,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6730e9ef739b4174bb2355eb10028820, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2060923043}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 6730e9ef739b4174bb2355eb10028820, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2060923044}
   m_SourcePrefab: {fileID: 100100000, guid: 6730e9ef739b4174bb2355eb10028820, type: 3}
 --- !u!4 &1130201209 stripped
 Transform:
@@ -35420,7 +35417,7 @@ PrefabInstance:
       objectReference: {fileID: 962956306}
     - target: {fileID: 6786454071807742201, guid: c666ff1497b4b1b41b95f25d9dd98d7a, type: 3}
       propertyPath: buildVersion
-      value: Artist_Realm Studios_Sprint 1_v2.0.0
+      value: Artist_Realm Studios_Sprint 1_v1.8
       objectReference: {fileID: 0}
     - target: {fileID: 6786454071807742201, guid: c666ff1497b4b1b41b95f25d9dd98d7a, type: 3}
       propertyPath: buildVersionText
@@ -39621,27 +39618,6 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 7845915831924539021, guid: 6730e9ef739b4174bb2355eb10028820, type: 3}
---- !u!114 &2060923044
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2060923040}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ce0c35a861f2514428226bb24af23baf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MainPainting
-  cover1: {fileID: 1609436558}
-  cover2: {fileID: 1724963624}
-  cover3: {fileID: 1893926369}
-  cover4: {fileID: 839643093}
-  paintbrushChanneller: {fileID: 0}
-  paint1Done: 0
-  paint2Done: 0
-  paint3Done: 0
-  paint4Done: 0
 --- !u!1 &2078552406
 GameObject:
   m_ObjectHideFlags: 0

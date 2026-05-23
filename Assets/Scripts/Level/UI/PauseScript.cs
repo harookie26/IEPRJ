@@ -7,8 +7,11 @@ public class PauseScript : MonoBehaviour
 {
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject settingsPanel;
-
+    [SerializeField] private GameObject saveGamePanel;
+    [SerializeField] private GameObject confirmSavePanel;
     [SerializeField] private GameObject gameSavedText;
+
+    public string currentSaveSlot = "save1";
 
     private GameStateManager _gameState => FindFirstObjectByType<GameStateManager>();
 
@@ -18,11 +21,15 @@ public class PauseScript : MonoBehaviour
 
     private bool _pauseOpen = false;
     private bool _settingsOpen = false;
+    private bool _saveGameOpen = false;
+    private bool _confirmSaveOpen = false;
 
     private void Start()
     {
         if (pausePanel != null) pausePanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
+        if(saveGamePanel != null) saveGamePanel.SetActive(false);
+        if(confirmSavePanel != null) confirmSavePanel.SetActive(false);
     }
 
     void Update()
@@ -33,6 +40,10 @@ public class PauseScript : MonoBehaviour
             if (_settingsOpen)
             {
                 CloseSettings();
+            }
+            if (_saveGameOpen)
+            {
+                CloseSaveGame();
             }
             else if (_pauseOpen)
             {
@@ -45,13 +56,20 @@ public class PauseScript : MonoBehaviour
         }
     }
 
+    public void SetSaveSlot(string slot)
+    {
+        currentSaveSlot = slot;
+        confirmSavePanel.SetActive(true);
+    }
+
     public void SaveGame()
     {
-        _saveManager.ToggleSaveGame();
+        _saveManager.SaveGameAsync(currentSaveSlot);
+        confirmSavePanel.SetActive(false);
         if (gameSavedText != null)
         {
             gameSavedText.SetActive(true);
-            Invoke("HideGameSavedText", 2f); // Hide the text after 2 seconds
+            Invoke("HideGameSavedText", 2f); //
         }
     }
 
@@ -126,9 +144,33 @@ public class PauseScript : MonoBehaviour
         if (settingsPanel != null) settingsPanel.SetActive(false);
         _pauseOpen = true;
         if (pausePanel != null) pausePanel.SetActive(true);
+    }
 
-        // No event fired here — game stays paused, just swapping panels
-        _gameState.UpdateCursorVisibility(_settingsOpen);
+    public void ToggleSaveGame()
+    {
+        if (!_pauseOpen && !_saveGameOpen)
+        {
+            return;
+        }
+        if (_saveGameOpen)
+            CloseSaveGame();
+        else
+            OpenSaveGame();
+    }
+
+    private void OpenSaveGame()
+    {
+        _saveGameOpen = true;
+        if (saveGamePanel != null) saveGamePanel.SetActive(true);
+        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
+        _gameState.UpdateCursorVisibility(_saveGameOpen);
+    }
+
+    private void CloseSaveGame()
+    {
+        _saveGameOpen = false;
+        confirmSavePanel.SetActive(false);
+        if (saveGamePanel != null) saveGamePanel.SetActive(false);
     }
 
 }

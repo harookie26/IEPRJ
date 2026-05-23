@@ -49,7 +49,10 @@ public class TutorialManager : MonoBehaviour
     {
         foreach (var panel in _tutorialPanels)
         {
-            if (panel != null) panel.ForceHide();
+            if (panel != null && panel.isActiveAndEnabled)
+            {
+
+            }
         }
     }
 

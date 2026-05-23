@@ -79,7 +79,7 @@ public class ReviewerToolsManager : MonoBehaviour
 
     public void OnGameSaved()
     {
-        saveManager.ToggleSaveGame();
+        saveManager.ToggleSaveGame("save1");
         if (gameSavedText != null)
         {
             gameSavedText.SetActive(true);

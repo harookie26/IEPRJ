@@ -80,10 +80,10 @@ public class MainMenu : MonoBehaviour
     }
 
     // Called when the player clicks "Load Game"
-    public void LoadGame()
+    public void LoadGame(string slotName)
     {
         // Tell the courier which file we want
-        SaveCourier.SaveSlotToLoad = "save1";
+        SaveCourier.SaveSlotToLoad = slotName;
 
         // Transition to the game scene
         SceneManager.LoadScene("Main");
