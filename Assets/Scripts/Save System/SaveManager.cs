@@ -124,20 +124,4 @@ public class SaveManager : MonoBehaviour
             Debug.LogWarning($"Load failed (File might not exist yet): {e.Message}");
         }
     }
-
-    public bool CheckIfSaveExists(string slotName)
-    {
-        if (savingSystem == null) return false;
-        try
-        {
-            var readable = savingSystem.OpenSaveReadable(slotName).Result;
-            readable.Dispose(); // We just wanted to check existence, so dispose immediately
-            return true;
-        }
-        catch
-        {
-            return false; // If we catch an exception, the save likely doesn't exist
-        }
-    }
-
 }
