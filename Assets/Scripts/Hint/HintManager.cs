@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class HintManager : MonoBehaviour
 {
+    public static HintManager Instance { get; private set; }
 
     [SerializeField] private GameObject hintPanel;
     [SerializeField] private TextMeshProUGUI hintText;
@@ -12,6 +13,21 @@ public class HintManager : MonoBehaviour
     public int corruptedPaintingsChanneled = 0;
 
     private List<int> triggeredHintIDs;
+
+    private void Awake()
+    {
+        // Enforce Singleton pattern
+        if (Instance == null)
+        {
+            Instance = this;
+            // Optionally uncomment the line below if you want this to persist across scene loads
+            // DontDestroyOnLoad(gameObject);
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
+    }
 
     void Start()
     {
@@ -41,7 +57,6 @@ public class HintManager : MonoBehaviour
         yield return new WaitForSeconds(0.25f);
         if (triggeredHintIDs.Count == 0)
         {
-            OpenHint();
             SetHint1();
         }
         else

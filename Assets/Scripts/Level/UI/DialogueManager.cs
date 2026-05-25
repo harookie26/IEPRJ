@@ -8,7 +8,9 @@ namespace Level.UI
         public static DialogueManager Instance { get; private set; }
 
         [Header("Setup")]
-        [SerializeField] private RectTransform parentCanvas; // where labels will be placed
+        [SerializeField] private RectTransform parentCanvas; // For overall canvas reference
+        [SerializeField, Tooltip("The dedicated empty GameObject inside the canvas where dialogue labels will actually live.")]
+        private RectTransform dialogueContainer;
         [SerializeField] private DialogueLabel labelPrefab;
         [SerializeField] private int initialPool = 2;
 
@@ -41,13 +43,21 @@ namespace Level.UI
                 return;
             }
 
+            // Fallback safety: If container isn't set, use the parent canvas directly
+            if (dialogueContainer == null)
+            {
+                dialogueContainer = parentCanvas;
+                Debug.LogWarning("DialogueManager: Dialogue Container not assigned. Defaulting to Parent Canvas.", this);
+            }
+
             for (int i = 0; i < initialPool; i++)
                 pool.Enqueue(CreateNew());
         }
 
         private DialogueLabel CreateNew()
         {
-            var go = Instantiate(labelPrefab.gameObject, parentCanvas != null ? parentCanvas : null);
+            // Instantiates directly inside the designated container
+            var go = Instantiate(labelPrefab.gameObject, dialogueContainer != null ? dialogueContainer : null);
             go.SetActive(true);
             var label = go.GetComponent<DialogueLabel>();
             // start inactive
@@ -100,7 +110,6 @@ namespace Level.UI
 
             dialogueQueue.Enqueue(request);
 
-            // If nothing is playing, start processing the queue
             if (!isPlaying)
                 ProcessQueue();
         }
@@ -121,17 +130,16 @@ namespace Level.UI
 
             currentLabel = GetLabel();
 
-            // position at center of parent
-            if (currentLabel.transform is RectTransform rt && parentCanvas != null)
+            // Set parent to the dedicated container and center it
+            if (currentLabel.transform is RectTransform rt && dialogueContainer != null)
             {
-                rt.SetParent(parentCanvas, false);
+                rt.SetParent(dialogueContainer, false);
                 rt.anchoredPosition = Vector2.zero;
             }
 
             currentLabel.gameObject.SetActive(true);
             currentLabel.Show(request.characterName, request.text, request.fadeIn, request.displayDuration, request.fadeOut);
 
-            // schedule display finish and then process next dialogue
             float totalDuration = request.fadeIn + request.displayDuration + request.fadeOut + 0.05f;
             StartCoroutine(FinishCurrentDialogue(totalDuration));
         }
@@ -140,14 +148,12 @@ namespace Level.UI
         {
             yield return new WaitForSecondsRealtime(seconds);
 
-            // Return current label to pool
             if (currentLabel != null)
                 ReturnLabel(currentLabel);
 
             currentLabel = null;
             isPlaying = false;
 
-            // Process next dialogue if any are queued
             if (dialogueQueue.Count > 0)
                 ProcessQueue();
         }

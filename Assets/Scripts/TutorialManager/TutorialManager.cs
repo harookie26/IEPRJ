@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class TutorialManager : MonoBehaviour
 {
+    public static TutorialManager Instance { get; private set; }
+
     [SerializeField] private FadeElement[] _tutorialPanels;
 
     // Initialize immediately to prevent any NullReferenceExceptions
@@ -11,6 +13,21 @@ public class TutorialManager : MonoBehaviour
 
     // The master flag that completely kills the race condition
     private bool hasSaveLoaded = false;
+
+    private void Awake()
+    {
+        // Enforce Singleton pattern
+        if (Instance == null)
+        {
+            Instance = this;
+            // Optionally uncomment the line below if you want this to persist across scene loads
+            // DontDestroyOnLoad(gameObject);
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
+    }
 
     private IEnumerator Start()
     {
@@ -23,7 +40,6 @@ public class TutorialManager : MonoBehaviour
         {
             Debug.Log("[Tutorial] No save data injected. Starting fresh tutorials.");
             TriggerMovementTutorial();
-            TriggerFlashlightTutorial();
         }
     }
 
@@ -69,15 +85,16 @@ public class TutorialManager : MonoBehaviour
         if (triggeredTutorialIDs.Contains(1)) return;
 
         triggeredTutorialIDs.Add(1);
-        StartCoroutine(TriggerTutorialWithDelay(1, 10.0f));
+        StartCoroutine(TriggerTutorialWithDelay(1, 1.0f));
+        StartCoroutine(TriggerTutorialWithDelay(2, 5.0f));
     }
 
     public void TriggerChannelingTutorial()
     {
-        if (triggeredTutorialIDs.Contains(2)) return;
+        if (triggeredTutorialIDs.Contains(3)) return;
 
-        triggeredTutorialIDs.Add(2);
-        StartCoroutine(TriggerTutorialWithDelay(2, 4.0f));
+        triggeredTutorialIDs.Add(3);
+        StartCoroutine(TriggerTutorialWithDelay(3, 4.0f));
     }
 
     public TutorialSaveData GetSaveData()
@@ -112,6 +129,5 @@ public class TutorialManager : MonoBehaviour
         // 4. Attempt to resume tutorials. 
         // If the save file has [0, 1], the Contains() check in these methods will instantly block them!
         TriggerMovementTutorial();
-        TriggerFlashlightTutorial();
     }
 }

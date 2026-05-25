@@ -82,6 +82,7 @@ public class DialogueTriggerManager : MonoBehaviour
 
         if (triggeredDialogueIDs.Contains(1) || triggeredDialogueIDs.Contains(2) || triggeredDialogueIDs.Contains(3))
         {
+            HintManager.Instance.OpenHint();
             return;
         }
         else
@@ -93,7 +94,16 @@ public class DialogueTriggerManager : MonoBehaviour
             DialogueManager.Instance.Display(introDialogue1);
             DialogueManager.Instance.Display(introDialogue2);
             DialogueManager.Instance.Display(introDialogue3);
+
+            float totalDuration = introDialogue1.displayDuration + introDialogue2.displayDuration + introDialogue3.displayDuration;
+            StartCoroutine(OpenHintAfterDelay(totalDuration));
         }
+    }
+
+    private IEnumerator OpenHintAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        HintManager.Instance.OpenHint();
     }
 
     public void TriggerKeyFoundDialogue()
