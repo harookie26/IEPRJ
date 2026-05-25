@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Threading.Tasks; // Added for Tasks
+using Unity.PlatformToolkit;
 using static EventNames.GameStateEvents;
 
 [FoldableInspector]
@@ -10,8 +12,10 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private Button exitButton;
     [SerializeField] private Button backButton;
     [SerializeField] private GameObject settingsPanel;
-
     [SerializeField] private GameObject playPanel;
+    [SerializeField] private GameObject noSavedText;
+
+    [SerializeField] private SaveManager saveManager;
 
     private ScreenFader _screenFader;
     private SceneLoader _sceneLoader;
@@ -80,13 +84,51 @@ public class MainMenu : MonoBehaviour
     }
 
     // Called when the player clicks "Load Game"
-    public void LoadGame(string slotName)
+    public async void LoadGame(string slotName)
     {
-        // Tell the courier which file we want
-        SaveCourier.SaveSlotToLoad = slotName;
+        bool saveExists = await CheckIfSaveExistsAsync(slotName);
 
-        // Transition to the game scene
-        SceneManager.LoadScene("Main");
+        if (saveExists)
+        {
+            SaveCourier.SaveSlotToLoad = slotName;
+            SceneManager.LoadScene("Main");
+        }
+        else
+        {
+            Debug.LogError($"Save slot '{slotName}' does not exist. Cannot load game.");
+            noSavedText.SetActive(true);
+            Invoke("HideNoSavedText", 2f);
+            return;
+        }
+    }
+    private async Task<bool> CheckIfSaveExistsAsync(string slotName)
+    {
+        try
+        {
+            await PlatformToolkit.Initialize();
+
+            if (PlatformToolkit.Capabilities.LocalSaving)
+            {
+                var savingSystem = PlatformToolkit.LocalSaving;
+                await using (var readable = await savingSystem.OpenSaveReadable(slotName))
+                {
+                    return readable != null;
+                }
+            }
+            return false;
+        }
+        catch
+        {
+            return false; 
+        }
+    }
+
+    private void HideNoSavedText()
+    {
+        if (noSavedText != null)
+        {
+            noSavedText.SetActive(false);
+        }
     }
 
     public void ToggleSettings()
