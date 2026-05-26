@@ -121,8 +121,6 @@ public class PlayerMovement : MonoBehaviour
 
     public bool isGamePaused = false;
 
-
-
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();

@@ -33,6 +33,14 @@ public static class GlobalSaveSystem
                     (SpatialSFXSaveData)sfx.CaptureState()
                 );
             }
+
+            if (s is SpatialTrigger stx)
+            {
+                Debug.Log($"[Global Save System] Capturing state for SpatialTrigger: {stx.SaveKey}");
+                data.spatialTriggerStates.Add(
+                    (SpatialTriggerSaveData)stx.CaptureState()
+                );
+            }
         }
     }
 
