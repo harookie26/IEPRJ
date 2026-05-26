@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class PlayerSaveHandler : MonoBehaviour
 {
@@ -38,9 +38,9 @@ public class PlayerSaveHandler : MonoBehaviour
     }
 
     // Gathers data from all scripts into one package
-    public PlayerSaveData GetSaveData()
+    public GameSaveData GetSaveData()
     {
-        return new PlayerSaveData
+        return new GameSaveData
         {
             position = movement.transform.position,
             // You can safely grab Yaw and Pitch from your PlayerMovement script
@@ -63,7 +63,7 @@ public class PlayerSaveHandler : MonoBehaviour
     }
 
     // Distributes the package back to all the scripts
-    public void LoadSaveData(PlayerSaveData data)
+    public void LoadSaveData(GameSaveData data)
     {
         Debug.Log($"[Master Save] PlayerSaveHandler triggered. Is data null? {data == null}");
 
@@ -87,7 +87,7 @@ public class PlayerSaveHandler : MonoBehaviour
         enemyIntroTrigger.LoadSaveData(data.enemyIntro);
         hintManager.LoadSaveData(data.hint);
         tutorialManager.LoadSaveData(data.tutorial);
-        enemyStateMachine.LoadSaveData(data.enemyState);    
+        enemyStateMachine.LoadSaveData(data.enemyState);
         paintbrushChanneller.LoadSaveData(data.paintbrush);
         corruptedPaintingsRandomizer.LoadSaveData(data.randomizedPaintings);
         Debug.Log("[Master Save] ALL player data loaded successfully!");

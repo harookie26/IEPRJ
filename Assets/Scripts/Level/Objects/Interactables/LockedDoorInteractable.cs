@@ -1,5 +1,4 @@
 using Game.ObjectTypes;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class LockedDoorInteractable : MonoBehaviour, IInteractable
@@ -37,7 +36,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         {
             doorObject.gameObject.SetActive(false);
         }
-    }   
+    }
 
     public void Interact()
     {
@@ -48,7 +47,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
             sfxAudioSource.PlayOneShot(audioList.lockedDoorSFX);
 
             doorObject.gameObject.SetActive(false);
-
+            SpatialSFX.Deactivate("door_banging");
         }
         else
         {
@@ -77,7 +76,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         {
             doorObject.gameObject.SetActive(false);
         }
-        
+
     }
 
 }
