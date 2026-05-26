@@ -2,25 +2,26 @@ using UnityEngine;
 
 public class ReducePlayerSpeedAction : SpatialTriggerAction
 {
-    [SerializeField] private float slowMultiplier = 0.5f;
+    [SerializeField] private Transform lookTarget;
+    [SerializeField] private float lookAtSpeed;
+
+    PlayerCamera playerCamera;
+    PlayerMovement playerMovement;
+
+    private void Start()
+    {
+        playerCamera = FindFirstObjectByType<PlayerCamera>();
+        playerMovement = FindFirstObjectByType<PlayerMovement>();
+    }
 
     public override void OnEnter(GameObject target)
     {
-        PlayerMovement movement = target.GetComponent<PlayerMovement>();
-
-        if (movement == null)
-            return;
-
-        movement.SetTriggerSlow(slowMultiplier);
+        playerCamera.SetLookAtTarget(lookTarget);
+        playerMovement.RotateTowards(lookTarget.position, lookAtSpeed);
     }
 
     public override void OnExit(GameObject target)
     {
-        PlayerMovement movement = target.GetComponent<PlayerMovement>();
-
-        if (movement == null)
-            return;
-
-        movement.ResetTriggerSlow();
+        playerCamera.ClearLookAtTarget();
     }
 }

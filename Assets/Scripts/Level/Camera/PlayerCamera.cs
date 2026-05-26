@@ -44,6 +44,11 @@ public class PlayerCamera : MonoBehaviour
     [SerializeField] private float sprintFOV = 75f;
     [SerializeField] private float fovTransitionSpeed = 5f;
 
+    [SerializeField] private float lookAtSpeed = 5f;
+    private bool useLookAtOverride = false;
+    private Transform lookAtTarget;
+
+
     private Vector3 lastSafeEulerAngles = Vector3.zero;
 
     private Rigidbody playerRigidbody;
@@ -370,6 +375,44 @@ public class PlayerCamera : MonoBehaviour
         float safeRoll = Mathf.Clamp(currentRollSway, -90f, 90f);
         if (float.IsNaN(safeRoll)) safeRoll = 0f;
 
+        Quaternion targetRotation;
+
+        if (useLookAtOverride && lookAtTarget != null)
+        {
+            Vector3 dir =
+                lookAtTarget.position - transform.position;
+
+            Quaternion worldLookRot =
+                Quaternion.LookRotation(dir);
+
+            Quaternion localLookRot =
+                Quaternion.Inverse(transform.parent.rotation)
+                * worldLookRot;
+
+            Vector3 euler = localLookRot.eulerAngles;
+
+            float pitchAngle = euler.x;
+
+            if (pitchAngle > 180f)
+                pitchAngle -= 360f;
+
+            targetRotation = Quaternion.Euler(
+                pitchAngle,
+                0f,
+                safeRoll
+            );
+        }
+        else
+        {
+            pitch =
+                playerMovement != null
+                ? playerMovement.CameraPitch
+                : 0f;
+
+            targetRotation =
+                Quaternion.Euler(pitch, 0f, safeRoll);
+        }
+
         transform.localRotation = Quaternion.Euler(pitch, 0f, safeRoll);
     }
 
@@ -413,5 +456,17 @@ public class PlayerCamera : MonoBehaviour
 
         currentFOV = Mathf.Lerp(currentFOV, targetFOV, fovTransitionSpeed * Time.deltaTime);
         mainCamera.fieldOfView = currentFOV;
+    }
+
+    public void SetLookAtTarget(Transform target)
+    {
+        lookAtTarget = target;
+        useLookAtOverride = true;
+    }
+
+    public void ClearLookAtTarget()
+    {
+        useLookAtOverride = false;
+        lookAtTarget = null;
     }
 }

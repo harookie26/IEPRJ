@@ -65,6 +65,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private bool clampYInsideRoomVolume = false;
     [SerializeField] private RoomComponent currentRoom;
 
+    [Header("External Control")]
+    private bool useExternalMovement = false;
+    private Vector2 externalMoveInput;
+    private Vector2 externalLookInput;
+
     private Rigidbody rb;
     private bool isGrounded = true;
     private bool canMove = true;
@@ -190,8 +195,16 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        lookInputTarget = lookAction.ReadValue<Vector2>();
-        moveInput = moveAction.ReadValue<Vector2>();
+        if (useExternalMovement)
+        {
+            moveInput = externalMoveInput;
+            lookInputTarget = externalLookInput;
+        }
+        else
+        {
+            lookInputTarget = lookAction.ReadValue<Vector2>();
+            moveInput = moveAction.ReadValue<Vector2>();
+        }
 
         lookInputCurrent = Vector2.Lerp(lookInputCurrent, lookInputTarget, lookInterpolationSpeed);
 
@@ -599,5 +612,43 @@ public class PlayerMovement : MonoBehaviour
 
         // 4. Reset velocities so they don't carry falling momentum from before the load
         ResetVelocity();
+    }
+
+    public void SetExternalMovement(Vector2 moveInput, Vector2 lookInput)
+    {
+        useExternalMovement = true;
+
+        externalMoveInput = Vector2.ClampMagnitude(moveInput, 1f);
+        externalLookInput = lookInput;
+    }
+
+    public void ClearExternalMovement()
+    {
+        useExternalMovement = false;
+
+        externalMoveInput = Vector2.zero;
+        externalLookInput = Vector2.zero;
+    }
+
+    public void RotateTowards(Vector3 worldTargetPosition, float rotationSpeed)
+    {
+        Vector3 dir =
+            worldTargetPosition - transform.position;
+
+        dir.y = 0f;
+
+        if (dir.sqrMagnitude < 0.001f)
+            return;
+
+        Quaternion targetRot =
+            Quaternion.LookRotation(dir);
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRot,
+            rotationSpeed * Time.deltaTime
+        );
+
+        bodyYaw = transform.eulerAngles.y;
     }
 }
