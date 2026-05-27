@@ -157,5 +157,15 @@ namespace Level.UI
             if (dialogueQueue.Count > 0)
                 ProcessQueue();
         }
+
+        public bool CheckifEntryAlreadyInQueue(string characterName, string text)
+        {
+            foreach (var request in dialogueQueue)
+            {
+                if (request.characterName == characterName && request.text == text)
+                    return true;
+            }
+            return false;
+        }   
     }
 }
