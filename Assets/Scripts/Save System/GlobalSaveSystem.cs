@@ -22,6 +22,7 @@ public static class GlobalSaveSystem
         if (data == null) return;
 
         data.spatialSFXStates = new List<SpatialSFXSaveData>();
+        data.spatialTriggerStates = new List<SpatialTriggerSaveData>();
 
         foreach (var s in saveables)
         {
@@ -46,11 +47,11 @@ public static class GlobalSaveSystem
 
     public static void RestoreFrom(GameSaveData data)
     {
-        if (data?.spatialSFXStates == null) return;
+        if (data == null) return;
 
         foreach (var s in saveables)
         {
-            if (s is SpatialSFX sfx)
+            if (s is SpatialSFX sfx && data.spatialSFXStates != null)
             {
                 foreach (var state in data.spatialSFXStates)
                 {
@@ -59,6 +60,20 @@ public static class GlobalSaveSystem
                         Debug.Log($"[Global Save System] Restoring state for SpatialSFX: {sfx.SaveKey}");
 
                         sfx.RestoreState(state);
+                        break;
+                    }
+                }
+            }
+
+            if (s is SpatialTrigger stx && data.spatialTriggerStates != null)
+            {
+                foreach (var state in data.spatialTriggerStates)
+                {
+                    if (state.id == stx.SaveKey)
+                    {
+                        Debug.Log($"[Global Save System] Restoring state for SpatialTrigger: {stx.SaveKey}");
+
+                        stx.RestoreState(state);
                         break;
                     }
                 }

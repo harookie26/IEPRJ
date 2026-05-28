@@ -147,7 +147,7 @@ public class SpatialTrigger : MonoBehaviour, ISaveable
 
     public object CaptureState()
     {
-        return new SpatialSFXSaveData
+        return new SpatialTriggerSaveData
         {
             id = uniqueID,
             isActive = _isActive
@@ -156,7 +156,7 @@ public class SpatialTrigger : MonoBehaviour, ISaveable
 
     public void RestoreState(object state)
     {
-        var data = (SpatialSFXSaveData)state;
+        var data = (SpatialTriggerSaveData)state;
 
         _isActive = data.isActive;
     }
