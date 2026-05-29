@@ -85,8 +85,8 @@ public class TutorialManager : MonoBehaviour
         if (triggeredTutorialIDs.Contains(1)) return;
 
         triggeredTutorialIDs.Add(1);
-        StartCoroutine(TriggerTutorialWithDelay(1, 1.0f));
-        StartCoroutine(TriggerTutorialWithDelay(2, 5.0f));
+        StartCoroutine(TriggerTutorialWithDelay(1, 2.5f));
+        StartCoroutine(TriggerTutorialWithDelay(2, 6.0f));
     }
 
     public void TriggerChannelingTutorial()

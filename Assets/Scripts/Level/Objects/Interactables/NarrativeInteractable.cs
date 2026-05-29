@@ -3,6 +3,7 @@ using System;
 using UnityEngine;
 using System.Collections.Generic;
 using Game.ObjectTypes;
+using System.Collections;
 
 [FoldableInspector]
 public class NarrativeInteractable : MonoBehaviour, IInteractable
@@ -13,6 +14,10 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
     [Tooltip("The panel that will display UI Object when the player interacts with this object. e.g. newspaper, photos")]
     [SerializeField] private GameObject popUpDisplayPanel;
 
+    [SerializeField] private bool singleInteractionOnly = false;
+
+    [SerializeField] private float dialogueInteractionCooldown = 0.5f; // Minimum time between interactions to prevent spamming
+    
     [Header("Highlight / Glow Settings")]
     [SerializeField, Tooltip("Should this interactable pulse its highlight/glow effect?")]
     private bool enableHighlight = true;
@@ -37,9 +42,12 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
 
     // Internal tracking state
     private float timeAccumulator;
+    private bool hasBeenInteractedWith = false;
+    private bool isInCooldown = false;
     private SpriteRenderer spriteRenderer;
     private List<Material> runtimeMaterials = new List<Material>();
     private List<Color> originalColors = new List<Color>();
+
 
     private void Awake()
     {
@@ -144,19 +152,29 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        if (dialogueList != null && dialogueList.Count > 0)
+        if (!hasBeenInteractedWith && !isInCooldown)
         {
-            foreach (var entry in dialogueList)
+            if (dialogueList != null && dialogueList.Count > 0)
             {
-                if (!DialogueManager.Instance.CheckifEntryAlreadyInQueue(entry.characterName, entry.text))
+                foreach (var entry in dialogueList)
                 {
-                    DialogueManager.Instance.Display(entry);
+                    if (!DialogueManager.Instance.CheckifEntryAlreadyInQueue(entry.characterName, entry.text))
+                    {
+                        DialogueManager.Instance.Display(entry);
+                    }
                 }
             }
-        }
-        else
-        {
-            Debug.Log("No dialogue entries assigned to this NarrativeInteractable.");
+            else
+            {
+                Debug.Log("No dialogue entries assigned to this NarrativeInteractable.");
+            }
+
+
+            if(singleInteractionOnly) hasBeenInteractedWith = true; //set to true to prevent future interactions if this is meant to be a one-time interaction
+
+            isInCooldown = true;
+            StartCoroutine(InteractionCooldown()); //start cooldown timer to prevent spamming interactions and overwhelming the dialogue system with duplicate entries if the player clicks multiple times in quick succession
+
         }
 
         if (popUpDisplayPanel != null)
@@ -174,6 +192,13 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
         {
             Debug.Log("No pop-up display panel assigned to this NarrativeInteractable.");
         }
+
+    }
+
+    private IEnumerator InteractionCooldown()
+    {
+        yield return new WaitForSeconds(dialogueInteractionCooldown);
+        isInCooldown = false;
     }
 
     public void ClosePopUpDisplay()

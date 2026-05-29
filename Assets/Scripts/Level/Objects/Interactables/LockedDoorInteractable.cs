@@ -3,16 +3,30 @@ using UnityEngine;
 
 public class LockedDoorInteractable : MonoBehaviour, IInteractable
 {
+    public static LockedDoorInteractable Instance { get; private set; }
+
     [SerializeField] private GameObject doorObject;
 
     private PlayerCollectibleManager collectibles;
     private AudioSource sfxAudioSource;
     private AudioList audioList;
 
-    private bool hasOpened = false;
+    public bool hasOpened = false;
 
     private void Awake()
     {
+        // Enforce Singleton pattern
+        if (Instance == null)
+        {
+            Instance = this;
+            // Optionally uncomment the line below if you want this to persist across scene loads
+            // DontDestroyOnLoad(gameObject);
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
+
         collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
 
         //Find the AudioList object in the scene

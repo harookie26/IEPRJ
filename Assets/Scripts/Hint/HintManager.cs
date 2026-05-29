@@ -84,6 +84,7 @@ public class HintManager : MonoBehaviour
 
     private void AddRestoredPainting()
     {
+        OpenHint();
         corruptedPaintingsChanneled++;
         SetHint4();
 
@@ -101,24 +102,38 @@ public class HintManager : MonoBehaviour
 
     private void SetHint2()
     {
+        OpenHint();
         triggeredHintIDs.Add(2);
         hintText.text = "Go to the Main Gallery";
     }
 
+    public void SetHintFindFlashlight()
+    {
+        OpenHint();
+        triggeredHintIDs.Add(7);
+        if(!PlayerCollectibleManager.Instance.HasCollected("Flashlight"))
+        {
+            hintText.text = "Find a flashlight somewhere in the other rooms";
+        }
+    }
+
     private void SetHint3()
     {
+        OpenHint();
         triggeredHintIDs.Add(3);
         hintText.text = "Collect the Paintbucket";
     }
 
     private void SetHintCorruptedPaintingTutorial()
     {
+        OpenHint();
         triggeredHintIDs.Add(4);
         hintText.text = "Channel the Corrupted Painting in the Main Gallery";
     }
 
     private void SetHint4()
     {
+        OpenHint();
         if (!triggeredHintIDs.Contains(5))
         {
             triggeredHintIDs.Add(5);
@@ -134,6 +149,7 @@ public class HintManager : MonoBehaviour
 
     private void SetHint5()
     {
+        OpenHint();
         triggeredHintIDs.Add(6);
 
         DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
@@ -177,6 +193,9 @@ public class HintManager : MonoBehaviour
                 break;
             case 6:
                 hintText.text = "Go back to the main gallery";
+                break;
+            case 7:
+                hintText.text = "Find a flashlight somewhere in the other rooms";
                 break;
         }
     }

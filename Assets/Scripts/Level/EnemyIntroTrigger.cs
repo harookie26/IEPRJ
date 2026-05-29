@@ -49,7 +49,6 @@ public class EnemyIntroTrigger : MonoBehaviour
         if (!hasTriggered && other.CompareTag("Player"))
         {
             hasTriggered = true;
-            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT3_START);
             DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
             enemyIntroModel.SetActive(false);
             sfxAudioSource.Play();

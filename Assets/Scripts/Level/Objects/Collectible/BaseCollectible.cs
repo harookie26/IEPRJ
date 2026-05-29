@@ -204,6 +204,36 @@ public class BaseCollectible : MonoBehaviour, ICollectible
     // ICollectible implementation
     public virtual void Collect()
     {
+        if (GetID == "Key")
+        {
+            DialogueTriggerManager.Instance.TriggerKeyFoundDialogue();
+        }
+
+        if (GetID == "Paintbucket")
+        {
+            if (!PlayerCollectibleManager.Instance.HasCollected("Flashlight"))
+            {
+                DialogueTriggerManager.Instance.TriggerFindFlashlightFirstDialogue();
+                return;
+            }
+            else
+            {
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT_PAINTING_START);
+                DialogueTriggerManager.Instance.TriggerChannelDialogue();
+            }
+        }
+
+        if (GetID == "Flashlight")
+        {
+            if (LockedDoorInteractable.Instance.hasOpened == true) {
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT3_START);
+                DialogueTriggerManager.Instance.TriggerPaintbucketDialogue();
+            }
+
+            DialogueTriggerManager.Instance.TriggerFlashlightDialogue();
+            TutorialManager.Instance.TriggerFlashlightTutorial();
+        }
+
         var manager = FindFirstObjectByType<PlayerCollectibleManager>();
         if (manager != null)
         {
@@ -215,22 +245,6 @@ public class BaseCollectible : MonoBehaviour, ICollectible
         }
 
         OnCollect();
-
-        if (GetID == "Key")
-        {
-            DialogueTriggerManager.Instance.TriggerKeyFoundDialogue();
-        }
-
-        if (GetID == "Paintbucket")
-        {
-            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT_PAINTING_START);
-            DialogueTriggerManager.Instance.TriggerChannelDialogue();
-        }
-
-        if(GetID == "Flashlight")
-        {
-            TutorialManager.Instance.TriggerFlashlightTutorial(); 
-        }
 
         gameObject.SetActive(false);
     }
