@@ -41322,6 +41322,11 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 685316703032803318, guid: bd9a4068a138531478acdab80bfc215a, type: 3}
   m_PrefabInstance: {fileID: 1979788544}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &662141114 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6378620619061146367, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+  m_PrefabInstance: {fileID: 1642392110}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &664404227 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 710574d457ba70645bde24003e16b760, type: 3}
@@ -44637,6 +44642,11 @@ Transform:
   - {fileID: 844986457}
   m_Father: {fileID: 1898357059}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &796252963 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5874016230616547939, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+  m_PrefabInstance: {fileID: 1642392110}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &797340078 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 2282f5c65f8f3e840a0e4a690e09fce1, type: 3}
@@ -46092,6 +46102,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 829559581}
   m_CullTransparentMesh: 1
+--- !u!1 &836680386 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2094490630712403420, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+  m_PrefabInstance: {fileID: 1642392110}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &837613509
 GameObject:
   m_ObjectHideFlags: 0
@@ -78156,9 +78171,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73ab5ecbd7931854fbbc468eaefeb812, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CheckpointPhases
-  _door: {fileID: 1504507809}
-  _key: {fileID: 919132147658083725}
-  _paintbucket: {fileID: 1006639216}
+  _door: {fileID: 836680386}
+  _key: {fileID: 662141114}
+  _paintbucket: {fileID: 796252963}
   _spawnPoints:
   - {x: 0, y: 0, z: 0}
   - {x: -10.78, y: 3.776, z: -2.0100002}
