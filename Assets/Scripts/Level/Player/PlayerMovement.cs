@@ -14,7 +14,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PBController pbController;
 
     private InputAction moveAction;
-    private InputAction jumpAction;
     private InputAction lookAction;
 
     [Header("Movement Settings")]
@@ -36,13 +35,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float minStaminaToSprint = 5f;
     [SerializeField] private float exhaustedSpeedMultiplier = 0.6f;
 
-    [Header("Jumping")]
-    [SerializeField] float jumpForce = 2f;
-    [SerializeField] private float jumpAccelerationDuration = 0.4f;
-    [SerializeField] private AnimationCurve jumpAscentCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
-    [SerializeField] private float jumpAscendMultiplier = 1.5f;
-    [SerializeField] private float fallMultiplier = 1.2f;
-
     [Header("Audio")]
     [SerializeField] private AudioClip footstepAudioClip;
     private AudioSource sfxAudioSource;
@@ -53,12 +45,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float walkPitch = 1.0f;
     [SerializeField] private float sprintPitch = 1.2f;
     private float stepTimer = 0f;
-
-    [Header("Coyote Time & Air Control")]
-    [SerializeField] private float coyoteTimeDuration = 0.2f;
-    [SerializeField] private float airStrafeMultiplier = 0.3f;
-    [SerializeField] private float landingDeceleration = 30f;
-    [SerializeField] private float landingRecoveryDuration = 0.1f;
 
     [Header("Room Constraint")]
     [SerializeField] private bool restrictToRoomBounds = true;
@@ -71,17 +57,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 externalLookInput;
 
     private Rigidbody rb;
-    private bool isGrounded = true;
     private bool canMove = true;
-    private bool jumpRequested = false;
-
-    private float jumpStartTime = 0f;
-    private Vector3 jumpStartVelocity = Vector3.zero;
-    private bool isJumpAscending = false;
-
-    private float coyoteTimeRemaining = 0f;
-    private bool wasGroundedLastFrame = true;
-    private float landingRecoveryTimeRemaining = 0f;
 
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -118,7 +94,6 @@ public class PlayerMovement : MonoBehaviour
 
     public bool IsTouchingWalls { get; private set; }
     public bool IsAtRoomCorner { get; private set; }
-    public bool IsGrounded => isGrounded;
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
     public bool IsCurrentlySprinting => isCurrentlySprinting;
@@ -131,7 +106,6 @@ public class PlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody>();
 
         moveAction = playerInput.actions["Movement"];
-        jumpAction = playerInput.actions["Jump"];
         lookAction = playerInput.actions["Look"];
 
         rb.constraints = RigidbodyConstraints.FreezeRotation;
@@ -144,7 +118,6 @@ public class PlayerMovement : MonoBehaviour
         Cursor.visible = false;
 
         bodyYaw = transform.eulerAngles.y;
-        coyoteTimeRemaining = 0f;
         currentStamina = maxStamina;
 
         sfxAudioSource = GameObject.FindWithTag("SFXAudioSource").GetComponent<AudioSource>();
@@ -217,9 +190,6 @@ public class PlayerMovement : MonoBehaviour
 
         cachedMoveDirection = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
 
-        if (jumpAction.triggered && (isGrounded || coyoteTimeRemaining > 0))
-            jumpRequested = true;
-
         HandleFootsteps();
     }
 
@@ -229,11 +199,6 @@ public class PlayerMovement : MonoBehaviour
 
         if (isGamePaused) return;
 
-        UpdateGroundStatus();
-
-        DetectLanding();
-        UpdateCoyoteTime();
-        UpdateLandingRecovery();
         UpdateStamina();
 
         bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
@@ -249,7 +214,7 @@ public class PlayerMovement : MonoBehaviour
             effectiveSpeed *= sprintSpeedMultiplier;
         }
 
-        if (isCurrentlySprinting && !isExhausted && moveInput.magnitude > 0.1f && isGrounded)
+        if (isCurrentlySprinting && !isExhausted && moveInput.magnitude > 0.1f)
         {
             sprintTimer += Time.fixedDeltaTime;
 
@@ -273,60 +238,6 @@ public class PlayerMovement : MonoBehaviour
         ApplyMovementPhysics(combinedVelocity);
     }
 
-    private void UpdateGroundStatus()
-    {
-        if (isJumpAscending)
-            return;
-
-        Vector3 rayOrigin = rb.position + Vector3.up * 0.1f;
-        if (Physics.Raycast(rayOrigin, Vector3.down, groundDetectionDistance, groundLayer))
-        {
-            isGrounded = true;
-        }
-        else
-        {
-            isGrounded = false;
-        }
-    }
-
-    private void UpdateCoyoteTime()
-    {
-        if (isGrounded)
-        {
-            coyoteTimeRemaining = coyoteTimeDuration;
-            wasGroundedLastFrame = true;
-        }
-        else
-        {
-            coyoteTimeRemaining -= Time.fixedDeltaTime;
-            wasGroundedLastFrame = false;
-        }
-    }
-
-    private void UpdateLandingRecovery()
-    {
-        if (landingRecoveryTimeRemaining > 0)
-        {
-            landingRecoveryTimeRemaining -= Time.fixedDeltaTime;
-        }
-    }
-
-    private void DetectLanding()
-    {
-        if (!wasGroundedLastFrame && isGrounded)
-        {
-            landingRecoveryTimeRemaining = landingRecoveryDuration;
-            ApplyLandingDeceleration();
-        }
-        wasGroundedLastFrame = isGrounded;
-    }
-
-    private void ApplyLandingDeceleration()
-    {
-        currentHorizontalVelocity = Vector3.Lerp(currentHorizontalVelocity, Vector3.zero, landingDeceleration * Time.fixedDeltaTime);
-    }
-
-
     private void ApplyAcceleration(ref Vector3 currentVel, Vector3 targetVel)
     {
         Vector3 velocityDifference = targetVel - currentVel;
@@ -335,11 +246,6 @@ public class PlayerMovement : MonoBehaviour
         if (distanceToTarget > 0.01f)
         {
             float acceleration = (distanceToTarget > 0) ? moveAcceleration : moveDeceleration;
-
-            if (!isGrounded)
-            {
-                acceleration *= airStrafeMultiplier;
-            }
 
             float maxDelta = acceleration * Time.fixedDeltaTime;
 
@@ -379,49 +285,7 @@ public class PlayerMovement : MonoBehaviour
 
         rb.MovePosition(newPos);
 
-        if (jumpRequested && (isGrounded || coyoteTimeRemaining > 0))
-        {
-            jumpStartTime = Time.time;
-            jumpStartVelocity = rb.linearVelocity;
-            isJumpAscending = true;
-            isGrounded = false;
-            coyoteTimeRemaining = 0f;
-            jumpRequested = false;
-        }
-
-        if (isJumpAscending)
-        {
-            float jumpElapsedTime = Time.time - jumpStartTime;
-            float jumpProgress = Mathf.Clamp01(jumpElapsedTime / jumpAccelerationDuration);
-
-            float curveValue = jumpAscentCurve.Evaluate(jumpProgress);
-            float targetJumpVelocity = jumpForce * curveValue * jumpAscendMultiplier;
-
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, targetJumpVelocity, rb.linearVelocity.z);
-
-            if (jumpProgress >= 1f)
-            {
-                isJumpAscending = false;
-            }
-        }
-
-        if (rb.linearVelocity.y < 0f)
-            rb.AddForce(Physics.gravity * (fallMultiplier - 1f) * rb.mass);
     }
-
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        foreach (var contact in collision.contacts)
-        {
-            if (Vector3.Dot(contact.normal, Vector3.up) > 0.5f)
-            {
-                isGrounded = true;
-                break;
-            }
-        }
-    }
-
     private void OnTriggerEnter(Collider other)
     {
         var room = other.GetComponent<RoomComponent>();
@@ -533,8 +397,6 @@ public class PlayerMovement : MonoBehaviour
     {
         rb.linearVelocity = Vector3.zero;
         currentHorizontalVelocity = Vector3.zero;
-        isJumpAscending = false;
-        jumpRequested = false;
 
         // 1. FORCE UNLOCK THE PLAYER: 
         // Just in case PBManual or the death sequence permanently locked your constraints or input
@@ -567,7 +429,7 @@ public class PlayerMovement : MonoBehaviour
     private void HandleFootsteps()
     {
         // Only play footsteps if grounded and moving
-        if (isGrounded && currentHorizontalVelocity.magnitude > 0.1f)
+        if (currentHorizontalVelocity.magnitude > 0.1f)
         {
             stepTimer -= Time.deltaTime;
 

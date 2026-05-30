@@ -36,7 +36,7 @@ public class EnemyIntroTrigger : MonoBehaviour
         }
     }
 
-    void Start()
+    private void Update()
     {
         if (hasTriggered)
         {
@@ -75,5 +75,4 @@ public class EnemyIntroTrigger : MonoBehaviour
             enemyIntroModel.SetActive(false);
         }
     }
-
 }

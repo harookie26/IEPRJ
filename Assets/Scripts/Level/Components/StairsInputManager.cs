@@ -101,12 +101,12 @@ public class StairsInputManager : MonoBehaviour
         }
 
         _playerMovement.SetCanMove(false);
-        if(enemy.isEnemyActivated)
+        if (enemy.isEnemyActivated)
         {
             enemy.Freeze();
-        }   
+        }
         yield return StartCoroutine(screenFader.FadeOutSequence(0.25f));
-            
+
         if (postFadeDelaySeconds > 0f)
         {
             yield return new WaitForSecondsRealtime(postFadeDelaySeconds);
