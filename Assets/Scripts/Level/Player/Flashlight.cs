@@ -1,3 +1,4 @@
+using Game.ObjectTypes;
 using TMPro; // Add this for the battery text
 using UnityEngine;
 using static EventNames.GameStateEvents;
@@ -5,6 +6,7 @@ using static EventNames.GameStateEvents;
 public class Flashlight : MonoBehaviour
 {
     [Header("References")]
+    [SerializeField] private GameObject flashlightObject; // The actual flashlight model
     [SerializeField] private GameObject flashlightBeam;
     [SerializeField] private TextMeshProUGUI batteryText; // Assign a UI Text element here
     [SerializeField] private Transform camTransform; // Assign the main camera or flashlight tip
@@ -21,6 +23,10 @@ public class Flashlight : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private AudioClip flashlightAudioClip;
     private AudioSource sfxAudioSource;
+
+    private PlayerCollectibleManager collectibles;
+
+    private bool hasCollectedFlashlight = false;
 
     private bool canToggle = true;
 
@@ -45,6 +51,8 @@ public class Flashlight : MonoBehaviour
         UpdateBeamState();
 
         sfxAudioSource = GetComponent<AudioSource>();
+
+        collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
 
         UpdateUI();
     }
@@ -84,7 +92,14 @@ public class Flashlight : MonoBehaviour
 
     private void HandleInput()
     {
-        if (Input.GetMouseButtonDown(0) && currentBattery > 0)
+        if(collectibles.HasCollected("Flashlight") && !hasCollectedFlashlight)
+        {
+            hasCollectedFlashlight = true;
+            batteryText.gameObject.SetActive(true);
+            flashlightObject.SetActive(true);
+        }
+
+        if (Input.GetMouseButtonDown(0) && currentBattery > 0 && collectibles.HasCollected("Flashlight"))
         {
             if (flashlightAudioClip != null && sfxAudioSource != null)
             {

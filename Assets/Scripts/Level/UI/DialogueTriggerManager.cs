@@ -9,19 +9,22 @@ public class DialogueTriggerManager : MonoBehaviour
     public static DialogueTriggerManager Instance { get; private set; }
 
     [Header("Intro Dialogue")]
-    [SerializeField] private DialogueEntry introDialogue1;
-    [SerializeField] private DialogueEntry introDialogue2;
-    [SerializeField] private DialogueEntry introDialogue3;
+    [SerializeField] private List<DialogueEntry> introDialogues;
 
     [Header("Locked Door Dialogue")]
-    [SerializeField] private DialogueEntry lockedDoorDialogue;
+    [SerializeField] private List<DialogueEntry> lockedDoorDialogues;
 
     [Header("Key Found Dialogue")]
     [SerializeField] private DialogueEntry keyFoundDialogue;
 
     [Header("Enemy Intro Dialogue")]
-    [SerializeField] private DialogueEntry EnemyIntro1Dialogue;
-    [SerializeField] private DialogueEntry EnemyIntro2Dialogue;
+    [SerializeField] private List<DialogueEntry> EnemyIntroDialogue;
+
+    [Header("Find Flashlight Dialogue")]
+    [SerializeField] private DialogueEntry findFlashlightDialogue;
+
+    [Header("Flashlight Dialogue")]
+    [SerializeField] private List<DialogueEntry> flashlightDialogues;
 
     [Header("Paintbucket Dialogue")]
     [SerializeField] private DialogueEntry paintbucketDialogue;
@@ -45,6 +48,8 @@ public class DialogueTriggerManager : MonoBehaviour
 
     private List<int> triggeredDialogueIDs;
 
+    private bool ishintOpen = false;
+
 
     private void Awake()
     {
@@ -65,7 +70,7 @@ public class DialogueTriggerManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
-            DialogueManager.Instance.Display(introDialogue1);
+            //DialogueManager.Instance.Display(introDialogue1);
         }
 
         if (Input.GetKeyDown(KeyCode.Y))
@@ -82,6 +87,7 @@ public class DialogueTriggerManager : MonoBehaviour
 
         if (triggeredDialogueIDs.Contains(1) || triggeredDialogueIDs.Contains(2) || triggeredDialogueIDs.Contains(3))
         {
+            HintManager.Instance.OpenHint();
             return;
         }
         else
@@ -90,10 +96,19 @@ public class DialogueTriggerManager : MonoBehaviour
             triggeredDialogueIDs.Add(2);
             triggeredDialogueIDs.Add(3);
 
-            DialogueManager.Instance.Display(introDialogue1);
-            DialogueManager.Instance.Display(introDialogue2);
-            DialogueManager.Instance.Display(introDialogue3);
+            foreach(var dialogue in introDialogues)
+            {
+                DialogueManager.Instance.Display(dialogue);
+            }
+
+            float totalDuration = introDialogues[0].displayDuration + introDialogues[1].displayDuration + introDialogues[2].displayDuration;
         }
+    }
+
+    private IEnumerator OpenHintAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        HintManager.Instance.OpenHint();
     }
 
     public void TriggerKeyFoundDialogue()
@@ -104,6 +119,13 @@ public class DialogueTriggerManager : MonoBehaviour
 
         triggeredDialogueIDs.Add(4);
         DialogueManager.Instance.Display(keyFoundDialogue);
+    }
+
+    public void TriggerFindFlashlightFirstDialogue()
+    {
+        if (SaveCourier.IsLoadingSave) return;
+
+        DialogueManager.Instance.Display(findFlashlightDialogue);
     }
 
     public void TriggerChannelDialogue()
@@ -187,12 +209,57 @@ public class DialogueTriggerManager : MonoBehaviour
             triggeredDialogueIDs.Add(15);
             triggeredDialogueIDs.Add(16);
             triggeredDialogueIDs.Add(17);
-            DialogueManager.Instance.Display(EnemyIntro1Dialogue);
-            DialogueManager.Instance.Display(EnemyIntro2Dialogue);
+            foreach (var dialogue in EnemyIntroDialogue)
+            {
+                DialogueManager.Instance.Display(dialogue);
+            }
+        }
+
+        if(PlayerCollectibleManager.Instance.HasCollected("Flashlight"))
+        {
+            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT3_START);
+            DialogueTriggerManager.Instance.TriggerPaintbucketDialogue();
+        }
+        else
+        {
+            HintManager.Instance.SetHintFindFlashlight();
+        }
+
+    }
+
+    public void TriggerPaintbucketDialogue()
+    {
+        if (SaveCourier.IsLoadingSave) return;
+
+        if (triggeredDialogueIDs.Contains(18))
+        {
+            return;
+        }       
+        else
+        {
+            triggeredDialogueIDs.Add(18);
             DialogueManager.Instance.Display(paintbucketDialogue);
         }
 
-        
+    }
+
+    public void TriggerFlashlightDialogue()
+    {
+        if (SaveCourier.IsLoadingSave) return;
+
+        if (triggeredDialogueIDs.Contains(19))
+        {
+            return;
+        }
+        else
+        {
+            triggeredDialogueIDs.Add(19);
+            foreach (var dialogue in flashlightDialogues)
+            {
+                DialogueManager.Instance.Display(dialogue);
+            }
+        }
+
     }
 
     public void TriggerLockedDoorDialogue()
@@ -201,9 +268,18 @@ public class DialogueTriggerManager : MonoBehaviour
 
         if (lockedDoorDialogueCooldown) return;
 
-        DialogueManager.Instance.Display(lockedDoorDialogue);
+        foreach (var dialogue in lockedDoorDialogues)
+        {
+            DialogueManager.Instance.Display(dialogue);
+        }
 
         StartCoroutine(LockedDoorDialogueTimer());
+
+        if(ishintOpen == false)
+        {
+            StartCoroutine(OpenHintAfterDelay(20));
+            ishintOpen = true;
+        }
     }
 
     private IEnumerator LockedDoorDialogueTimer()
@@ -211,6 +287,14 @@ public class DialogueTriggerManager : MonoBehaviour
         lockedDoorDialogueCooldown = true;
         yield return new WaitForSeconds(5f);
         lockedDoorDialogueCooldown = false;
+    }
+
+    public void TriggerInaccessibleAreaDialogue()
+    {
+        if (SaveCourier.IsLoadingSave) return;
+
+        DialogueManager.Instance.Display("Georgie", "I think we should explore this area later."
+            , 0.25f, 3f, 0.25f);
     }
 
     public DialogueSaveData GetSaveData()

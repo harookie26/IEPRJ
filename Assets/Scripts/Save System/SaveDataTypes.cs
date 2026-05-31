@@ -1,13 +1,9 @@
 // Inside one file: SaveDataTypes.cs
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[Serializable]
-public class GameSaveData { /* ... */ }
-
 [System.Serializable]
-public class PlayerSaveData
+public class GameSaveData
 {
     // Movement & Look Rotation
     public Vector3 position;
@@ -38,6 +34,10 @@ public class PlayerSaveData
     public PaintbrushSaveData paintbrush;
 
     public PaintingRandomizerSaveData randomizedPaintings;
+
+    public List<SpatialSFXSaveData> spatialSFXStates;
+
+    public List<SpatialTriggerSaveData> spatialTriggerStates;
 }
 
 [System.Serializable]
@@ -98,4 +98,18 @@ public class PaintingRandomizerSaveData
 {
     // Because names are unique now, this will never fail!
     public List<string> savedPaintingNames;
+}
+
+[System.Serializable]
+public class SpatialSFXSaveData
+{
+    public string id;
+    public bool isActive;
+}
+
+[System.Serializable]
+public class SpatialTriggerSaveData
+{
+    public string id;
+    public bool isActive;
 }

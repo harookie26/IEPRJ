@@ -26,6 +26,8 @@ public class StairsComponent : MonoBehaviour, IStair
 
     private bool _playerInZone = false;
 
+    public bool isInaccesibleOnGameStart = false;
+
     public static StairsComponent CurrentDoor;
     public int Id => GetInstanceID();
     public IRoom RoomA => roomA;
@@ -55,8 +57,15 @@ public class StairsComponent : MonoBehaviour, IStair
 
     }
 
-    private void OnDestroy()
+    private void Update()
     {
+        if (isInaccesibleOnGameStart)
+        {
+            if (PlayerCollectibleManager.Instance.HasCollected("Paintbucket"))
+            {
+                isInaccesibleOnGameStart = false;
+            }
+        }
     }
 
     void OnTriggerEnter(Collider other)
@@ -132,6 +141,12 @@ public class StairsComponent : MonoBehaviour, IStair
 
     public void MoveToLinkedDoor()
     {
+        if(isInaccesibleOnGameStart)
+        {
+            DialogueTriggerManager.Instance.TriggerInaccessibleAreaDialogue();
+            return;
+        }
+
         if (partnerDoor == null)
         {
             Debug.LogError($"[Stairs:{name}] Partner door not assigned. Teleport failed.");
