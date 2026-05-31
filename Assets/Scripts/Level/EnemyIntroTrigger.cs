@@ -14,6 +14,7 @@ public class EnemyIntroTrigger : MonoBehaviour, ISaveable
 
     [SerializeField] private GameObject enemyIntroModel;
     [SerializeField] private AudioClip lightsOutSFX;
+    [SerializeField] private EnemyStateMachine enemyStateMachine;
 
     public bool hasTriggered = false;
     public string SaveKey => uniqueID;
@@ -33,7 +34,7 @@ public class EnemyIntroTrigger : MonoBehaviour, ISaveable
         {
 
             sfxAudioSource = audioObject1.GetComponent<AudioSource>();
-            sfxAudioSource.clip = lightsOutSFX;
+            //sfxAudioSource.clip = lightsOutSFX;
         }
         else
         {
@@ -64,7 +65,9 @@ public class EnemyIntroTrigger : MonoBehaviour, ISaveable
             hasTriggered = true;
             DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
             enemyIntroModel.SetActive(false);
-            sfxAudioSource.Play();
+            sfxAudioSource.PlayOneShot(lightsOutSFX);
+
+            enemyStateMachine.scriptedEncounterCheck();
         }
     }
 
