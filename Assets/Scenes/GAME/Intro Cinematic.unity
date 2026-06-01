@@ -16938,6 +16938,53 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &838434306
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 838434308}
+  - component: {fileID: 838434307}
+  m_Layer: 0
+  m_Name: GameFocusHandler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &838434307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 838434306}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04ab9e395005b5148bb7b825c6ee00a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameFocusHandler
+  playerInput: {fileID: 0}
+  gameplayActionMap: Player Movement
+  lockCursorDuringGameplay: 1
+--- !u!4 &838434308
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 838434306}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 11.15165, y: 5.41953, z: -17.65785}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!43 &838912227
 Mesh:
   m_ObjectHideFlags: 0
@@ -37305,7 +37352,7 @@ PrefabInstance:
       objectReference: {fileID: 962956306}
     - target: {fileID: 6786454071807742201, guid: c666ff1497b4b1b41b95f25d9dd98d7a, type: 3}
       propertyPath: buildVersion
-      value: Artist_Realm Studios_Sprint 1_v1.8
+      value: Artist_Realm Studios_Sprint 2_v2.1
       objectReference: {fileID: 0}
     - target: {fileID: 6786454071807742201, guid: c666ff1497b4b1b41b95f25d9dd98d7a, type: 3}
       propertyPath: buildVersionText
@@ -44912,3 +44959,4 @@ SceneRoots:
   - {fileID: 1839490657}
   - {fileID: 1865121245}
   - {fileID: 633268631}
+  - {fileID: 838434308}

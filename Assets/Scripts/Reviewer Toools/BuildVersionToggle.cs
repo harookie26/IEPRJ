@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class BuildVersionToggle : MonoBehaviour
 {
-    [SerializeField] private string buildVersion = "Artist Realm Studio Sprint 1 v1.7";
+    [SerializeField] private string buildVersion = "Artist Realm Studio Sprint 2 v2.1";
     [SerializeField] private TextMeshProUGUI buildVersionText;
 
     private bool isVisible = true;
