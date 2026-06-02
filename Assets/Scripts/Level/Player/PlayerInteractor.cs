@@ -427,6 +427,14 @@ public class PlayerInteractor : MonoBehaviour
         return false;
     }
 
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (hasFocus && EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
     private void OnDrawGizmos()
     {
         if (rayOrigin == null)
