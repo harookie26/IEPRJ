@@ -14,7 +14,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private PBController pbController;
 
     private InputAction moveAction;
-    private InputAction jumpAction;
     private InputAction lookAction;
 
     [Header("Movement Settings")]
@@ -36,13 +35,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float minStaminaToSprint = 5f;
     [SerializeField] private float exhaustedSpeedMultiplier = 0.6f;
 
-    [Header("Jumping")]
-    [SerializeField] float jumpForce = 2f;
-    [SerializeField] private float jumpAccelerationDuration = 0.4f;
-    [SerializeField] private AnimationCurve jumpAscentCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
-    [SerializeField] private float jumpAscendMultiplier = 1.5f;
-    [SerializeField] private float fallMultiplier = 1.2f;
-
     [Header("Audio")]
     [SerializeField] private AudioClip footstepAudioClip;
     private AudioSource sfxAudioSource;
@@ -54,12 +46,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float sprintPitch = 1.2f;
     private float stepTimer = 0f;
 
-    [Header("Coyote Time & Air Control")]
-    [SerializeField] private float coyoteTimeDuration = 0.2f;
-    [SerializeField] private float airStrafeMultiplier = 0.3f;
-    [SerializeField] private float landingDeceleration = 30f;
-    [SerializeField] private float landingRecoveryDuration = 0.1f;
-
     [Header("Room Constraint")]
     [SerializeField] private bool restrictToRoomBounds = true;
     [SerializeField] private bool clampYInsideRoomVolume = false;
@@ -70,18 +56,20 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 externalMoveInput;
     private Vector2 externalLookInput;
 
+    [Header("Anti Clipping")]
+    [SerializeField] private CapsuleCollider playerCapsule;
+
+    [SerializeField] private LayerMask wallMask;
+    [SerializeField] private LayerMask groundMask;
+
+    [SerializeField] private float antiClipSkin = 0.04f;
+    [SerializeField] private bool preventCornerLift = true;
+    [SerializeField] private float maxAllowedCornerLift = 0.03f;
+    private Vector3 lastValidPosition;
+    private readonly Collider[] overlapResults = new Collider[16];
+
     private Rigidbody rb;
-    private bool isGrounded = true;
     private bool canMove = true;
-    private bool jumpRequested = false;
-
-    private float jumpStartTime = 0f;
-    private Vector3 jumpStartVelocity = Vector3.zero;
-    private bool isJumpAscending = false;
-
-    private float coyoteTimeRemaining = 0f;
-    private bool wasGroundedLastFrame = true;
-    private float landingRecoveryTimeRemaining = 0f;
 
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -116,9 +104,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float groundDetectionDistance = 0.1f;
     [SerializeField] private LayerMask groundLayer = -1;
 
+    private float actualHorizontalSpeed;
+
     public bool IsTouchingWalls { get; private set; }
     public bool IsAtRoomCorner { get; private set; }
-    public bool IsGrounded => isGrounded;
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
     public bool IsCurrentlySprinting => isCurrentlySprinting;
@@ -131,7 +120,6 @@ public class PlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody>();
 
         moveAction = playerInput.actions["Movement"];
-        jumpAction = playerInput.actions["Jump"];
         lookAction = playerInput.actions["Look"];
 
         rb.constraints = RigidbodyConstraints.FreezeRotation;
@@ -144,16 +132,25 @@ public class PlayerMovement : MonoBehaviour
         Cursor.visible = false;
 
         bodyYaw = transform.eulerAngles.y;
-        coyoteTimeRemaining = 0f;
         currentStamina = maxStamina;
 
         sfxAudioSource = GameObject.FindWithTag("SFXAudioSource").GetComponent<AudioSource>();
         if (sfxAudioSource == null)
             sfxAudioSource = gameObject.AddComponent<AudioSource>();
+
+        if (playerCapsule == null)
+        {
+            playerCapsule = GetComponent<CapsuleCollider>();
+        }
+
+        lastValidPosition = rb.position;
+        //rb.maxDepenetrationVelocity = 1.0f;
     }
 
     private void Start()
     {
+        Debug.Log("Current Action Map: " + playerInput.currentActionMap?.name);
+
         ResolveCurrentRoomAtPosition();
 
         // Move event subscriptions here so they aren't lost during temporary deactivations
@@ -217,9 +214,6 @@ public class PlayerMovement : MonoBehaviour
 
         cachedMoveDirection = (transform.forward * moveInput.y + transform.right * moveInput.x).normalized;
 
-        if (jumpAction.triggered && (isGrounded || coyoteTimeRemaining > 0))
-            jumpRequested = true;
-
         HandleFootsteps();
     }
 
@@ -229,11 +223,6 @@ public class PlayerMovement : MonoBehaviour
 
         if (isGamePaused) return;
 
-        UpdateGroundStatus();
-
-        DetectLanding();
-        UpdateCoyoteTime();
-        UpdateLandingRecovery();
         UpdateStamina();
 
         bool roomCorrupted = currentRoom != null && currentRoom.isCorrupted;
@@ -249,7 +238,7 @@ public class PlayerMovement : MonoBehaviour
             effectiveSpeed *= sprintSpeedMultiplier;
         }
 
-        if (isCurrentlySprinting && !isExhausted && moveInput.magnitude > 0.1f && isGrounded)
+        if (isCurrentlySprinting && !isExhausted && actualHorizontalSpeed > 0.1f)
         {
             sprintTimer += Time.fixedDeltaTime;
 
@@ -271,61 +260,8 @@ public class PlayerMovement : MonoBehaviour
         Vector3 combinedVelocity = new Vector3(currentHorizontalVelocity.x, rb.linearVelocity.y, currentHorizontalVelocity.z);
 
         ApplyMovementPhysics(combinedVelocity);
+        ResolveWallPenetration();
     }
-
-    private void UpdateGroundStatus()
-    {
-        if (isJumpAscending)
-            return;
-
-        Vector3 rayOrigin = rb.position + Vector3.up * 0.1f;
-        if (Physics.Raycast(rayOrigin, Vector3.down, groundDetectionDistance, groundLayer))
-        {
-            isGrounded = true;
-        }
-        else
-        {
-            isGrounded = false;
-        }
-    }
-
-    private void UpdateCoyoteTime()
-    {
-        if (isGrounded)
-        {
-            coyoteTimeRemaining = coyoteTimeDuration;
-            wasGroundedLastFrame = true;
-        }
-        else
-        {
-            coyoteTimeRemaining -= Time.fixedDeltaTime;
-            wasGroundedLastFrame = false;
-        }
-    }
-
-    private void UpdateLandingRecovery()
-    {
-        if (landingRecoveryTimeRemaining > 0)
-        {
-            landingRecoveryTimeRemaining -= Time.fixedDeltaTime;
-        }
-    }
-
-    private void DetectLanding()
-    {
-        if (!wasGroundedLastFrame && isGrounded)
-        {
-            landingRecoveryTimeRemaining = landingRecoveryDuration;
-            ApplyLandingDeceleration();
-        }
-        wasGroundedLastFrame = isGrounded;
-    }
-
-    private void ApplyLandingDeceleration()
-    {
-        currentHorizontalVelocity = Vector3.Lerp(currentHorizontalVelocity, Vector3.zero, landingDeceleration * Time.fixedDeltaTime);
-    }
-
 
     private void ApplyAcceleration(ref Vector3 currentVel, Vector3 targetVel)
     {
@@ -335,11 +271,6 @@ public class PlayerMovement : MonoBehaviour
         if (distanceToTarget > 0.01f)
         {
             float acceleration = (distanceToTarget > 0) ? moveAcceleration : moveDeceleration;
-
-            if (!isGrounded)
-            {
-                acceleration *= airStrafeMultiplier;
-            }
 
             float maxDelta = acceleration * Time.fixedDeltaTime;
 
@@ -353,75 +284,77 @@ public class PlayerMovement : MonoBehaviour
 
     private void ApplyMovementPhysics(Vector3 velocityWithGravity)
     {
-        Vector3 newPos = rb.position + velocityWithGravity * Time.fixedDeltaTime;
+        Vector3 oldPosition = rb.position;
 
-        bool shouldClamp = restrictToRoomBounds && currentRoom != null && doorwayOverlapCount <= 0;
+        bool wasGrounded = IsGrounded();
 
         IsTouchingWalls = false;
         IsAtRoomCorner = false;
 
+        Vector3 desiredDelta =
+            velocityWithGravity * Time.fixedDeltaTime;
+
+        desiredDelta =
+            ResolveWallSlide(oldPosition, desiredDelta);
+
+        Vector3 newPos =
+            oldPosition + desiredDelta;
+
+        bool shouldClamp =
+            restrictToRoomBounds &&
+            currentRoom != null &&
+            doorwayOverlapCount <= 0;
+
         if (shouldClamp)
         {
-            Vector3 clamped = ClampPositionToRoom(newPos, currentRoom.Bounds, clampYInsideRoomVolume);
+            Vector3 clamped =
+                ClampPositionToRoom(
+                    newPos,
+                    currentRoom.Bounds,
+                    clampYInsideRoomVolume
+                );
 
-            bool xClamped = !Mathf.Approximately(newPos.x, clamped.x);
-            bool zClamped = !Mathf.Approximately(newPos.z, clamped.z);
-            IsTouchingWalls = xClamped || zClamped;
-            IsAtRoomCorner = xClamped && zClamped;
+            bool xClamped =
+                !Mathf.Approximately(newPos.x, clamped.x);
+
+            bool zClamped =
+                !Mathf.Approximately(newPos.z, clamped.z);
+
+            IsTouchingWalls =
+                IsTouchingWalls || xClamped || zClamped;
+
+            IsAtRoomCorner =
+                xClamped && zClamped;
 
             if (xClamped)
                 currentHorizontalVelocity.x = 0f;
+
             if (zClamped)
                 currentHorizontalVelocity.z = 0f;
 
             newPos = clamped;
         }
 
+        // If grounded and touching a wall/corner, do not allow forced upward motion.
+        if (preventCornerLift && wasGrounded && IsTouchingWalls && doorwayOverlapCount <= 0)
+        {
+            float maxY =
+                oldPosition.y + maxAllowedCornerLift;
+
+            if (newPos.y > maxY)
+            {
+                newPos.y = oldPosition.y;
+
+                rb.linearVelocity = new Vector3(
+                    rb.linearVelocity.x,
+                    Mathf.Min(0f, rb.linearVelocity.y),
+                    rb.linearVelocity.z
+                );
+            }
+        }
+
         rb.MovePosition(newPos);
-
-        if (jumpRequested && (isGrounded || coyoteTimeRemaining > 0))
-        {
-            jumpStartTime = Time.time;
-            jumpStartVelocity = rb.linearVelocity;
-            isJumpAscending = true;
-            isGrounded = false;
-            coyoteTimeRemaining = 0f;
-            jumpRequested = false;
-        }
-
-        if (isJumpAscending)
-        {
-            float jumpElapsedTime = Time.time - jumpStartTime;
-            float jumpProgress = Mathf.Clamp01(jumpElapsedTime / jumpAccelerationDuration);
-
-            float curveValue = jumpAscentCurve.Evaluate(jumpProgress);
-            float targetJumpVelocity = jumpForce * curveValue * jumpAscendMultiplier;
-
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, targetJumpVelocity, rb.linearVelocity.z);
-
-            if (jumpProgress >= 1f)
-            {
-                isJumpAscending = false;
-            }
-        }
-
-        if (rb.linearVelocity.y < 0f)
-            rb.AddForce(Physics.gravity * (fallMultiplier - 1f) * rb.mass);
     }
-
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        foreach (var contact in collision.contacts)
-        {
-            if (Vector3.Dot(contact.normal, Vector3.up) > 0.5f)
-            {
-                isGrounded = true;
-                break;
-            }
-        }
-    }
-
     private void OnTriggerEnter(Collider other)
     {
         var room = other.GetComponent<RoomComponent>();
@@ -533,8 +466,6 @@ public class PlayerMovement : MonoBehaviour
     {
         rb.linearVelocity = Vector3.zero;
         currentHorizontalVelocity = Vector3.zero;
-        isJumpAscending = false;
-        jumpRequested = false;
 
         // 1. FORCE UNLOCK THE PLAYER: 
         // Just in case PBManual or the death sequence permanently locked your constraints or input
@@ -567,7 +498,7 @@ public class PlayerMovement : MonoBehaviour
     private void HandleFootsteps()
     {
         // Only play footsteps if grounded and moving
-        if (isGrounded && currentHorizontalVelocity.magnitude > 0.1f)
+        if (actualHorizontalSpeed > 0.1f)
         {
             stepTimer -= Time.deltaTime;
 
@@ -650,5 +581,331 @@ public class PlayerMovement : MonoBehaviour
         );
 
         bodyYaw = transform.eulerAngles.y;
+    }
+
+    // =========================
+    // DEFENSIVE MOVEMENT STACK
+    // =========================
+
+    private void GetCapsuleWorldPoints(
+    Vector3 worldPosition,
+    out Vector3 pointA,
+    out Vector3 pointB,
+    out float radius)
+    {
+        Vector3 scale = transform.lossyScale;
+
+        Vector3 center =
+            worldPosition +
+            transform.rotation * Vector3.Scale(playerCapsule.center, scale);
+
+        Vector3 axis;
+        float heightScale;
+        float radiusScale;
+
+        switch (playerCapsule.direction)
+        {
+            case 0:
+                axis = transform.right;
+                heightScale = Mathf.Abs(scale.x);
+                radiusScale = Mathf.Max(Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+                break;
+
+            case 2:
+                axis = transform.forward;
+                heightScale = Mathf.Abs(scale.z);
+                radiusScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
+                break;
+
+            default:
+                axis = transform.up;
+                heightScale = Mathf.Abs(scale.y);
+                radiusScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+                break;
+        }
+
+        radius = playerCapsule.radius * radiusScale;
+
+        float height = Mathf.Max(
+            playerCapsule.height * heightScale,
+            radius * 2f
+        );
+
+        float halfSegmentLength = Mathf.Max(0f, (height * 0.5f) - radius);
+
+        pointA = center + axis * halfSegmentLength;
+        pointB = center - axis * halfSegmentLength;
+    }
+
+    private Vector3 PreventClippingWithCapsuleCast(Vector3 startPosition, Vector3 desiredDelta)
+    {
+        Vector3 horizontalDelta = new Vector3(desiredDelta.x, 0f, desiredDelta.z);
+
+        float distance = horizontalDelta.magnitude;
+
+        if (distance <= 0.0001f)
+            return desiredDelta;
+
+        Vector3 direction = horizontalDelta / distance;
+
+        GetCapsuleWorldPoints(
+            startPosition,
+            out Vector3 pointA,
+            out Vector3 pointB,
+            out float radius
+        );
+
+        if (Physics.CapsuleCast(
+            pointA,
+            pointB,
+            radius,
+            direction,
+            out RaycastHit hit,
+            distance + antiClipSkin,
+            wallMask,
+            QueryTriggerInteraction.Ignore))
+        {
+            float safeDistance = Mathf.Max(hit.distance - antiClipSkin, 0f);
+
+            desiredDelta.x = direction.x * safeDistance;
+            desiredDelta.z = direction.z * safeDistance;
+
+            IsTouchingWalls = true;
+
+            currentHorizontalVelocity.x = 0f;
+            currentHorizontalVelocity.z = 0f;
+        }
+
+        return desiredDelta;
+    }
+
+    private bool IsPositionSafe(Vector3 position)
+    {
+        GetCapsuleWorldPoints(
+            position,
+            out Vector3 pointA,
+            out Vector3 pointB,
+            out float radius
+        );
+
+        int hitCount = Physics.OverlapCapsuleNonAlloc(
+            pointA,
+            pointB,
+            radius,
+            overlapResults,
+            wallMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider hit = overlapResults[i];
+
+            if (hit == null)
+                continue;
+
+            if (hit.transform.IsChildOf(transform))
+                continue;
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private void UpdateLastValidPositionOrRecover(Vector3 candidatePosition)
+    {
+        if (IsPositionSafe(candidatePosition))
+        {
+            lastValidPosition = candidatePosition;
+            return;
+        }
+
+        rb.position = lastValidPosition;
+        transform.position = lastValidPosition;
+
+        rb.linearVelocity = Vector3.zero;
+        currentHorizontalVelocity = Vector3.zero;
+
+        Debug.LogWarning("[AntiClip] Player was inside geometry. Snapped back to last valid position.");
+    }
+
+    private Vector3 ResolveWallSlide(Vector3 startPosition, Vector3 desiredDelta)
+    {
+        Vector3 originalDelta = desiredDelta;
+
+        Vector3 horizontalDelta = new Vector3(
+            desiredDelta.x,
+            0f,
+            desiredDelta.z
+        );
+
+        float distance = horizontalDelta.magnitude;
+
+        if (distance <= 0.0001f)
+            return desiredDelta;
+
+        Vector3 direction = horizontalDelta / distance;
+
+        GetCapsuleWorldPoints(
+            startPosition,
+            out Vector3 pointA,
+            out Vector3 pointB,
+            out float radius
+        );
+
+        radius = Mathf.Max(0.01f, radius - antiClipSkin);
+
+        if (Physics.CapsuleCast(
+            pointA,
+            pointB,
+            radius,
+            direction,
+            out RaycastHit hit,
+            distance + antiClipSkin,
+            wallMask,
+            QueryTriggerInteraction.Ignore))
+        {
+            Vector3 wallNormal = hit.normal;
+
+            // wall response must be horizontal.
+            wallNormal.y = 0f;
+
+            if (wallNormal.sqrMagnitude < 0.001f)
+                wallNormal = -direction;
+
+            wallNormal.Normalize();
+
+            float safeDistance =
+                Mathf.Max(hit.distance - antiClipSkin, 0f);
+
+            Vector3 safeDelta =
+                direction * safeDistance;
+
+            Vector3 remainingDelta =
+                horizontalDelta - safeDelta;
+
+            Vector3 slideDelta =
+                Vector3.ProjectOnPlane(remainingDelta, wallNormal);
+
+            // never allow wall slide to generate vertical motion.
+            slideDelta.y = 0f;
+
+            if (slideDelta.magnitude < 0.01f)
+                slideDelta = Vector3.zero;
+
+            Vector3 resolvedHorizontalDelta =
+                safeDelta + slideDelta;
+
+            desiredDelta.x = resolvedHorizontalDelta.x;
+            desiredDelta.z = resolvedHorizontalDelta.z;
+
+            desiredDelta.y = originalDelta.y;
+
+            currentHorizontalVelocity = new Vector3(
+                resolvedHorizontalDelta.x,
+                0f,
+                resolvedHorizontalDelta.z
+            ) / Time.fixedDeltaTime;
+
+            IsTouchingWalls = true;
+        }
+
+        return desiredDelta;
+    }
+
+    private bool IsGrounded()
+    {
+        if (playerCapsule == null)
+            return false;
+
+        Vector3 origin = rb.position + Vector3.up * 0.1f;
+
+        float sphereRadius =
+            Mathf.Max(0.05f, playerCapsule.radius * 0.85f);
+
+        float castDistance =
+            groundDetectionDistance + 0.2f;
+
+        return Physics.SphereCast(
+            origin,
+            sphereRadius,
+            Vector3.down,
+            out _,
+            castDistance,
+            groundMask,
+            QueryTriggerInteraction.Ignore
+        );
+    }
+
+    private bool ResolveWallPenetration()
+    {
+        GetCapsuleWorldPoints(
+            rb.position,
+            out Vector3 pointA,
+            out Vector3 pointB,
+            out float radius
+        );
+
+        int hitCount = Physics.OverlapCapsuleNonAlloc(
+            pointA,
+            pointB,
+            radius - antiClipSkin,
+            overlapResults,
+            wallMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        Vector3 totalCorrection = Vector3.zero;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider other = overlapResults[i];
+
+            if (other == null)
+                continue;
+
+            if (other.transform.IsChildOf(transform))
+                continue;
+
+            bool overlapped = Physics.ComputePenetration(
+                playerCapsule,
+                transform.position,
+                transform.rotation,
+                other,
+                other.transform.position,
+                other.transform.rotation,
+                out Vector3 direction,
+                out float distance
+            );
+
+            if (!overlapped)
+                continue;
+
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude < 0.001f)
+                continue;
+
+            direction.Normalize();
+
+            totalCorrection += direction * distance;
+        }
+
+        if (totalCorrection.sqrMagnitude > 0.0001f)
+        {
+            Vector3 correctedPosition = rb.position + totalCorrection;
+
+            // Do not allow wall depenetration to lift the player.
+            correctedPosition.y = rb.position.y;
+
+            rb.MovePosition(correctedPosition);
+
+            currentHorizontalVelocity = Vector3.zero;
+
+            return true;
+        }
+
+        return false;
     }
 }

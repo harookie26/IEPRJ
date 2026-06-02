@@ -47,6 +47,7 @@ public class EnemyStateMachine : MonoBehaviour
     private bool enemyCaught = false;
 
     private bool configWarned = false;
+    private int scriptedEncounters = 0;
 
     private void WarnMissingConfig()
     {
@@ -426,16 +427,16 @@ public class EnemyStateMachine : MonoBehaviour
         int tierIndex = Mathf.Clamp(corruptedPaintingsChanneled, 0, stunDurationTiers.Length - 1);
         currentStunDuration = stunDurationTiers[tierIndex];
 
-        if (corruptedPaintingsChanneled > 0 && !isEnemyActivated)
-        {
-            isEnemyActivated = true;
-            AudioSource source = this.gameObject.GetComponent<AudioSource>();
-            source.Play();
-            if (navMeshAgent != null)
-                navMeshAgent.isStopped = false;
+        //if (corruptedPaintingsChanneled > 2 && !isEnemyActivated)
+        //{
+        //    isEnemyActivated = true;
+        //    AudioSource source = this.gameObject.GetComponent<AudioSource>();
+        //    source.Play();
+        //    if (navMeshAgent != null)
+        //        navMeshAgent.isStopped = false;
 
-            ChangeState(RoamState); // only start moving now
-        }
+        //    ChangeState(RoamState); // only start moving now
+        //}
 
         if (corruptedPaintingsChanneled > 1)
         {
@@ -580,5 +581,22 @@ public class EnemyStateMachine : MonoBehaviour
         if (navMeshAgent != null)
             navMeshAgent.isStopped = false;
         ChangeState(RoamState);
+    }
+
+    public void scriptedEncounterCheck()
+    {
+        scriptedEncounters++;
+
+        if (scriptedEncounters == 3)
+        {
+            isEnemyActivated = true;
+            AudioSource source = this.gameObject.GetComponent<AudioSource>();
+            source.Play();
+            if (navMeshAgent != null)
+                navMeshAgent.isStopped = false;
+
+            ChangeState(RoamState); // only start moving now
+        }
+
     }
 }

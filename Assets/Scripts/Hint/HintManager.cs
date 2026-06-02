@@ -117,14 +117,14 @@ public class HintManager : MonoBehaviour
         }
     }
 
-    private void SetHint3()
+    public void SetHint3()
     {
         OpenHint();
         triggeredHintIDs.Add(3);
         hintText.text = "Collect the Paintbucket";
     }
 
-    private void SetHintCorruptedPaintingTutorial()
+    public void SetHintCorruptedPaintingTutorial()
     {
         OpenHint();
         triggeredHintIDs.Add(4);

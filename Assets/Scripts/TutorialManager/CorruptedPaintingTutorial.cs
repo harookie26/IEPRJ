@@ -31,7 +31,7 @@ public class CorruptedPaintingTutorial : MonoBehaviour
 
     public void ApplyCheckpointPhase(int phase)
     {
-        bool completed = phase >= 4;
+        bool completed = phase >= 5;
 
         if (completed)
         {

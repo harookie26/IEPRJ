@@ -130,18 +130,12 @@ public class StairsComponent : MonoBehaviour, IStair
             return false;
         }
 
-        if (!_playerMovement.IsGrounded)
-        {
-            Debug.Log($"[Stairs:{name}] Player NOT grounded (IsGrounded={_playerMovement.IsGrounded})");
-            return false;
-        }
-
         return true;
     }
 
     public void MoveToLinkedDoor()
     {
-        if(isInaccesibleOnGameStart)
+        if (isInaccesibleOnGameStart)
         {
             DialogueTriggerManager.Instance.TriggerInaccessibleAreaDialogue();
             return;
