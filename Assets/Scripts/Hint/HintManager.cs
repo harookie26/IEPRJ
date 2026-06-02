@@ -124,7 +124,7 @@ public class HintManager : MonoBehaviour
         hintText.text = "Collect the Paintbucket";
     }
 
-    private void SetHintCorruptedPaintingTutorial()
+    public void SetHintCorruptedPaintingTutorial()
     {
         OpenHint();
         triggeredHintIDs.Add(4);
