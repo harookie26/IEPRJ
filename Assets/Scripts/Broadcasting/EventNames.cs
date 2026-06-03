@@ -41,6 +41,7 @@ public class EventNames {
         public const string HINT1_END = "HINT1_END";
         public const string HINT2_START = "HINT2_START";
         public const string HINT2_END = "HINT2_END";
+        public const string HINT_FIND_FLASHLIGHT_START = "HINT_FIND_FLASHLIGHT_START";
         public const string HINT3_START = "HINT3_START";
         public const string HINT3_END = "HINT3_END";
 

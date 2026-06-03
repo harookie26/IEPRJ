@@ -1,11 +1,13 @@
-using System.Collections;
 using UnityEngine;
 
 public class EnemyIntroTrigger : MonoBehaviour
 {
+    private AudioSource sfxAudioSource;
+
     public static EnemyIntroTrigger Instance { get; private set; }
 
     [SerializeField] private GameObject enemyIntroModel;
+    [SerializeField] private AudioClip lightsOutSFX;
 
     public bool hasTriggered = false;
 
@@ -18,11 +20,25 @@ public class EnemyIntroTrigger : MonoBehaviour
         }
 
         Instance = this;
+
+        GameObject audioObject1 = GameObject.FindWithTag("SFXAudioSource");
+
+        if (audioObject1 != null)
+        {
+
+            sfxAudioSource = audioObject1.GetComponent<AudioSource>();
+            sfxAudioSource.clip = lightsOutSFX;
+        }
+        else
+        {
+            //.
+            Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
+        }
     }
 
     void Start()
     {
-        if(hasTriggered)
+        if (hasTriggered)
         {
             enemyIntroModel.SetActive(false);
         }
@@ -33,9 +49,9 @@ public class EnemyIntroTrigger : MonoBehaviour
         if (!hasTriggered && other.CompareTag("Player"))
         {
             hasTriggered = true;
-            EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT3_START);
             DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
             enemyIntroModel.SetActive(false);
+            sfxAudioSource.Play();
         }
     }
 
