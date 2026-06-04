@@ -5,36 +5,57 @@ public class PlayerLocationUpdater : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI locationText;
 
+    // Keep these public/serialized if other scripts read them
     public string playerLocationName;
-
     public int playerLocationID;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public System.Action<string> OnLocationChanged;
+
     void Start()
     {
-
+        // Force the initial text display on start
+        if (locationText != null) locationText.text = playerLocationName;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        locationText.text = playerLocationName;
+        // Kept your text update loop here
+        if (locationText != null) locationText.text = playerLocationName;
     }
 
     public int getplayerLocationID()
     {
-        //Debug.Log(playerLocationID);
         return playerLocationID;
+    }
+
+    public string getplayerLocationName()
+    {
+        return playerLocationName;
+    }
+
+    // Unify the logic into one clear entry point
+    public void SetNewLocation(string newLocation, int newID)
+    {
+        if (playerLocationName != newLocation)
+        {
+            playerLocationName = newLocation;
+            playerLocationID = newID;
+
+            // This is what notifies your MinimapManager!
+            OnLocationChanged?.Invoke(playerLocationName);
+        }
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other != null)
         {
-            if (other.gameObject.GetComponent<RoomComponent>() != null)
+            // TryGetComponent is slightly cleaner and faster than GetComponent != null
+            if (other.gameObject.TryGetComponent<RoomComponent>(out RoomComponent room))
             {
-                playerLocationName = other.gameObject.GetComponent<RoomComponent>().GetCurrentRoomName();
-                playerLocationID = other.gameObject.GetComponent<RoomComponent>().Id;
+                // FIX: Instead of setting variables directly, route it through 
+                // SetNewLocation so the Minimap Event actually fires.
+                SetNewLocation(room.GetCurrentRoomName(), room.Id);
             }
         }
     }
