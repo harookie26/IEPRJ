@@ -5,6 +5,11 @@ using static EventNames.GameStateEvents;
 
 public class Flashlight : MonoBehaviour
 {
+    private const float GhostDetectionRadius = 0.35f;
+    private const float GhostDetectionAngleTolerance = 4f;
+    private const int MaxGhostHits = 32;
+    private static readonly Collider[] GhostColliderBuffer = new Collider[MaxGhostHits];
+
     [Header("References")]
     [SerializeField] private GameObject flashlightObject; // The actual flashlight model
     [SerializeField] private GameObject flashlightBeam;
@@ -34,6 +39,8 @@ public class Flashlight : MonoBehaviour
 
     private bool hasLoadedData = false;
 
+    private Light flashlightLight;
+
     public void SetIsOn(bool value) => isOn = value;
 
     void Start()
@@ -47,6 +54,7 @@ public class Flashlight : MonoBehaviour
         }
 
         if (camTransform == null) camTransform = Camera.main.transform;
+        if (flashlightBeam != null) flashlightLight = flashlightBeam.GetComponent<Light>();
 
         UpdateBeamState();
 
@@ -118,20 +126,85 @@ public class Flashlight : MonoBehaviour
 
     private void CheckForGhost()
     {
-        int layerMask = enemyLayer | (1 << LayerMask.NameToLayer("Default"));
-
-        if (Physics.Raycast(camTransform.position, camTransform.forward, out RaycastHit hit, stunRange, enemyLayer))
+        if (TryGetGhostInLight(out EnemyStateMachine ghost))
         {
-            // Use GetComponentInParent in case the collider is on a child object
-            var ghost = hit.collider.GetComponentInParent<EnemyStateMachine>();
+            // Call the Freeze function with your custom duration
+            ghost.Freeze(ghost.StunDuration);
+            Debug.Log("Ghost is caught in light - Stun timer paused.");
+        }
+    }
 
-            if (ghost != null)
+    private bool TryGetGhostInLight(out EnemyStateMachine ghost)
+    {
+        ghost = null;
+
+        Transform lightTransform = flashlightBeam != null ? flashlightBeam.transform : null;
+        Transform sourceTransform = lightTransform != null ? lightTransform : camTransform;
+        if (sourceTransform == null) return false;
+
+        Vector3 origin = sourceTransform.position;
+        Vector3 direction = sourceTransform.forward;
+        float range = flashlightLight != null ? Mathf.Max(stunRange, flashlightLight.range) : stunRange;
+        float halfAngle = flashlightLight != null ? flashlightLight.spotAngle * 0.5f : 28f;
+
+        int colliderCount = Physics.OverlapSphereNonAlloc(
+            origin,
+            range,
+            GhostColliderBuffer,
+            enemyLayer,
+            QueryTriggerInteraction.Collide);
+
+        for (int i = 0; i < colliderCount; i++)
+        {
+            Collider candidate = GhostColliderBuffer[i];
+            if (candidate == null) continue;
+
+            Vector3 toCandidate = candidate.bounds.center - origin;
+            if (toCandidate.sqrMagnitude <= GhostDetectionRadius * GhostDetectionRadius)
             {
-                // Call the Freeze function with your custom duration
-                ghost.Freeze(ghost.StunDuration);
-                Debug.Log("Ghost is caught in light - Stun timer paused.");
+                ghost = candidate.GetComponentInParent<EnemyStateMachine>();
+                if (ghost != null) return true;
+                continue;
+            }
+
+            float angle = Vector3.Angle(direction, toCandidate);
+            if (angle <= halfAngle + GhostDetectionAngleTolerance)
+            {
+                ghost = candidate.GetComponentInParent<EnemyStateMachine>();
+                if (ghost != null) return true;
             }
         }
+
+        return camTransform != null
+            && camTransform != sourceTransform
+            && TryGetGhostFromDirection(camTransform.position, camTransform.forward, range, halfAngle, out ghost);
+    }
+
+    private bool TryGetGhostFromDirection(Vector3 origin, Vector3 direction, float range, float halfAngle, out EnemyStateMachine ghost)
+    {
+        ghost = null;
+
+        int colliderCount = Physics.OverlapSphereNonAlloc(
+            origin,
+            range,
+            GhostColliderBuffer,
+            enemyLayer,
+            QueryTriggerInteraction.Collide);
+
+        for (int i = 0; i < colliderCount; i++)
+        {
+            Collider candidate = GhostColliderBuffer[i];
+            if (candidate == null) continue;
+
+            Vector3 toCandidate = candidate.bounds.center - origin;
+            float angle = Vector3.Angle(direction, toCandidate);
+            if (angle > halfAngle + GhostDetectionAngleTolerance) continue;
+
+            ghost = candidate.GetComponentInParent<EnemyStateMachine>();
+            if (ghost != null) return true;
+        }
+
+        return false;
     }
 
     private void UpdateBeamState()

@@ -234,6 +234,7 @@ public class BaseCollectible : MonoBehaviour, ICollectible
             TutorialManager.Instance.TriggerFlashlightTutorial();
         }
 
+
         var manager = FindFirstObjectByType<PlayerCollectibleManager>();
         if (manager != null)
         {
