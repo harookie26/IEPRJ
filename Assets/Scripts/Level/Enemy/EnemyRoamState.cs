@@ -21,13 +21,13 @@ public class EnemyRoamState : EnemyState
             return;
         }
 
-        teleportTimer += Time.deltaTime;
-        if (teleportTimer >= nextTeleportDuration)
-        {
-            TeleportToNewRoom(state);
-            teleportTimer = 0;
-            nextTeleportDuration = Random.Range(5f, 8f);
-        }
+        //teleportTimer += Time.deltaTime;
+        //if (teleportTimer >= nextTeleportDuration)
+        //{
+        //    TeleportToNewRoom(state);
+        //    teleportTimer = 0;
+        //    nextTeleportDuration = Random.Range(5f, 8f);
+        //}
 
         if (!state.NavAgent.pathPending && state.NavAgent.remainingDistance <= state.NavAgent.stoppingDistance)
         {

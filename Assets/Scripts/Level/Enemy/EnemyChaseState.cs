@@ -23,14 +23,14 @@ public class EnemyChaseState : EnemyState
     {
         chaseTimer += Time.deltaTime;
 
-        if (chaseTimer >= maxChaseDuration)
-        {
-            Debug.Log("Chase timed out! Teleporting away and returning to Roam.");
+        //if (chaseTimer >= maxChaseDuration)
+        //{
+        //    Debug.Log("Chase timed out! Teleporting away and returning to Roam.");
 
-            state.EnemyTeleporting.TeleportNow(state);
-            state.ChangeState(state.RoamState);
-            return;
-        }
+        //    state.EnemyTeleporting.TeleportNow(state);
+        //    state.ChangeState(state.RoamState);
+        //    return;
+        //}
 
         if (state.TargetPlayer == null)
         {

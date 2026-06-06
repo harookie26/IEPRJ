@@ -19,6 +19,7 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
 
     [Header("Animation Setup")]
     [SerializeField] bool hasAnimation = false;
+    [SerializeField] bool disableAfterAnimation = false;
     [SerializeField] private Animator modelAnimator;
     [SerializeField] private string animationStateName = "TriggerAnimation";
 
@@ -52,10 +53,7 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
 
     private void Update()
     {
-        //if (hasTriggered)
-        //{
-        //    model.SetActive(false);
-        //}
+
     }
 
     private void OnTriggerEnter(Collider other)
@@ -66,7 +64,15 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
             DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
             sfxAudioSource.PlayOneShot(sfx);
 
-            enemyStateMachine.scriptedEncounterCheck();
+            EnemyManager manager = FindFirstObjectByType<EnemyManager>();
+            if (manager != null)
+            {
+                manager.ReportTriggerActivated();
+            }
+            else
+            {
+                Debug.LogError("[InteractionTrigger] CRITICAL: Could not find EnemyManager in the scene!");
+            }
 
             if (hasAnimation && modelAnimator != null)
             {
@@ -81,22 +87,20 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
 
     private IEnumerator PlayAnimationThenDeactivate()
     {
-        // 1. Play the animation sequence (supports using a State Name or a Trigger)
         modelAnimator.Play(animationStateName);
 
-        // Wait exactly 1 frame to ensure the animator updates and transitions into the new state
         yield return null;
 
-        // 2. Dynamically calculate the duration of the current animation clip playing
         float animationLength = modelAnimator.GetCurrentAnimatorStateInfo(0).length;
 
-        // 3. Wait safely until the sequence finishes playing
         yield return new WaitForSeconds(animationLength);
 
-        // 4. Finally clean up and deactivate the object
         if (model != null)
         {
-            model.SetActive(false);
+            //if(disableAfterAnimation)
+            //    model.SetActive(false);
+            //else
+            //    model.SetActive(true);
         }
     }
 

@@ -56,7 +56,7 @@ public class PlayerSaveHandler : MonoBehaviour
             enemyIntro = enemyIntroTrigger.GetSaveData(),
             hint = hintManager.GetSaveData(),
             tutorial = tutorialManager.GetSaveData(),
-            enemyState = enemyStateMachine.GetSaveData(), // Get enemy state data
+            //enemyState = enemyStateMachine.GetSaveData(), // Get enemy state data
             paintbrush = paintbrushChanneller.GetSaveData(), // Get paintbrush state data
             randomizedPaintings = corruptedPaintingsRandomizer.GetSaveData() // Get randomized paintings data
         };

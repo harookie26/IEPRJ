@@ -25,7 +25,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     [Header("Teleporting")]
     [Tooltip("List of transforms marking teleport destination points.")]
-    [SerializeField] private List<Transform> teleportPoints = new List<Transform>();
+    [SerializeField] public List<Transform> teleportPoints = new List<Transform>();
     [Tooltip("Cooldown between teleports in seconds.")]
     [SerializeField] private float teleportCooldown = 0.5f;
 
@@ -96,6 +96,7 @@ public class EnemyStateMachine : MonoBehaviour
     private Vector3 initialEnemyPosition;
     private Vector3 initialEnemyRotation;
 
+    private bool hasInitialized = false;
     private void OnEnable()
     {
         AllInstances.Add(this);
@@ -110,16 +111,9 @@ public class EnemyStateMachine : MonoBehaviour
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
     }
 
+
     private void Start()
     {
-        //if (navMeshAgent == null && enemy != null)
-        //{
-        //    navMeshAgent = enemy.GetComponent<NavMeshAgent>();
-        //    if (navMeshAgent == null)
-        //    {
-        //        Debug.LogWarning("EnemyStateManager: No NavMeshAgent found on the enemy. Assign one in the inspector or add one to the enemy GameObject.");
-        //    }
-        //}
         currentStunDuration = stunDurationTiers[0];
         initialEnemyPosition = enemy.transform.position;
         initialEnemyRotation = enemy.transform.eulerAngles;
@@ -129,10 +123,6 @@ public class EnemyStateMachine : MonoBehaviour
             MoveSpeed = config.moveSpeed;
             baseRoamSpeed = config.patrolSpeed;
             baseChaseSpeed = config.moveSpeed;
-            //EnemyAggroRadius = config.enemyAggroRadius;
-            //EnemyKillRadius = config.enemyKillRadius;
-            //DistractedCalmDuration = config.distractedCalmDuration;
-            //DistractedRushMultiplier = config.distractedRushMultiplier;
         }
         else
         {
@@ -141,19 +131,76 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         enemyTeleporting.SetTeleportConfig(teleportPoints, teleportCooldown);
+        hasInitialized = true;
 
+        // Controlled exclusively via the EnemyManager setup loop now
         if (!isEnemyActivated)
         {
-            if (navMeshAgent != null)
-            {
-                navMeshAgent.isStopped = true;
-                navMeshAgent.velocity = Vector3.zero;
-                navMeshAgent.ResetPath();
-            }
-            return; // don't enter any state yet
+            DisableAgentPhysics();
+            return;
         }
 
         ChangeState(RoamState);
+    }
+
+    public void SetActiveGhost(bool dynamicState)
+    {
+        if (!hasInitialized) isEnemyActivated = dynamicState;
+
+        isEnemyActivated = dynamicState;
+
+        if (isEnemyActivated)
+        {
+            if (navMeshAgent != null)
+            {
+                navMeshAgent.enabled = true;
+                navMeshAgent.isStopped = false;
+            }
+
+            SetGhostVisualsAndPhysics(true);
+
+            ChangeState(RoamState);
+            Debug.Log($"[{gameObject.name}] Awoken and revealed by Manager. Commencing Floor Roam.");
+        }
+        else
+        {
+            DisableAgentPhysics();
+            SetGhostVisualsAndPhysics(false);
+            Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
+        }
+    }
+
+    private void SetGhostVisualsAndPhysics(bool visible)
+    {
+        Renderer[] renderers = enemy.GetComponentsInChildren<Renderer>();
+        foreach (Renderer r in renderers)
+        {
+            r.enabled = visible;
+        }
+
+        Collider[] colliders = enemy.GetComponentsInChildren<Collider>();
+        foreach (Collider c in colliders)
+        {
+            c.enabled = visible;
+        }
+
+        AudioSource ghostVoice = enemy.GetComponent<AudioSource>();
+        if (ghostVoice != null)
+        {
+            if (visible) ghostVoice.Play();
+            else ghostVoice.Stop();
+        }
+    }
+
+    private void DisableAgentPhysics()
+    {
+        StopChaseAudio();
+        if (navMeshAgent != null)
+        {
+            navMeshAgent.velocity = Vector3.zero;
+            navMeshAgent.ResetPath();
+            navMeshAgent.enabled = false; // Disabling entirely prevents navigation calculations on inactive layers
+        }
     }
 
     private void Update()
@@ -174,7 +221,7 @@ public class EnemyStateMachine : MonoBehaviour
             passiveTensionTimer += Time.deltaTime;
             if (passiveTensionTimer >= maxSilentPassiveDuration)
             {
-                TriggerPassiveRelocation();
+                //TriggerPassiveRelocation();
             }
         }
         else if (currentState == ChaseState)
@@ -184,30 +231,6 @@ public class EnemyStateMachine : MonoBehaviour
             animator.SetBool("isRunning", true);
 
             passiveTensionTimer = 0f;
-        }
-    }
-
-    private void TriggerPassiveRelocation()
-    {
-        if (targetPlayer == null || !isEnemyActivated || isFrozen) return;
-
-        passiveTensionTimer = 0f;
-
-        Vector3 playerPos = targetPlayer.transform.position;
-        IRoom playerRoom = RoomUtils.GetRoomForPosition(new Vector2(playerPos.x, playerPos.y));
-
-        if (playerRoom is RoomComponent targetRoom)
-        {
-            Vector3 warpPos = enemyTeleporting.GetForcedTeleportPoint(this, targetRoom);
-
-            if (warpPos != Vector3.zero)
-            {
-                NavAgent.Warp(warpPos);
-                NavAgent.ResetPath();
-
-                ChangeState(RoamState);
-                Debug.Log($"[Tension System] Player was silent too long ({maxSilentPassiveDuration}s). Ghost warped to adjacent point: {warpPos}");
-            }
         }
     }
 
