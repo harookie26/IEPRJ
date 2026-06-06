@@ -10,7 +10,7 @@ public class PlayerSaveHandler : MonoBehaviour
     public LockedDoorInteractable lockedDoor;
     public PlayerCollectibleManager collectibleManager;
     public DialogueTriggerManager dialogueTriggerManager;
-    public EnemyIntroTrigger enemyIntroTrigger;
+    public InteractionTrigger enemyIntroTrigger;
     public HintManager hintManager;
     public TutorialManager tutorialManager;
     public EnemyStateMachine enemyStateMachine; // Add this reference for the enemy state machine
@@ -26,7 +26,7 @@ public class PlayerSaveHandler : MonoBehaviour
         if (lockedDoor == null) lockedDoor = GetComponent<LockedDoorInteractable>();
         if (collectibleManager == null) collectibleManager = GetComponent<PlayerCollectibleManager>();
         if (dialogueTriggerManager == null) dialogueTriggerManager = GetComponent<DialogueTriggerManager>();
-        if (enemyIntroTrigger == null) enemyIntroTrigger = GetComponent<EnemyIntroTrigger>();
+        if (enemyIntroTrigger == null) enemyIntroTrigger = GetComponent<InteractionTrigger>();
         if (enemyStateMachine == null) enemyStateMachine = GetComponent<EnemyStateMachine>();
         if (paintbrushChanneller == null) paintbrushChanneller = GetComponent<PaintbrushChanneller>();
         if (corruptedPaintingsRandomizer == null) corruptedPaintingsRandomizer = GetComponent<CorruptPaintingRandomizer>();

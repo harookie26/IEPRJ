@@ -17,7 +17,7 @@ public class CheckpointPhases : MonoBehaviour
     private MainPainting _mainPainting;
     private ReviewerToolsManager _reviewerToolsManager;
     private HintManager _hintManager;
-    private EnemyIntroTrigger _enemyIntroTrigger;
+    private InteractionTrigger _enemyIntroTrigger;
 
     [Header("Object References")]
     [SerializeField] private GameObject _door;
@@ -47,7 +47,7 @@ public class CheckpointPhases : MonoBehaviour
         _mainPainting = FindFirstObjectByType<MainPainting>();
         _reviewerToolsManager = FindFirstObjectByType<ReviewerToolsManager>();
         _hintManager = FindFirstObjectByType<HintManager>();
-        _enemyIntroTrigger = FindFirstObjectByType<EnemyIntroTrigger>();
+        _enemyIntroTrigger = FindFirstObjectByType<InteractionTrigger>();
 
     }
 

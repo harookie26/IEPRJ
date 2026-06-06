@@ -1,45 +1,45 @@
 using Game.States;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyIntroTrigger : MonoBehaviour, ISaveable
+public class InteractionTrigger : MonoBehaviour, ISaveable
 {
     private AudioSource sfxAudioSource;
 
-    private static readonly Dictionary<string, EnemyIntroTrigger> Registry = new();
+    private static readonly Dictionary<string, InteractionTrigger> Registry = new();
 
     [Header("Identification")]
     [SerializeField] private string uniqueID;
-    public static EnemyIntroTrigger Instance { get; private set; }
+    public static InteractionTrigger Instance { get; private set; }
 
-    [SerializeField] private GameObject enemyIntroModel;
-    [SerializeField] private AudioClip lightsOutSFX;
+    [SerializeField] private GameObject model;
+    [SerializeField] private AudioClip sfx;
     [SerializeField] private EnemyStateMachine enemyStateMachine;
+
+    [Header("Animation Setup")]
+    [SerializeField] bool hasAnimation = false;
+    [SerializeField] private Animator modelAnimator;
+    [SerializeField] private string animationStateName = "TriggerAnimation";
 
     public bool hasTriggered = false;
     public string SaveKey => uniqueID;
     private void Awake()
     {
-        //if (Instance != null && Instance != this)
-        //{
-        //    Destroy(gameObject);
-        //    return;
-        //}
-
-        //Instance = this;
-
         GameObject audioObject1 = GameObject.FindWithTag("SFXAudioSource");
 
         if (audioObject1 != null)
         {
-
             sfxAudioSource = audioObject1.GetComponent<AudioSource>();
-            //sfxAudioSource.clip = lightsOutSFX;
         }
         else
         {
-            //.
             Debug.LogWarning("No GameObject with tag 'SFXAudioSource' found in scene.");
+        }
+
+        if (hasAnimation && modelAnimator == null && model != null)
+        {
+            modelAnimator = model.GetComponent<Animator>();
         }
 
         Register();
@@ -52,10 +52,10 @@ public class EnemyIntroTrigger : MonoBehaviour, ISaveable
 
     private void Update()
     {
-        if (hasTriggered)
-        {
-            enemyIntroModel.SetActive(false);
-        }
+        //if (hasTriggered)
+        //{
+        //    model.SetActive(false);
+        //}
     }
 
     private void OnTriggerEnter(Collider other)
@@ -64,10 +64,39 @@ public class EnemyIntroTrigger : MonoBehaviour, ISaveable
         {
             hasTriggered = true;
             DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
-            enemyIntroModel.SetActive(false);
-            sfxAudioSource.PlayOneShot(lightsOutSFX);
+            sfxAudioSource.PlayOneShot(sfx);
 
             enemyStateMachine.scriptedEncounterCheck();
+
+            if (hasAnimation && modelAnimator != null)
+            {
+                StartCoroutine(PlayAnimationThenDeactivate());
+            }
+            else
+            {
+                if (model != null) model.SetActive(false);
+            }
+        }
+    }
+
+    private IEnumerator PlayAnimationThenDeactivate()
+    {
+        // 1. Play the animation sequence (supports using a State Name or a Trigger)
+        modelAnimator.Play(animationStateName);
+
+        // Wait exactly 1 frame to ensure the animator updates and transitions into the new state
+        yield return null;
+
+        // 2. Dynamically calculate the duration of the current animation clip playing
+        float animationLength = modelAnimator.GetCurrentAnimatorStateInfo(0).length;
+
+        // 3. Wait safely until the sequence finishes playing
+        yield return new WaitForSeconds(animationLength);
+
+        // 4. Finally clean up and deactivate the object
+        if (model != null)
+        {
+            model.SetActive(false);
         }
     }
 
@@ -112,10 +141,9 @@ public class EnemyIntroTrigger : MonoBehaviour, ISaveable
         var data = (EnemyIntroSaveData)state;
         this.hasTriggered = data.hasTriggered;
 
-        // Apply visual state immediately upon data restoration
-        if (this.hasTriggered && enemyIntroModel != null)
+        if (this.hasTriggered && model != null)
         {
-            enemyIntroModel.SetActive(false);
+            model.SetActive(false);
         }
     }
 
@@ -133,10 +161,9 @@ public class EnemyIntroTrigger : MonoBehaviour, ISaveable
 
         this.hasTriggered = data.hasTriggered;
 
-        // Apply the visual state IMMEDIATELY upon loading the save data
-        if (this.hasTriggered && enemyIntroModel != null)
+        if (this.hasTriggered && model != null)
         {
-            enemyIntroModel.SetActive(false);
+            model.SetActive(false);
         }
     }
 }

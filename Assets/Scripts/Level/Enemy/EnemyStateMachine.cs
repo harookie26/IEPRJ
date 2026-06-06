@@ -39,6 +39,10 @@ public class EnemyStateMachine : MonoBehaviour
     [Tooltip("Stun durations indexed by how many paintings are restored (0, 1, 2, 3+ paintings).")]
     [SerializeField] private float[] stunDurationTiers = new float[] { 5f, 5f, 3.5f, 2f };
     private float currentStunDuration;
+
+    [Header("Tension Management")]
+    [SerializeField] private float maxSilentPassiveDuration = 45f;
+    private float passiveTensionTimer = 0f;
     public float StunDuration => currentStunDuration;
 
     private EnemyState currentState;
@@ -166,12 +170,44 @@ public class EnemyStateMachine : MonoBehaviour
             animator.SetBool("isWalking", true);
             animator.SetBool("isStunned", false);
             animator.SetBool("isRunning", false);
+
+            passiveTensionTimer += Time.deltaTime;
+            if (passiveTensionTimer >= maxSilentPassiveDuration)
+            {
+                TriggerPassiveRelocation();
+            }
         }
         else if (currentState == ChaseState)
         {
             animator.SetBool("isWalking", false);
             animator.SetBool("isStunned", false);
             animator.SetBool("isRunning", true);
+
+            passiveTensionTimer = 0f;
+        }
+    }
+
+    private void TriggerPassiveRelocation()
+    {
+        if (targetPlayer == null || !isEnemyActivated || isFrozen) return;
+
+        passiveTensionTimer = 0f;
+
+        Vector3 playerPos = targetPlayer.transform.position;
+        IRoom playerRoom = RoomUtils.GetRoomForPosition(new Vector2(playerPos.x, playerPos.y));
+
+        if (playerRoom is RoomComponent targetRoom)
+        {
+            Vector3 warpPos = enemyTeleporting.GetForcedTeleportPoint(this, targetRoom);
+
+            if (warpPos != Vector3.zero)
+            {
+                NavAgent.Warp(warpPos);
+                NavAgent.ResetPath();
+
+                ChangeState(RoamState);
+                Debug.Log($"[Tension System] Player was silent too long ({maxSilentPassiveDuration}s). Ghost warped to adjacent point: {warpPos}");
+            }
         }
     }
 
@@ -214,40 +250,32 @@ public class EnemyStateMachine : MonoBehaviour
 
     public Vector3 GetRandomPointExcludingPlayerRoom()
     {
-        // Fallback safety checks
         if (teleportPoints == null || teleportPoints.Count == 0) return transform.position;
         if (targetPlayer == null) return GetRandomPoint();
 
-        // 1. Identify what room the player is currently occupying
         Vector3 playerPos = targetPlayer.transform.position;
         IRoom playerRoom = RoomUtils.GetRoomForPosition(new Vector2(playerPos.x, playerPos.y));
 
         List<Transform> validPoints = new List<Transform>();
 
-        // 2. Loop through all patrol/teleport positions
         foreach (Transform point in teleportPoints)
         {
             if (point == null) continue;
 
-            // Identify what room this specific destination point is inside
             IRoom pointRoom = RoomUtils.GetRoomForPosition(new Vector2(point.position.x, point.position.y));
 
-            // 3. EXCLUSION RULE: Only add the point if it's NOT in the player's room
             if (playerRoom == null || pointRoom == null || !pointRoom.Equals(playerRoom))
             {
                 validPoints.Add(point);
             }
         }
 
-        // 4. Selection: Pick a random point from the safe rooms list
         if (validPoints.Count > 0)
         {
             int index = Random.Range(0, validPoints.Count);
             return validPoints[index].position;
         }
 
-        // Extreme Fallback: If ALL your level's points are somehow inside the player's room, 
-        // default back to a normal random point to prevent a crash.
         return GetRandomPoint();
     }
     // ----- Freeze / Unfreeze API -----
@@ -598,5 +626,22 @@ public class EnemyStateMachine : MonoBehaviour
             ChangeState(RoamState); // only start moving now
         }
 
+    }
+
+    public void ReactToLoudNoise(int roomId)
+    {
+        if (!isEnemyActivated || isFrozen || currentState == ChaseState) return;
+
+        var targetRoom = RoomRegistry.GetRoom(roomId) as RoomComponent;
+        if (targetRoom != null)
+        {
+            // Instead of instant warping, tell the NavMeshAgent to actively patrol to that room
+            Vector3 targetPoint = enemyTeleporting.GetForcedTeleportPoint(this, targetRoom);
+            if (targetPoint != Vector3.zero)
+            {
+                NavAgent.SetDestination(targetPoint);
+                Debug.Log($"Ghost heard a disturbance in Room {roomId}! Investigating...");
+            }
+        }
     }
 }
