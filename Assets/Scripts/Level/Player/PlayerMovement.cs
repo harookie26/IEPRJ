@@ -107,6 +107,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Ground Detection")]
     [SerializeField] private float groundDetectionDistance = 0.1f;
     [SerializeField] private LayerMask groundLayer = -1;
+    [SerializeField, Range(0f, 89f)] private float maxWalkableSlopeAngle = 55f;
 
     private float actualHorizontalSpeed;
 
@@ -257,11 +258,45 @@ public class PlayerMovement : MonoBehaviour
             sprintTimer = 0f;
         }
 
+        bool isGrounded = TryGetGroundHit(out RaycastHit groundHit);
+        bool isOnWalkableGround = isGrounded
+            && Vector3.Angle(groundHit.normal, Vector3.up) <= maxWalkableSlopeAngle;
+
+        rb.useGravity = !isOnWalkableGround;
+
         Vector3 targetVelocity = cachedMoveDirection * effectiveSpeed;
 
         ApplyAcceleration(ref currentHorizontalVelocity, targetVelocity);
 
-        Vector3 combinedVelocity = new Vector3(currentHorizontalVelocity.x, rb.linearVelocity.y, currentHorizontalVelocity.z);
+        Vector3 combinedVelocity;
+
+        if (isOnWalkableGround)
+        {
+            Vector3 horizontalVelocity = new Vector3(
+                currentHorizontalVelocity.x,
+                0f,
+                currentHorizontalVelocity.z
+            );
+
+            Vector3 slopeVelocity = Vector3.ProjectOnPlane(
+                horizontalVelocity,
+                groundHit.normal
+            );
+
+            if (slopeVelocity.sqrMagnitude > 0.0001f)
+                slopeVelocity = slopeVelocity.normalized * horizontalVelocity.magnitude;
+
+            combinedVelocity = slopeVelocity;
+            rb.linearVelocity = Vector3.zero;
+        }
+        else
+        {
+            combinedVelocity = new Vector3(
+                currentHorizontalVelocity.x,
+                rb.linearVelocity.y,
+                currentHorizontalVelocity.z
+            );
+        }
 
         ApplyMovementPhysics(combinedVelocity);
     }
@@ -860,8 +895,16 @@ public class PlayerMovement : MonoBehaviour
 
     private bool IsGrounded()
     {
+        return TryGetGroundHit(out _);
+    }
+
+    private bool TryGetGroundHit(out RaycastHit groundHit)
+    {
         if (playerCapsule == null)
+        {
+            groundHit = default;
             return false;
+        }
 
         Vector3 origin = rb.position + Vector3.up * 0.1f;
 
@@ -875,7 +918,7 @@ public class PlayerMovement : MonoBehaviour
             origin,
             sphereRadius,
             Vector3.down,
-            out _,
+            out groundHit,
             castDistance,
             groundMask,
             QueryTriggerInteraction.Ignore
