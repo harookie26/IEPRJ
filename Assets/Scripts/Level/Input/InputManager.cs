@@ -36,6 +36,10 @@ public class InputManager : MonoBehaviour
     private bool ePressPending = false;
     private float eHoldTimer = 0f;
     private bool channeling = false;
+    private bool interactActionStarted = false;
+    private bool interactActionCanceled = false;
+    private bool applicationHasFocus = true;
+    private bool applicationPaused = false;
 
     private void Awake()
     {
@@ -60,6 +64,16 @@ public class InputManager : MonoBehaviour
         {
             sprintHeld = false;
             EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_STOPPED_SPRINT);
+        };
+        inputActions.Player.Interact.started += _ =>
+        {
+            if (CanProcessGameplayInput())
+                interactActionStarted = true;
+        };
+        inputActions.Player.Interact.canceled += _ =>
+        {
+            if (CanProcessGameplayInput())
+                interactActionCanceled = true;
         };
     }
 
@@ -95,6 +109,8 @@ public class InputManager : MonoBehaviour
                 sprintHeld = false;
 
                 // reset channel state while blocked
+                interactActionStarted = false;
+                interactActionCanceled = false;
                 ePressPending = false;
                 eHoldTimer = 0f;
                 if (channeling)
@@ -120,6 +136,8 @@ public class InputManager : MonoBehaviour
             }
             ePressPending = false;
             eHoldTimer = 0f;
+            interactActionStarted = false;
+            interactActionCanceled = false;
 
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
@@ -133,9 +151,12 @@ public class InputManager : MonoBehaviour
         else
         {
             // Tap vs Hold (channel) detection for E key
-            bool eWasPressed = Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
-            bool eIsPressed = Keyboard.current != null && Keyboard.current.eKey.isPressed;
-            bool eWasReleased = Keyboard.current != null && Keyboard.current.eKey.wasReleasedThisFrame;
+            bool eWasPressed = interactActionStarted;
+            bool eIsPressed = inputActions.Player.Interact.IsPressed();
+            bool eWasReleased = interactActionCanceled;
+
+            interactActionStarted = false;
+            interactActionCanceled = false;
 
             if (eWasPressed)
             {
@@ -275,5 +296,37 @@ public class InputManager : MonoBehaviour
     {
         onlyAllowLMBOrEnter = false;
         blockInputUntilRelease = true;
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        applicationHasFocus = hasFocus;
+        ResetInteractionInput();
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        applicationPaused = pauseStatus;
+        ResetInteractionInput();
+    }
+
+    private bool CanProcessGameplayInput()
+    {
+        return applicationHasFocus && !applicationPaused;
+    }
+
+    private void ResetInteractionInput()
+    {
+        interactPressed = false;
+        interactActionStarted = false;
+        interactActionCanceled = false;
+        ePressPending = false;
+        eHoldTimer = 0f;
+
+        if (channeling)
+        {
+            channeling = false;
+            OnChannelStopped?.Invoke();
+        }
     }
 }

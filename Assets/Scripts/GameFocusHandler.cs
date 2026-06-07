@@ -50,11 +50,7 @@ public class GameFocusHandler : MonoBehaviour
         if (!Application.isFocused)
             yield break;
 
-        if (lockCursorDuringGameplay)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
+        ApplyGameplayCursorLock();
 
         if (playerInput != null)
         {
@@ -67,7 +63,22 @@ public class GameFocusHandler : MonoBehaviour
             }
         }
 
+        // Some platforms apply their own cursor state after the focus callback.
+        yield return new WaitForEndOfFrame();
+
+        if (Application.isFocused)
+            ApplyGameplayCursorLock();
+
         Debug.Log("[Focus] Restored gameplay input and cursor lock.");
+    }
+
+    private void ApplyGameplayCursorLock()
+    {
+        if (!lockCursorDuringGameplay)
+            return;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void ReleaseGameplayFocus()
