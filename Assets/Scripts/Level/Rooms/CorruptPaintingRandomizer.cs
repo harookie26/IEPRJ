@@ -275,7 +275,7 @@ public class CorruptPaintingRandomizer : MonoBehaviour
 
     public void ApplyCheckpointPhase(int phase)
     {
-        int completedCount = Mathf.Clamp(phase - 4, 0, activeChosenPaintings.Count);
+        int completedCount = Mathf.Clamp(phase - 5, 0, activeChosenPaintings.Count);
 
         for (int i = 0; i < activeChosenPaintings.Count; i++)
         {

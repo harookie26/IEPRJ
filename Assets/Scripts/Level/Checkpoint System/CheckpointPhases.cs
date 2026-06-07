@@ -196,6 +196,12 @@ public class CheckpointPhases : MonoBehaviour
 
         if (_paintingRandomizer != null) _paintingRandomizer.ApplyCheckpointPhase(phase);
 
+        PaintbrushChanneller channeller = FindFirstObjectByType<PaintbrushChanneller>();
+        if (channeller != null)
+        {
+            channeller.ApplyCheckpointPaintingProgress(Mathf.Clamp(phase - 5, 0, 4));
+        }
+
         if (_mainPainting != null)
         {
             _mainPainting.paint1Done = phase >= 6;

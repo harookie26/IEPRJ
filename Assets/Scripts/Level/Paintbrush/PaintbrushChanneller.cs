@@ -347,6 +347,16 @@ public class PaintbrushChanneller : MonoBehaviour
     public int GetChannelledPaintingCount() => completedPaintingIds.Count;
     public bool HasCompletedPainting(string id) => !string.IsNullOrEmpty(id) && completedPaintingIds.Contains(id);
 
+    public void ApplyCheckpointPaintingProgress(int completedCount)
+    {
+        completedCount = Mathf.Clamp(completedCount, 0, 4);
+
+        for (int i = 1; i <= completedCount; i++)
+        {
+            completedPaintingIds.Add($"paint{i}");
+        }
+    }
+
     // --- UPDATED GIZMOS: Draw a sphere to visualize the proximity radius ---
     private void OnDrawGizmos()
     {
