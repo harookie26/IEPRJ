@@ -36,6 +36,21 @@ namespace Level.UI
             Show(formatted, fadeIn, hold, fadeOut);
         }
 
+        public void HideImmediately()
+        {
+            if (running != null)
+            {
+                StopCoroutine(running);
+                running = null;
+            }
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 0f;
+                canvasGroup.gameObject.SetActive(false);
+            }
+        }
+
         IEnumerator Sequence(string message, float fadeIn, float hold, float fadeOut)
         {
             tmp.text = message;

@@ -156,13 +156,18 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
         {
             if (dialogueList != null && dialogueList.Count > 0)
             {
+                var pendingEntries = new List<DialogueEntry>();
+
                 foreach (var entry in dialogueList)
                 {
                     if (!DialogueManager.Instance.CheckifEntryAlreadyInQueue(entry.characterName, entry.text))
                     {
-                        DialogueManager.Instance.Display(entry);
+                        pendingEntries.Add(entry);
                     }
                 }
+
+                if (pendingEntries.Count > 0)
+                    DialogueManager.Instance.DisplaySequence(pendingEntries);
             }
             else
             {

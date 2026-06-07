@@ -11,12 +11,7 @@ public class DialogueIntroSceneManager : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        foreach (var entry in introDialogues)
-        {
-            DialogueManager.Instance.Display(entry);
-        }
-
-        
+        DialogueManager.Instance.DisplaySequence(introDialogues);
     }
 
     // Update is called once per frame

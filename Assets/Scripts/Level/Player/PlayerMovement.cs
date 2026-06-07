@@ -6,6 +6,10 @@ using static EventNames.GameStateEvents;
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
+    private const int MaxWallSlideIterations = 2;
+    private const int SafePositionSearchIterations = 6;
+    private const float SafePositionRadiusInset = 0.002f;
+
     [Header("Input References")]
     [SerializeField] private PlayerInput playerInput;
     [SerializeField] private Camera playerCamera;
@@ -260,7 +264,6 @@ public class PlayerMovement : MonoBehaviour
         Vector3 combinedVelocity = new Vector3(currentHorizontalVelocity.x, rb.linearVelocity.y, currentHorizontalVelocity.z);
 
         ApplyMovementPhysics(combinedVelocity);
-        ResolveWallPenetration();
     }
 
     private void ApplyAcceleration(ref Vector3 currentVel, Vector3 targetVel)
@@ -296,6 +299,9 @@ public class PlayerMovement : MonoBehaviour
 
         desiredDelta =
             ResolveWallSlide(oldPosition, desiredDelta);
+
+        desiredDelta =
+            ClampHorizontalDeltaToSafePosition(oldPosition, desiredDelta);
 
         Vector3 newPos =
             oldPosition + desiredDelta;
@@ -335,13 +341,13 @@ public class PlayerMovement : MonoBehaviour
             newPos = clamped;
         }
 
-        // If grounded and touching a wall/corner, do not allow forced upward motion.
-        if (preventCornerLift && wasGrounded && IsTouchingWalls && doorwayOverlapCount <= 0)
+        // Wall contacts must never turn horizontal movement into upward movement.
+        if (preventCornerLift && wasGrounded && IsTouchingWalls)
         {
             float maxY =
                 oldPosition.y + maxAllowedCornerLift;
 
-            if (newPos.y > maxY)
+            if (newPos.y > maxY || rb.linearVelocity.y > 0f)
             {
                 newPos.y = oldPosition.y;
 
@@ -679,7 +685,7 @@ public class PlayerMovement : MonoBehaviour
         return desiredDelta;
     }
 
-    private bool IsPositionSafe(Vector3 position)
+    private bool IsPositionSafe(Vector3 position, float radiusInset = 0f)
     {
         GetCapsuleWorldPoints(
             position,
@@ -687,6 +693,8 @@ public class PlayerMovement : MonoBehaviour
             out Vector3 pointB,
             out float radius
         );
+
+        radius = Mathf.Max(0.01f, radius - radiusInset);
 
         int hitCount = Physics.OverlapCapsuleNonAlloc(
             pointA,
@@ -713,6 +721,43 @@ public class PlayerMovement : MonoBehaviour
         return true;
     }
 
+    private Vector3 ClampHorizontalDeltaToSafePosition(Vector3 startPosition, Vector3 desiredDelta)
+    {
+        Vector3 horizontalDelta = new Vector3(desiredDelta.x, 0f, desiredDelta.z);
+        if (horizontalDelta.sqrMagnitude <= 0.00000001f) return desiredDelta;
+
+        Vector3 verticalDelta = new Vector3(0f, desiredDelta.y, 0f);
+        Vector3 targetPosition = startPosition + verticalDelta + horizontalDelta;
+
+        if (IsPositionSafe(targetPosition, SafePositionRadiusInset))
+            return desiredDelta;
+
+        float safeFraction = 0f;
+        float blockedFraction = 1f;
+
+        for (int i = 0; i < SafePositionSearchIterations; i++)
+        {
+            float testFraction = (safeFraction + blockedFraction) * 0.5f;
+            Vector3 testPosition =
+                startPosition + verticalDelta + horizontalDelta * testFraction;
+
+            if (IsPositionSafe(testPosition, SafePositionRadiusInset))
+                safeFraction = testFraction;
+            else
+                blockedFraction = testFraction;
+        }
+
+        Vector3 safeHorizontalDelta = horizontalDelta * safeFraction;
+        desiredDelta.x = safeHorizontalDelta.x;
+        desiredDelta.z = safeHorizontalDelta.z;
+
+        currentHorizontalVelocity = safeHorizontalDelta / Time.fixedDeltaTime;
+        IsTouchingWalls = true;
+        IsAtRoomCorner = true;
+
+        return desiredDelta;
+    }
+
     private void UpdateLastValidPositionOrRecover(Vector3 candidatePosition)
     {
         if (IsPositionSafe(candidatePosition))
@@ -732,20 +777,12 @@ public class PlayerMovement : MonoBehaviour
 
     private Vector3 ResolveWallSlide(Vector3 startPosition, Vector3 desiredDelta)
     {
-        Vector3 originalDelta = desiredDelta;
-
-        Vector3 horizontalDelta = new Vector3(
+        Vector3 remainingDelta = new Vector3(
             desiredDelta.x,
             0f,
             desiredDelta.z
         );
-
-        float distance = horizontalDelta.magnitude;
-
-        if (distance <= 0.0001f)
-            return desiredDelta;
-
-        Vector3 direction = horizontalDelta / distance;
+        Vector3 resolvedDelta = Vector3.zero;
 
         GetCapsuleWorldPoints(
             startPosition,
@@ -756,59 +793,66 @@ public class PlayerMovement : MonoBehaviour
 
         radius = Mathf.Max(0.01f, radius - antiClipSkin);
 
-        if (Physics.CapsuleCast(
-            pointA,
-            pointB,
-            radius,
-            direction,
-            out RaycastHit hit,
-            distance + antiClipSkin,
-            wallMask,
-            QueryTriggerInteraction.Ignore))
+        for (int iteration = 0; iteration < MaxWallSlideIterations; iteration++)
         {
-            Vector3 wallNormal = hit.normal;
+            float distance = remainingDelta.magnitude;
+            if (distance <= 0.0001f) break;
 
-            // wall response must be horizontal.
+            Vector3 direction = remainingDelta / distance;
+            Vector3 castOffset = resolvedDelta;
+
+            if (!Physics.CapsuleCast(
+                pointA + castOffset,
+                pointB + castOffset,
+                radius,
+                direction,
+                out RaycastHit hit,
+                distance + antiClipSkin,
+                wallMask,
+                QueryTriggerInteraction.Ignore))
+            {
+                resolvedDelta += remainingDelta;
+                remainingDelta = Vector3.zero;
+                break;
+            }
+
+            float safeDistance = Mathf.Clamp(
+                hit.distance - antiClipSkin,
+                0f,
+                distance
+            );
+
+            Vector3 movementToWall = direction * safeDistance;
+            resolvedDelta += movementToWall;
+            remainingDelta -= movementToWall;
+
+            Vector3 wallNormal = hit.normal;
             wallNormal.y = 0f;
 
             if (wallNormal.sqrMagnitude < 0.001f)
                 wallNormal = -direction;
 
             wallNormal.Normalize();
-
-            float safeDistance =
-                Mathf.Max(hit.distance - antiClipSkin, 0f);
-
-            Vector3 safeDelta =
-                direction * safeDistance;
-
-            Vector3 remainingDelta =
-                horizontalDelta - safeDelta;
-
-            Vector3 slideDelta =
-                Vector3.ProjectOnPlane(remainingDelta, wallNormal);
-
-            // never allow wall slide to generate vertical motion.
-            slideDelta.y = 0f;
-
-            if (slideDelta.magnitude < 0.01f)
-                slideDelta = Vector3.zero;
-
-            Vector3 resolvedHorizontalDelta =
-                safeDelta + slideDelta;
-
-            desiredDelta.x = resolvedHorizontalDelta.x;
-            desiredDelta.z = resolvedHorizontalDelta.z;
-
-            desiredDelta.y = originalDelta.y;
-
-            currentHorizontalVelocity = new Vector3(
-                resolvedHorizontalDelta.x,
-                0f,
-                resolvedHorizontalDelta.z
-            ) / Time.fixedDeltaTime;
+            remainingDelta = Vector3.ProjectOnPlane(remainingDelta, wallNormal);
+            remainingDelta.y = 0f;
 
             IsTouchingWalls = true;
+            IsAtRoomCorner |= iteration > 0;
+
+            if (remainingDelta.magnitude < 0.001f)
+                break;
+        }
+
+        desiredDelta.x = resolvedDelta.x;
+        desiredDelta.z = resolvedDelta.z;
+
+        if (IsTouchingWalls)
+        {
+            currentHorizontalVelocity = new Vector3(
+                resolvedDelta.x,
+                0f,
+                resolvedDelta.z
+            ) / Time.fixedDeltaTime;
         }
 
         return desiredDelta;
@@ -838,74 +882,4 @@ public class PlayerMovement : MonoBehaviour
         );
     }
 
-    private bool ResolveWallPenetration()
-    {
-        GetCapsuleWorldPoints(
-            rb.position,
-            out Vector3 pointA,
-            out Vector3 pointB,
-            out float radius
-        );
-
-        int hitCount = Physics.OverlapCapsuleNonAlloc(
-            pointA,
-            pointB,
-            radius - antiClipSkin,
-            overlapResults,
-            wallMask,
-            QueryTriggerInteraction.Ignore
-        );
-
-        Vector3 totalCorrection = Vector3.zero;
-
-        for (int i = 0; i < hitCount; i++)
-        {
-            Collider other = overlapResults[i];
-
-            if (other == null)
-                continue;
-
-            if (other.transform.IsChildOf(transform))
-                continue;
-
-            bool overlapped = Physics.ComputePenetration(
-                playerCapsule,
-                transform.position,
-                transform.rotation,
-                other,
-                other.transform.position,
-                other.transform.rotation,
-                out Vector3 direction,
-                out float distance
-            );
-
-            if (!overlapped)
-                continue;
-
-            direction.y = 0f;
-
-            if (direction.sqrMagnitude < 0.001f)
-                continue;
-
-            direction.Normalize();
-
-            totalCorrection += direction * distance;
-        }
-
-        if (totalCorrection.sqrMagnitude > 0.0001f)
-        {
-            Vector3 correctedPosition = rb.position + totalCorrection;
-
-            // Do not allow wall depenetration to lift the player.
-            correctedPosition.y = rb.position.y;
-
-            rb.MovePosition(correctedPosition);
-
-            currentHorizontalVelocity = Vector3.zero;
-
-            return true;
-        }
-
-        return false;
-    }
 }
