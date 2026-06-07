@@ -47974,6 +47974,7 @@ GameObject:
   m_Component:
   - component: {fileID: 761876024}
   - component: {fileID: 761876026}
+  - component: {fileID: 761876027}
   - component: {fileID: 761876025}
   m_Layer: 0
   m_Name: 'ElevatorTrigger '
@@ -48039,6 +48040,27 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.2225151, y: 1, z: 0.3294354}
   m_Center: {x: 0.11125755, y: 0, z: -0.13789436}
+--- !u!65 &761876027
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761876023}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.123539, y: 2.089573, z: 1.102781}
+  m_Center: {x: 7.986801, y: 3.9240994, z: 0.23928508}
 --- !u!43 &764295265
 Mesh:
   m_ObjectHideFlags: 0
@@ -95664,11 +95686,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2311993842097491211, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.717
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2311993842097491211, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.075
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2318883670129709838, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -96041,6 +96063,14 @@ PrefabInstance:
     - target: {fileID: 7219207052572343810, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: 7223970868259544116, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -16.494
+      objectReference: {fileID: 0}
+    - target: {fileID: 7223970868259544116, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 4.813
       objectReference: {fileID: 0}
     - target: {fileID: 7557518262773191390, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: m_StaticEditorFlags
