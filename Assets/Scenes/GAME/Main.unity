@@ -33200,10 +33200,10 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
-    m_Type: 0
+    m_Type: 2
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0.43
     m_Bias: 0.05
     m_NormalBias: 0.4
     m_NearPlane: 0.2
@@ -50206,10 +50206,13 @@ MonoBehaviour:
   camTransform: {fileID: 2095731256}
   maxBattery: 100
   drainRate: 1.5
-  stunRange: 24
+  stunRange: 18
   enemyLayer:
     serializedVersion: 2
     m_Bits: 256
+  occlusionMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
   flashlightAudioClip: {fileID: 8300000, guid: cc37d3e2c9932904c998bcb8322a4f68, type: 3}
 --- !u!82 &808703923
 AudioSource:
