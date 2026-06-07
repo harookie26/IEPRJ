@@ -39778,7 +39778,7 @@ PrefabInstance:
       objectReference: {fileID: 962956306}
     - target: {fileID: 6786454071807742201, guid: c666ff1497b4b1b41b95f25d9dd98d7a, type: 3}
       propertyPath: buildVersion
-      value: Artist_Realm Studios_Sprint 2_v2.1
+      value: Artist_Realm Studios_Sprint 2_v1.8
       objectReference: {fileID: 0}
     - target: {fileID: 6786454071807742201, guid: c666ff1497b4b1b41b95f25d9dd98d7a, type: 3}
       propertyPath: buildVersionText
@@ -40187,6 +40187,10 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 1960919535}
+    - target: {fileID: 7495612685105653474, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 40b1d3dd25000fc48a91dfc062bc5ba1, type: 2}
     - target: {fileID: 7652727092665411845, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_Mesh
       value: 
