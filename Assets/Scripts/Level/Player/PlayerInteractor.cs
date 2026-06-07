@@ -233,6 +233,14 @@ public class PlayerInteractor : MonoBehaviour
             Debug.LogWarning("[HUD] paintbrushChanneller is null — assign it in the inspector!");
         }
 
+        if (currentActiveInteractable != null)
+        {
+            if (currentActiveInteractable.IsPopUpOpen)
+            {
+                desiredKey = null; // Force the HUD to hide if the pop-up is active
+            }
+        }
+
         if (currentHudKey == desiredKey)
             return;
 
