@@ -13,6 +13,8 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
     [SerializeField] private string uniqueID;
     public static InteractionTrigger Instance { get; private set; }
 
+    [SerializeField] private bool isflashlightHintTrigger = false;
+
     [SerializeField] private GameObject model;
     [SerializeField] private AudioClip sfx;
     [SerializeField] private EnemyStateMachine enemyStateMachine;
@@ -61,7 +63,10 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
         if (!hasTriggered && other.CompareTag("Player"))
         {
             hasTriggered = true;
-            DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
+            if (isflashlightHintTrigger)
+            {
+                DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
+            }
             sfxAudioSource.PlayOneShot(sfx);
 
             EnemyManager manager = FindFirstObjectByType<EnemyManager>();
