@@ -119,7 +119,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         // Pause the BGM
         if (bgmAudioSource != null && bgmAudioSource.isPlaying)
         {
-            bgmAudioSource.Pause();
+            //bgmAudioSource.Pause();
             Debug.Log("[PaintingChannelable] BGM paused.");
         }
 
