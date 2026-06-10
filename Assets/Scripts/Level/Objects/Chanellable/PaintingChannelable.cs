@@ -36,6 +36,21 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [Tooltip("Unique string ID for this painting. Assign in inspector (e.g. 'paint1').")]
     [SerializeField] private string paintingId = "";
 
+    [Header("Dynamic Cutscene Settings")]
+    [Tooltip("Distance from the painting to start the camera.")]
+    [SerializeField] private float startDistance = .5f;
+    [Tooltip("Distance from the painting to end the camera zoom.")]
+    [SerializeField] private float endDistance = 2.0f;
+    [Tooltip("Adjust this if the camera is too high or too low (e.g., 1.5 for eye level).")]
+    [SerializeField] private float heightOffset = 0f;
+    [SerializeField] private float fadeDuration = 1f;
+    [SerializeField] private float moveDuration = 4f;
+    [SerializeField] private float viewDuration = 5f;
+
+    // Hidden from inspector because they will be found automatically via Code
+    private Camera cutsceneCamera;
+    private UnityEngine.UI.Image fadeImage;
+
     private AudioSource sfxAudioSource;
     private AudioSource bgmAudioSource;
     private AudioSource restorationMusicAudioSource;
@@ -91,6 +106,26 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         else
         {
             Debug.LogWarning("No AudioList instance found in scene.");
+        }
+
+        GameObject camObj = GameObject.FindWithTag("CutsceneCamera");
+        if (camObj != null)
+        {
+            cutsceneCamera = camObj.GetComponent<Camera>();
+        }
+        else
+        {
+            Debug.LogWarning("No GameObject with tag 'CutsceneCamera' found in scene.");
+        }
+
+        GameObject fadeObj = GameObject.FindWithTag("FadeImage");
+        if (fadeObj != null)
+        {
+            fadeImage = fadeObj.GetComponent<UnityEngine.UI.Image>();
+        }
+        else
+        {
+            Debug.LogWarning("No GameObject with tag 'FadeImage' found in scene.");
         }
 
         // Auto-assign first child as cover if not explicitly set.
@@ -233,5 +268,128 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         }
 
         checkpointManager.SaveCheckpoint();
+
+        StartCoroutine(PlayCutsceneCoroutine());
+    }
+
+    private System.Collections.IEnumerator PlayCutsceneCoroutine()
+    {
+        if (cutsceneCamera == null || fadeImage == null)
+        {
+            Debug.LogWarning("[PaintingChannelable] Cutscene dependencies not found. Skipping cutscene.");
+            yield break;
+        }
+
+        // 1. Calculate Positions Dynamically
+        Vector3 outwardDir = GetTrueOutwardDirection();
+        Vector3 paintingCenter = transform.position + new Vector3(0, heightOffset, 0);
+
+        Vector3 startPos = paintingCenter + (outwardDir * startDistance);
+        Vector3 endPos = paintingCenter + (outwardDir * endDistance);
+
+        // 2. Setup Camera
+        Camera mainCam = Camera.main;
+        if (mainCam != null) mainCam.enabled = false;
+
+        cutsceneCamera.transform.position = startPos;
+        cutsceneCamera.transform.LookAt(paintingCenter);
+        cutsceneCamera.enabled = true;
+
+        // 3. Fade IN from Black
+        yield return StartCoroutine(FadeRoutine(1f, 0f, fadeDuration));
+
+        // 4. Move the camera backwards dynamically
+        float elapsed = 0f;
+        while (elapsed < moveDuration)
+        {
+            cutsceneCamera.transform.position = Vector3.Lerp(startPos, endPos, elapsed / moveDuration);
+            cutsceneCamera.transform.LookAt(paintingCenter); // Keep focused on the center
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        cutsceneCamera.transform.position = endPos;
+
+        // 5. Wait
+        yield return new WaitForSeconds(viewDuration);
+
+        // 6. Fade OUT to Black
+        yield return StartCoroutine(FadeRoutine(0f, 1f, fadeDuration));
+
+        // 7. Revert Cameras
+        cutsceneCamera.enabled = false;
+        if (mainCam != null) mainCam.enabled = true;
+
+        // 8. Fade IN back to gameplay
+        yield return StartCoroutine(FadeRoutine(1f, 0f, fadeDuration));
+    }
+
+    private Vector3 GetTrueOutwardDirection()
+    {
+        PaintbrushChanneller player = FindFirstObjectByType<PaintbrushChanneller>();
+        Vector3 directionToPlayer;
+
+        if (player != null)
+        {
+            // Get the direction to the player, but IGNORE the Y axis (height).
+            // This ensures we only care about their horizontal placement in the room.
+            directionToPlayer = player.transform.position - transform.position;
+            directionToPlayer.y = 0;
+            directionToPlayer.Normalize();
+        }
+        else
+        {
+            // Fallback
+            directionToPlayer = new Vector3(transform.forward.x, 0, transform.forward.z).normalized;
+        }
+
+        // Check all 6 local axes of the 3D model
+        Vector3[] axes = new Vector3[]
+        {
+            transform.forward, -transform.forward,
+            transform.up, -transform.up,
+            transform.right, -transform.right
+        };
+
+        Vector3 bestAxis = transform.forward;
+        float maxDot = -Mathf.Infinity;
+
+        foreach (Vector3 axis in axes)
+        {
+            // Flatten the axis (remove its vertical Y component)
+            Vector3 flatAxis = new Vector3(axis.x, 0, axis.z);
+
+            // If the axis was pointing completely straight up or down, its flat length is 0. Skip it.
+            if (flatAxis.sqrMagnitude < 0.01f) continue;
+
+            flatAxis.Normalize();
+
+            // Find which flat axis aligns most perfectly with the player
+            float dot = Vector3.Dot(flatAxis, directionToPlayer);
+            if (dot > maxDot)
+            {
+                maxDot = dot;
+                bestAxis = flatAxis;
+            }
+        }
+
+        // Return the best axis. Because it's flattened, the camera will never move vertically.
+        return bestAxis.normalized;
+    }
+
+    private System.Collections.IEnumerator FadeRoutine(float startAlpha, float endAlpha, float duration)
+    {
+        float elapsed = 0f;
+        Color color = fadeImage.color;
+
+        while (elapsed < duration)
+        {
+            color.a = Mathf.Lerp(startAlpha, endAlpha, elapsed / duration);
+            fadeImage.color = color;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        color.a = endAlpha;
+        fadeImage.color = color;
     }
 }

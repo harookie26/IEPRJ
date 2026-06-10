@@ -1,10 +1,14 @@
+using NUnit.Framework;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class MinimapManager : MonoBehaviour
 {
     [SerializeField] private PlayerLocationUpdater locationUpdater;
     [SerializeField] private Camera minimapCamera;
     [SerializeField] private GameObject minimapObject;
+
+    [SerializeField] private List<GameObject> minimapMarkers;
 
     private bool isMinimapVisible = false;
 
@@ -37,6 +41,16 @@ public class MinimapManager : MonoBehaviour
         {
             isMinimapVisible = true;
             minimapObject.gameObject.SetActive(isMinimapVisible);
+        }
+
+    }
+
+    void LateUpdate()
+    {
+        // Synchronize the rotation after the minimap camera has definitively moved
+        foreach (GameObject item in minimapMarkers)
+        {
+            item.transform.rotation = minimapCamera.transform.rotation;
         }
     }
 
