@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,7 +9,9 @@ namespace Level.UI
         public static DialogueManager Instance { get; private set; }
 
         [Header("Setup")]
-        [SerializeField] private RectTransform parentCanvas; // where labels will be placed
+        [SerializeField] private RectTransform parentCanvas; // For overall canvas reference
+        [SerializeField, Tooltip("The dedicated empty GameObject inside the canvas where dialogue labels will actually live.")]
+        private RectTransform dialogueContainer;
         [SerializeField] private DialogueLabel labelPrefab;
         [SerializeField] private int initialPool = 2;
 
@@ -24,6 +27,7 @@ namespace Level.UI
         private readonly Queue<DialogueLabel> pool = new Queue<DialogueLabel>();
         private readonly Queue<DialogueRequest> dialogueQueue = new Queue<DialogueRequest>();
         private DialogueLabel currentLabel;
+        private Coroutine finishCoroutine;
         private bool isPlaying = false;
 
         void Awake()
@@ -41,13 +45,21 @@ namespace Level.UI
                 return;
             }
 
+            // Fallback safety: If container isn't set, use the parent canvas directly
+            if (dialogueContainer == null)
+            {
+                dialogueContainer = parentCanvas;
+                Debug.LogWarning("DialogueManager: Dialogue Container not assigned. Defaulting to Parent Canvas.", this);
+            }
+
             for (int i = 0; i < initialPool; i++)
                 pool.Enqueue(CreateNew());
         }
 
         private DialogueLabel CreateNew()
         {
-            var go = Instantiate(labelPrefab.gameObject, parentCanvas != null ? parentCanvas : null);
+            // Instantiates directly inside the designated container
+            var go = Instantiate(labelPrefab.gameObject, dialogueContainer != null ? dialogueContainer : null);
             go.SetActive(true);
             var label = go.GetComponent<DialogueLabel>();
             // start inactive
@@ -80,6 +92,51 @@ namespace Level.UI
             Display(entry.characterName, entry.text, entry.fadeIn, entry.displayDuration, entry.fadeOut);
         }
 
+        public void DisplaySequence(IEnumerable<DialogueEntry> entries)
+        {
+            if (entries == null || labelPrefab == null) return;
+
+            var requests = new List<DialogueRequest>();
+
+            foreach (DialogueEntry entry in entries)
+            {
+                if (entry == null) continue;
+
+                requests.Add(new DialogueRequest
+                {
+                    characterName = entry.characterName,
+                    text = entry.text,
+                    fadeIn = entry.fadeIn,
+                    displayDuration = entry.displayDuration,
+                    fadeOut = entry.fadeOut
+                });
+            }
+
+            if (requests.Count == 0) return;
+
+            ReplaceWithSequence(requests);
+        }
+
+        public void DisplayLatest(
+            string characterName,
+            string text,
+            float fadeIn = 0.25f,
+            float hold = 3f,
+            float fadeOut = 0.25f)
+        {
+            ReplaceWithSequence(new[]
+            {
+                new DialogueRequest
+                {
+                    characterName = characterName,
+                    text = text,
+                    fadeIn = fadeIn,
+                    displayDuration = hold,
+                    fadeOut = fadeOut
+                }
+            });
+        }
+
         // Display by explicit values with character name
         public void Display(string characterName, string text, float fadeIn = 0.25f, float hold = 3f, float fadeOut = 0.25f)
         {
@@ -100,9 +157,41 @@ namespace Level.UI
 
             dialogueQueue.Enqueue(request);
 
-            // If nothing is playing, start processing the queue
             if (!isPlaying)
                 ProcessQueue();
+        }
+
+        private void ReplaceWithSequence(IEnumerable<DialogueRequest> requests)
+        {
+            bool shouldInterrupt = isPlaying;
+
+            if (shouldInterrupt)
+                StopCurrentDialogue();
+
+            dialogueQueue.Clear();
+
+            foreach (DialogueRequest request in requests)
+                dialogueQueue.Enqueue(request);
+
+            ProcessQueue();
+        }
+
+        private void StopCurrentDialogue()
+        {
+            if (finishCoroutine != null)
+            {
+                StopCoroutine(finishCoroutine);
+                finishCoroutine = null;
+            }
+
+            if (currentLabel != null)
+            {
+                currentLabel.HideImmediately();
+                ReturnLabel(currentLabel);
+                currentLabel = null;
+            }
+
+            isPlaying = false;
         }
 
         // Display by explicit values (text only, no character name)
@@ -121,35 +210,43 @@ namespace Level.UI
 
             currentLabel = GetLabel();
 
-            // position at center of parent
-            if (currentLabel.transform is RectTransform rt && parentCanvas != null)
+            // Set parent to the dedicated container and center it
+            if (currentLabel.transform is RectTransform rt && dialogueContainer != null)
             {
-                rt.SetParent(parentCanvas, false);
+                rt.SetParent(dialogueContainer, false);
                 rt.anchoredPosition = Vector2.zero;
             }
 
             currentLabel.gameObject.SetActive(true);
             currentLabel.Show(request.characterName, request.text, request.fadeIn, request.displayDuration, request.fadeOut);
 
-            // schedule display finish and then process next dialogue
             float totalDuration = request.fadeIn + request.displayDuration + request.fadeOut + 0.05f;
-            StartCoroutine(FinishCurrentDialogue(totalDuration));
+            finishCoroutine = StartCoroutine(FinishCurrentDialogue(totalDuration));
         }
 
-        System.Collections.IEnumerator FinishCurrentDialogue(float seconds)
+        IEnumerator FinishCurrentDialogue(float seconds)
         {
             yield return new WaitForSecondsRealtime(seconds);
 
-            // Return current label to pool
             if (currentLabel != null)
                 ReturnLabel(currentLabel);
 
             currentLabel = null;
+            finishCoroutine = null;
             isPlaying = false;
 
-            // Process next dialogue if any are queued
             if (dialogueQueue.Count > 0)
                 ProcessQueue();
         }
+
+        public bool CheckifEntryAlreadyInQueue(string characterName, string text)
+        {
+            foreach (var request in dialogueQueue)
+            {
+                if (request.characterName == characterName && request.text == text)
+                    return true;
+            }
+            return false;
+        }   
     }
 }

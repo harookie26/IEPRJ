@@ -25,7 +25,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     [Header("Teleporting")]
     [Tooltip("List of transforms marking teleport destination points.")]
-    [SerializeField] private List<Transform> teleportPoints = new List<Transform>();
+    [SerializeField] public List<Transform> teleportPoints = new List<Transform>();
     [Tooltip("Cooldown between teleports in seconds.")]
     [SerializeField] private float teleportCooldown = 0.5f;
 
@@ -39,6 +39,10 @@ public class EnemyStateMachine : MonoBehaviour
     [Tooltip("Stun durations indexed by how many paintings are restored (0, 1, 2, 3+ paintings).")]
     [SerializeField] private float[] stunDurationTiers = new float[] { 5f, 5f, 3.5f, 2f };
     private float currentStunDuration;
+
+    [Header("Tension Management")]
+    [SerializeField] private float maxSilentPassiveDuration = 45f;
+    private float passiveTensionTimer = 0f;
     public float StunDuration => currentStunDuration;
 
     private EnemyState currentState;
@@ -47,6 +51,7 @@ public class EnemyStateMachine : MonoBehaviour
     private bool enemyCaught = false;
 
     private bool configWarned = false;
+    private int scriptedEncounters = 0;
 
     private void WarnMissingConfig()
     {
@@ -91,6 +96,7 @@ public class EnemyStateMachine : MonoBehaviour
     private Vector3 initialEnemyPosition;
     private Vector3 initialEnemyRotation;
 
+    private bool hasInitialized = false;
     private void OnEnable()
     {
         AllInstances.Add(this);
@@ -105,16 +111,9 @@ public class EnemyStateMachine : MonoBehaviour
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
     }
 
+
     private void Start()
     {
-        //if (navMeshAgent == null && enemy != null)
-        //{
-        //    navMeshAgent = enemy.GetComponent<NavMeshAgent>();
-        //    if (navMeshAgent == null)
-        //    {
-        //        Debug.LogWarning("EnemyStateManager: No NavMeshAgent found on the enemy. Assign one in the inspector or add one to the enemy GameObject.");
-        //    }
-        //}
         currentStunDuration = stunDurationTiers[0];
         initialEnemyPosition = enemy.transform.position;
         initialEnemyRotation = enemy.transform.eulerAngles;
@@ -124,10 +123,6 @@ public class EnemyStateMachine : MonoBehaviour
             MoveSpeed = config.moveSpeed;
             baseRoamSpeed = config.patrolSpeed;
             baseChaseSpeed = config.moveSpeed;
-            //EnemyAggroRadius = config.enemyAggroRadius;
-            //EnemyKillRadius = config.enemyKillRadius;
-            //DistractedCalmDuration = config.distractedCalmDuration;
-            //DistractedRushMultiplier = config.distractedRushMultiplier;
         }
         else
         {
@@ -136,19 +131,76 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         enemyTeleporting.SetTeleportConfig(teleportPoints, teleportCooldown);
+        hasInitialized = true;
 
+        // Controlled exclusively via the EnemyManager setup loop now
         if (!isEnemyActivated)
         {
-            if (navMeshAgent != null)
-            {
-                navMeshAgent.isStopped = true;
-                navMeshAgent.velocity = Vector3.zero;
-                navMeshAgent.ResetPath();
-            }
-            return; // don't enter any state yet
+            DisableAgentPhysics();
+            return;
         }
 
         ChangeState(RoamState);
+    }
+
+    public void SetActiveGhost(bool dynamicState)
+    {
+        if (!hasInitialized) isEnemyActivated = dynamicState;
+
+        isEnemyActivated = dynamicState;
+
+        if (isEnemyActivated)
+        {
+            if (navMeshAgent != null)
+            {
+                navMeshAgent.enabled = true;
+                navMeshAgent.isStopped = false;
+            }
+
+            SetGhostVisualsAndPhysics(true);
+
+            ChangeState(RoamState);
+            Debug.Log($"[{gameObject.name}] Awoken and revealed by Manager. Commencing Floor Roam.");
+        }
+        else
+        {
+            DisableAgentPhysics();
+            SetGhostVisualsAndPhysics(false);
+            Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
+        }
+    }
+
+    private void SetGhostVisualsAndPhysics(bool visible)
+    {
+        Renderer[] renderers = enemy.GetComponentsInChildren<Renderer>();
+        foreach (Renderer r in renderers)
+        {
+            r.enabled = visible;
+        }
+
+        Collider[] colliders = enemy.GetComponentsInChildren<Collider>();
+        foreach (Collider c in colliders)
+        {
+            c.enabled = visible;
+        }
+
+        AudioSource ghostVoice = enemy.GetComponent<AudioSource>();
+        if (ghostVoice != null)
+        {
+            if (visible) ghostVoice.Play();
+            else ghostVoice.Stop();
+        }
+    }
+
+    private void DisableAgentPhysics()
+    {
+        StopChaseAudio();
+        if (navMeshAgent != null)
+        {
+            navMeshAgent.velocity = Vector3.zero;
+            navMeshAgent.ResetPath();
+            navMeshAgent.enabled = false; // Disabling entirely prevents navigation calculations on inactive layers
+        }
     }
 
     private void Update()
@@ -165,12 +217,20 @@ public class EnemyStateMachine : MonoBehaviour
             animator.SetBool("isWalking", true);
             animator.SetBool("isStunned", false);
             animator.SetBool("isRunning", false);
+
+            passiveTensionTimer += Time.deltaTime;
+            if (passiveTensionTimer >= maxSilentPassiveDuration)
+            {
+                //TriggerPassiveRelocation();
+            }
         }
         else if (currentState == ChaseState)
         {
             animator.SetBool("isWalking", false);
             animator.SetBool("isStunned", false);
             animator.SetBool("isRunning", true);
+
+            passiveTensionTimer = 0f;
         }
     }
 
@@ -213,40 +273,32 @@ public class EnemyStateMachine : MonoBehaviour
 
     public Vector3 GetRandomPointExcludingPlayerRoom()
     {
-        // Fallback safety checks
         if (teleportPoints == null || teleportPoints.Count == 0) return transform.position;
         if (targetPlayer == null) return GetRandomPoint();
 
-        // 1. Identify what room the player is currently occupying
         Vector3 playerPos = targetPlayer.transform.position;
         IRoom playerRoom = RoomUtils.GetRoomForPosition(new Vector2(playerPos.x, playerPos.y));
 
         List<Transform> validPoints = new List<Transform>();
 
-        // 2. Loop through all patrol/teleport positions
         foreach (Transform point in teleportPoints)
         {
             if (point == null) continue;
 
-            // Identify what room this specific destination point is inside
             IRoom pointRoom = RoomUtils.GetRoomForPosition(new Vector2(point.position.x, point.position.y));
 
-            // 3. EXCLUSION RULE: Only add the point if it's NOT in the player's room
             if (playerRoom == null || pointRoom == null || !pointRoom.Equals(playerRoom))
             {
                 validPoints.Add(point);
             }
         }
 
-        // 4. Selection: Pick a random point from the safe rooms list
         if (validPoints.Count > 0)
         {
             int index = Random.Range(0, validPoints.Count);
             return validPoints[index].position;
         }
 
-        // Extreme Fallback: If ALL your level's points are somehow inside the player's room, 
-        // default back to a normal random point to prevent a crash.
         return GetRandomPoint();
     }
     // ----- Freeze / Unfreeze API -----
@@ -426,16 +478,16 @@ public class EnemyStateMachine : MonoBehaviour
         int tierIndex = Mathf.Clamp(corruptedPaintingsChanneled, 0, stunDurationTiers.Length - 1);
         currentStunDuration = stunDurationTiers[tierIndex];
 
-        if (corruptedPaintingsChanneled > 0 && !isEnemyActivated)
-        {
-            isEnemyActivated = true;
-            AudioSource source = this.gameObject.GetComponent<AudioSource>();
-            source.Play();
-            if (navMeshAgent != null)
-                navMeshAgent.isStopped = false;
+        //if (corruptedPaintingsChanneled > 2 && !isEnemyActivated)
+        //{
+        //    isEnemyActivated = true;
+        //    AudioSource source = this.gameObject.GetComponent<AudioSource>();
+        //    source.Play();
+        //    if (navMeshAgent != null)
+        //        navMeshAgent.isStopped = false;
 
-            ChangeState(RoamState); // only start moving now
-        }
+        //    ChangeState(RoamState); // only start moving now
+        //}
 
         if (corruptedPaintingsChanneled > 1)
         {
@@ -580,5 +632,39 @@ public class EnemyStateMachine : MonoBehaviour
         if (navMeshAgent != null)
             navMeshAgent.isStopped = false;
         ChangeState(RoamState);
+    }
+
+    public void scriptedEncounterCheck()
+    {
+        scriptedEncounters++;
+
+        if (scriptedEncounters == 3)
+        {
+            isEnemyActivated = true;
+            AudioSource source = this.gameObject.GetComponent<AudioSource>();
+            source.Play();
+            if (navMeshAgent != null)
+                navMeshAgent.isStopped = false;
+
+            ChangeState(RoamState); // only start moving now
+        }
+
+    }
+
+    public void ReactToLoudNoise(int roomId)
+    {
+        if (!isEnemyActivated || isFrozen || currentState == ChaseState) return;
+
+        var targetRoom = RoomRegistry.GetRoom(roomId) as RoomComponent;
+        if (targetRoom != null)
+        {
+            // Instead of instant warping, tell the NavMeshAgent to actively patrol to that room
+            Vector3 targetPoint = enemyTeleporting.GetForcedTeleportPoint(this, targetRoom);
+            if (targetPoint != Vector3.zero)
+            {
+                NavAgent.SetDestination(targetPoint);
+                Debug.Log($"Ghost heard a disturbance in Room {roomId}! Investigating...");
+            }
+        }
     }
 }

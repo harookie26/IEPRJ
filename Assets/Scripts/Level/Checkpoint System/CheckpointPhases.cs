@@ -17,16 +17,19 @@ public class CheckpointPhases : MonoBehaviour
     private MainPainting _mainPainting;
     private ReviewerToolsManager _reviewerToolsManager;
     private HintManager _hintManager;
+    private InteractionTrigger _enemyIntroTrigger;
 
     [Header("Object References")]
     [SerializeField] private GameObject _door;
     [SerializeField] private GameObject _key;
     [SerializeField] private GameObject _paintbucket;
+    [SerializeField] private GameObject _flashlight_collectible;
 
     [Header("Spawn Settings")]
     [SerializeField] private Vector3[] _spawnPoints;
 
     private int _currentPhase;
+    private Vector3 initialSpawn;
 
     private void Awake()
     {
@@ -44,6 +47,8 @@ public class CheckpointPhases : MonoBehaviour
         _mainPainting = FindFirstObjectByType<MainPainting>();
         _reviewerToolsManager = FindFirstObjectByType<ReviewerToolsManager>();
         _hintManager = FindFirstObjectByType<HintManager>();
+        _enemyIntroTrigger = FindFirstObjectByType<InteractionTrigger>();
+
     }
 
     private void Start()
@@ -55,6 +60,8 @@ public class CheckpointPhases : MonoBehaviour
         {
             _spawnPoints[0] = _player.transform.position;
         }
+
+        initialSpawn = _player.transform.position;
     }
 
     private void Update()
@@ -74,9 +81,9 @@ public class CheckpointPhases : MonoBehaviour
             _playerCC.enabled = false;
 
         // Painting phases
-        if (phase >= 5 && phase < 9)
+        if (phase >= 6 && phase < 10)
         {
-            int paintingIndex = phase - 5;
+            int paintingIndex = phase - 6;
 
             if (paintingIndex < 0 || paintingIndex >= 4)
             {
@@ -108,9 +115,9 @@ public class CheckpointPhases : MonoBehaviour
         // Normal phases
         _player.transform.position = _spawnPoints[phase];
 
-        if (phase == 9)
+        if (phase == 0)
         {
-            Vector3 spawnPos = new Vector3(7.01900005f, 9.03999996f, 1.36099994f);
+            Vector3 spawnPos = initialSpawn;
 
             _player.transform.position = spawnPos;
         }
@@ -146,11 +153,31 @@ public class CheckpointPhases : MonoBehaviour
         // Door Logic
         if (_door) _door.SetActive(phase < 2);
 
+        // Flashlight Logic
+        if (phase < 3)
+        {
+            PlayerCollectibleManager.Instance.RemoveCollected("Flashlight");
+            if (_flashlight_collectible) _flashlight_collectible.SetActive(true);
+
+            _enemyIntroTrigger.hasTriggered = false;
+
+        }
+        else
+        {
+            PlayerCollectibleManager.Instance.AddCollected("Flashlight");
+            if (_flashlight_collectible) _flashlight_collectible.SetActive(false);
+
+            _enemyIntroTrigger.hasTriggered = true;
+
+        }
+
         // Paintbucket Logic
-        if (phase >= 3)
+        if (phase >= 4)
         {
             PlayerCollectibleManager.Instance.AddCollected("Paintbucket");
             if (_paintbucket) _paintbucket.SetActive(false);
+
+
         }
         else
         {
@@ -161,20 +188,26 @@ public class CheckpointPhases : MonoBehaviour
         if (_tutorialPainting != null) _tutorialPainting.ApplyCheckpointPhase(phase);
 
         // Enemy Logic
-        if (_enemyStateMachine != null)
-        {
-            if (phase >= 5) _enemyStateMachine.ReactivateEnemyState();
-            else _enemyStateMachine.ResetEnemyState();
-        }
+        //if (_enemyStateMachine != null)
+        //{
+        //    if (phase >= 6) _enemyStateMachine.ReactivateEnemyState();
+        //    else _enemyStateMachine.ResetEnemyState();
+        //}
 
         if (_paintingRandomizer != null) _paintingRandomizer.ApplyCheckpointPhase(phase);
 
+        PaintbrushChanneller channeller = FindFirstObjectByType<PaintbrushChanneller>();
+        if (channeller != null)
+        {
+            channeller.ApplyCheckpointPaintingProgress(Mathf.Clamp(phase - 5, 0, 4));
+        }
+
         if (_mainPainting != null)
         {
-            _mainPainting.paint1Done = phase >= 5;
-            _mainPainting.paint2Done = phase >= 6;
-            _mainPainting.paint3Done = phase >= 7;
-            _mainPainting.paint4Done = phase >= 8;
+            _mainPainting.paint1Done = phase >= 6;
+            _mainPainting.paint2Done = phase >= 7;
+            _mainPainting.paint3Done = phase >= 8;
+            _mainPainting.paint4Done = phase >= 9;
         }
     }
 
@@ -194,34 +227,34 @@ public class CheckpointPhases : MonoBehaviour
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT3_START);
                 break;
 
-            case 3:
+            case 4:
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT_PAINTING_START);
                 break;
 
-            case 4:
-                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
-                break;
-
             case 5:
-                _hintManager.corruptedPaintingsChanneled = 1;
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
                 break;
 
             case 6:
-                _hintManager.corruptedPaintingsChanneled = 2;
+                _hintManager.corruptedPaintingsChanneled = 1;
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
                 break;
 
             case 7:
-                _hintManager.corruptedPaintingsChanneled = 3;
+                _hintManager.corruptedPaintingsChanneled = 2;
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
                 break;
 
             case 8:
-                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT5_START);
+                _hintManager.corruptedPaintingsChanneled = 3;
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
                 break;
 
             case 9:
+                EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT5_START);
+                break;
+
+            case 10:
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT5_START);
                 break;
 

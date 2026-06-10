@@ -34,6 +34,8 @@ public class PlayerInteractor : MonoBehaviour
 
     private string currentHudKey;
 
+    private NarrativeInteractable currentActiveInteractable;
+
     private AudioSource sfxAudioSource;
     private AudioSource musicAudioSource;
     private AudioList audioList;
@@ -125,12 +127,17 @@ public class PlayerInteractor : MonoBehaviour
             Debug.Log($"[PlayerInteractor] Detected collider: {hitCol.gameObject.name}, isInteract: {isInteract}");
             if (isInteract)
             {
-                // Note: lookup helpers in interactions - check both parent and children for components
                 var interactable = FindInteractableOnCollider(hitCol);
                 Debug.Log($"[PlayerInteractor] Interactable found: {interactable != null}");
                 if (interactable != null)
                 {
                     interactable.Interact();
+
+                    if (interactable is NarrativeInteractable narrative)
+                    {
+                        currentActiveInteractable = narrative;
+                    }
+
                     return;
                 }
             }
@@ -156,8 +163,33 @@ public class PlayerInteractor : MonoBehaviour
             return;
 
         string desiredKey = null;
+        Collider hitCol = null;
+        bool isInteract = false;
 
-        if (TrySphereCastPriority(out Collider hitCol, out _, out bool isInteract))
+        bool hitSomething = TrySphereCastPriority(out hitCol, out _, out isInteract);
+
+        bool isStillLookingAtCurrent = false;
+
+        if (hitSomething && isInteract && hitCol != null)
+        {
+            var interactable = FindInteractableOnCollider(hitCol);
+            if (interactable != null && interactable is NarrativeInteractable narrative)
+            {
+                if (narrative == currentActiveInteractable)
+                {
+                    isStillLookingAtCurrent = true;
+                }
+            }
+        }
+
+        if (currentActiveInteractable != null && !isStillLookingAtCurrent)
+        {
+            currentActiveInteractable.ClosePopUpDisplay();
+            currentActiveInteractable = null;
+        }
+
+
+        if (hitSomething)
         {
             if (isInteract)
             {
@@ -174,13 +206,11 @@ public class PlayerInteractor : MonoBehaviour
             }
         }
 
-        // Proximity channel check
         if (desiredKey == null && paintbrushChanneller != null && collectibles.HasCollected("Paintbucket"))
         {
             Transform proximityOrigin = paintbrushChanneller.proximityOrigin != null
                 ? paintbrushChanneller.proximityOrigin
                 : paintbrushChanneller.transform;
-
 
             Collider[] hits = Physics.OverlapSphere(
                 proximityOrigin.position,
@@ -201,6 +231,14 @@ public class PlayerInteractor : MonoBehaviour
         else if (paintbrushChanneller == null)
         {
             Debug.LogWarning("[HUD] paintbrushChanneller is null — assign it in the inspector!");
+        }
+
+        if (currentActiveInteractable != null)
+        {
+            if (currentActiveInteractable.IsPopUpOpen)
+            {
+                desiredKey = null; // Force the HUD to hide if the pop-up is active
+            }
         }
 
         if (currentHudKey == desiredKey)
@@ -395,6 +433,14 @@ public class PlayerInteractor : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (hasFocus && EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 
     private void OnDrawGizmos()

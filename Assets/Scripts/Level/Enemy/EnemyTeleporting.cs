@@ -92,39 +92,50 @@ public class EnemyTeleporting : EnemyState
             return Vector3.zero;
         }
 
-        List<Transform> validPoints = new List<Transform>();
+        Vector3 playerPos = state.TargetPlayer.transform.position;
+        IRoom currentRoom = RoomUtils.GetRoomForPosition(new Vector2(state.Enemy.transform.position.x, state.Enemy.transform.position.y));
+        IRoom playerRoom = RoomUtils.GetRoomForPosition(new Vector2(playerPos.x, playerPos.y));
+
+        List<Transform> closePoints = new List<Transform>();
+        List<Transform> farPoints = new List<Transform>();
+
         foreach (var point in teleportPoints)
         {
-            if (point != null)
-            {
-                validPoints.Add(point);
-            }
-        }
+            if (point == null) continue;
 
-        if (validPoints.Count == 0)
-        {
-            Debug.LogWarning("EnemyTeleporting: All teleport points are null.");
-            return Vector3.zero;
-        }
-
-        IRoom currentRoom = RoomUtils.GetRoomForPosition(new Vector2(state.Enemy.transform.position.x, state.Enemy.transform.position.y));
-
-        List<Transform> differentRoomPoints = new List<Transform>();
-        foreach (var point in validPoints)
-        {
             IRoom pointRoom = RoomUtils.GetRoomForPosition(new Vector2(point.position.x, point.position.y));
 
-            if (currentRoom == null || pointRoom == null || !currentRoom.Equals(pointRoom))
+            if (currentRoom != null && pointRoom != null && currentRoom.Equals(pointRoom)) continue;
+            if (playerRoom != null && pointRoom != null && playerRoom.Equals(pointRoom)) continue;
+
+            float distToPlayer = Vector3.Distance(point.position, playerPos);
+
+            // Define a "Stalking Zone" (e.g., between 6 and 22 meters away)
+            if (distToPlayer >= 6f && distToPlayer <= 22f)
             {
-                differentRoomPoints.Add(point);
+                closePoints.Add(point);
+            }
+            else
+            {
+                farPoints.Add(point);
             }
         }
 
-        List<Transform> pointsToUse = differentRoomPoints.Count > 0 ? differentRoomPoints : validPoints;
+        List<Transform> pointsToUse;
+        if (closePoints.Count > 0 && Random.value < 0.75f)
+        {
+            pointsToUse = closePoints;
+            Debug.Log($"[Stalking System] Ghost chose to stay close. ({closePoints.Count} stalk points available)");
+        }
+        else
+        {
+            pointsToUse = farPoints.Count > 0 ? farPoints : teleportPoints;
+        }
 
         Transform randomPoint = pointsToUse[Random.Range(0, pointsToUse.Count)];
         return randomPoint.position;
     }
+
     public Vector3 GetForcedTeleportPoint(EnemyStateMachine state, RoomComponent forcedRoom)
     {
         if (forcedRoom == null || teleportPoints == null || teleportPoints.Count == 0)

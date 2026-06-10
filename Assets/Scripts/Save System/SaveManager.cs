@@ -1,7 +1,7 @@
-using UnityEngine;
 using System.Text;
 using System.Threading.Tasks;
 using Unity.PlatformToolkit;
+using UnityEngine;
 
 public class SaveManager : MonoBehaviour
 {
@@ -79,9 +79,10 @@ public class SaveManager : MonoBehaviour
     {
         if (savingSystem == null) return;
 
-        PlayerSaveData data = playerSaveHandler.GetSaveData();
-        string json = JsonUtility.ToJson(data);
+        GameSaveData data = playerSaveHandler.GetSaveData();
+        GlobalSaveSystem.CaptureInto(data);
 
+        string json = JsonUtility.ToJson(data);
         try
         {
             await using (var writeable = await savingSystem.OpenSaveWritable(slotName))
@@ -114,8 +115,10 @@ public class SaveManager : MonoBehaviour
 
             if (!string.IsNullOrEmpty(json))
             {
-                PlayerSaveData loadedData = JsonUtility.FromJson<PlayerSaveData>(json);
+                GameSaveData loadedData = JsonUtility.FromJson<GameSaveData>(json);
                 playerSaveHandler.LoadSaveData(loadedData);
+                GlobalSaveSystem.RestoreFrom(loadedData);
+
                 Debug.Log($"<color=cyan>Game Loaded locally from slot: {slotName}!</color>");
             }
         }

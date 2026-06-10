@@ -76,15 +76,29 @@ public class CorruptPaintingRandomizer : MonoBehaviour
         int corruptedCount = 4;
         activeChosenPaintings.Clear();
 
-        List<List<GameObject>> allRooms = new List<List<GameObject>>
+        // --- NEW: Force Room 3 to always be picked ---
+        if (Room3paintings != null && Room3paintings.Count > 0)
         {
-            Room1paintings, Room2paintings, Room3paintings, Room4paintings, Room5paintings
+            // Find all valid paintings in Room 3 (future-proofs it just in case you ever add a 2nd painting)
+            List<GameObject> validRoom3 = Room3paintings.FindAll(p => p != null);
+            if (validRoom3.Count > 0)
+            {
+                ShuffleList(validRoom3);
+                activeChosenPaintings.Add(validRoom3[0]); // Adds the forced painting
+                if (isDebugMode) Debug.Log($"[Randomizer] Forced Room 3 painting: {validRoom3[0].name}");
+            }
+        }
+
+        // Add only the REMAINING rooms to the randomizer pool
+        List<List<GameObject>> remainingRooms = new List<List<GameObject>>
+        {
+            Room1paintings, Room2paintings, Room4paintings, Room5paintings
         };
 
-        List<List<GameObject>> shuffledRooms = new List<List<GameObject>>(allRooms);
+        List<List<GameObject>> shuffledRooms = new List<List<GameObject>>(remainingRooms);
         ShuffleList(shuffledRooms);
 
-        // Pass 1
+        // Pass 1: Pick 1 painting from each of the other rooms until we hit 4 total
         foreach (var room in shuffledRooms)
         {
             if (activeChosenPaintings.Count >= corruptedCount) break;
@@ -98,7 +112,7 @@ public class CorruptPaintingRandomizer : MonoBehaviour
             }
         }
 
-        // Pass 2
+        // Pass 2: Fill any remaining slots from the rest of the level if Pass 1 failed to find enough
         if (activeChosenPaintings.Count < corruptedCount)
         {
             List<GameObject> remainingPool = new List<GameObject>();
@@ -114,6 +128,7 @@ public class CorruptPaintingRandomizer : MonoBehaviour
                 activeChosenPaintings.Add(p);
             }
         }
+
         ApplyCorruptionToChosenList();
     }
 
@@ -260,7 +275,7 @@ public class CorruptPaintingRandomizer : MonoBehaviour
 
     public void ApplyCheckpointPhase(int phase)
     {
-        int completedCount = Mathf.Clamp(phase - 4, 0, activeChosenPaintings.Count);
+        int completedCount = Mathf.Clamp(phase - 5, 0, activeChosenPaintings.Count);
 
         for (int i = 0; i < activeChosenPaintings.Count; i++)
         {

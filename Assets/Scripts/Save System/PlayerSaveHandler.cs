@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class PlayerSaveHandler : MonoBehaviour
 {
@@ -10,7 +10,7 @@ public class PlayerSaveHandler : MonoBehaviour
     public LockedDoorInteractable lockedDoor;
     public PlayerCollectibleManager collectibleManager;
     public DialogueTriggerManager dialogueTriggerManager;
-    public EnemyIntroTrigger enemyIntroTrigger;
+    public InteractionTrigger enemyIntroTrigger;
     public HintManager hintManager;
     public TutorialManager tutorialManager;
     public EnemyStateMachine enemyStateMachine; // Add this reference for the enemy state machine
@@ -26,7 +26,7 @@ public class PlayerSaveHandler : MonoBehaviour
         if (lockedDoor == null) lockedDoor = GetComponent<LockedDoorInteractable>();
         if (collectibleManager == null) collectibleManager = GetComponent<PlayerCollectibleManager>();
         if (dialogueTriggerManager == null) dialogueTriggerManager = GetComponent<DialogueTriggerManager>();
-        if (enemyIntroTrigger == null) enemyIntroTrigger = GetComponent<EnemyIntroTrigger>();
+        if (enemyIntroTrigger == null) enemyIntroTrigger = GetComponent<InteractionTrigger>();
         if (enemyStateMachine == null) enemyStateMachine = GetComponent<EnemyStateMachine>();
         if (paintbrushChanneller == null) paintbrushChanneller = GetComponent<PaintbrushChanneller>();
         if (corruptedPaintingsRandomizer == null) corruptedPaintingsRandomizer = GetComponent<CorruptPaintingRandomizer>();
@@ -38,9 +38,9 @@ public class PlayerSaveHandler : MonoBehaviour
     }
 
     // Gathers data from all scripts into one package
-    public PlayerSaveData GetSaveData()
+    public GameSaveData GetSaveData()
     {
-        return new PlayerSaveData
+        return new GameSaveData
         {
             position = movement.transform.position,
             // You can safely grab Yaw and Pitch from your PlayerMovement script
@@ -56,14 +56,14 @@ public class PlayerSaveHandler : MonoBehaviour
             enemyIntro = enemyIntroTrigger.GetSaveData(),
             hint = hintManager.GetSaveData(),
             tutorial = tutorialManager.GetSaveData(),
-            enemyState = enemyStateMachine.GetSaveData(), // Get enemy state data
+            //enemyState = enemyStateMachine.GetSaveData(), // Get enemy state data
             paintbrush = paintbrushChanneller.GetSaveData(), // Get paintbrush state data
             randomizedPaintings = corruptedPaintingsRandomizer.GetSaveData() // Get randomized paintings data
         };
     }
 
     // Distributes the package back to all the scripts
-    public void LoadSaveData(PlayerSaveData data)
+    public void LoadSaveData(GameSaveData data)
     {
         Debug.Log($"[Master Save] PlayerSaveHandler triggered. Is data null? {data == null}");
 
@@ -87,7 +87,7 @@ public class PlayerSaveHandler : MonoBehaviour
         enemyIntroTrigger.LoadSaveData(data.enemyIntro);
         hintManager.LoadSaveData(data.hint);
         tutorialManager.LoadSaveData(data.tutorial);
-        enemyStateMachine.LoadSaveData(data.enemyState);    
+        enemyStateMachine.LoadSaveData(data.enemyState);
         paintbrushChanneller.LoadSaveData(data.paintbrush);
         corruptedPaintingsRandomizer.LoadSaveData(data.randomizedPaintings);
         Debug.Log("[Master Save] ALL player data loaded successfully!");

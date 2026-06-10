@@ -7,6 +7,7 @@ public class StairsInputManager : MonoBehaviour
     private bool _isCutsceneActive = false;
     private GameObject _player;
     private PlayerMovement _playerMovement;
+    private UIManager _uiManager;
 
     [Header("Stair Cooldown")]
     [Tooltip("Seconds after initiating a stair transfer before another can be started.")]
@@ -25,6 +26,7 @@ public class StairsInputManager : MonoBehaviour
 
         _player = GameObject.FindGameObjectWithTag("Player");
         _playerMovement = FindFirstObjectByType<PlayerMovement>();
+        _uiManager = FindFirstObjectByType<UIManager>();
     }
 
     private void OnDisable()
@@ -45,25 +47,32 @@ public class StairsInputManager : MonoBehaviour
             return;
 
         bool interactThisFrame = InputManager.Instance.WasInteractPressed();
-        if (interactThisFrame)
+        if (!interactThisFrame)
+            return;
+
+        StairsComponent doorToUse = StairsComponent.CurrentDoor;
+
+        if (doorToUse == null)
         {
-            StairsComponent doorToUse = StairsComponent.CurrentDoor;
+            Debug.Log("[StairsInputManager] ❌ Interact pressed but CurrentDoor is NULL");
+            return;
+        }
 
-            if (doorToUse == null)
-            {
-                Debug.Log("[StairsInputManager] ❌ Interact pressed but CurrentDoor is NULL");
-                return;
-            }
+        if (doorToUse.isInaccesibleOnGameStart)
+        {
+            _uiManager?.ClearForcedHUD();
+            DialogueTriggerManager.Instance.TriggerInaccessibleAreaDialogue();
+            return;
+        }
 
-            if (doorToUse.IsReadyToUse())
-            {
-                _lastDoorUseTime = Time.unscaledTime;
-                StartCoroutine(TransferPlayer(doorToUse, 0.05f));
-            }
-            else
-            {
-                Debug.Log($"[StairsInputManager] ❌ Door {doorToUse.name} not ready for use (player not grounded or invalid state).");
-            }
+        if (doorToUse.IsReadyToUse())
+        {
+            _lastDoorUseTime = Time.unscaledTime;
+            StartCoroutine(TransferPlayer(doorToUse, 0.05f));
+        }
+        else
+        {
+            Debug.Log($"[StairsInputManager] ❌ Door {doorToUse.name} not ready for use (player not grounded or invalid state).");
         }
     }
 
@@ -101,12 +110,15 @@ public class StairsInputManager : MonoBehaviour
         }
 
         _playerMovement.SetCanMove(false);
-        if(enemy.isEnemyActivated)
+        if (enemy.isEnemyActivated)
         {
             enemy.Freeze();
-        }   
+        }
+
+        yield return StartCoroutine(doorToUse.PlayAnimationThenDeactivate());
         yield return StartCoroutine(screenFader.FadeOutSequence(0.25f));
-            
+        doorToUse.ResetAnimationPose();
+
         if (postFadeDelaySeconds > 0f)
         {
             yield return new WaitForSecondsRealtime(postFadeDelaySeconds);

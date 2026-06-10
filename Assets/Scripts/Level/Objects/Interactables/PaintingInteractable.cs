@@ -40,6 +40,33 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        // If this interactable is associated with the main painting, check if it's fully revealed
+        var mainPainting = GetComponent<MainPainting>() ?? GetComponentInParent<MainPainting>();
+
+        if (mainPainting != null)
+        {
+            Debug.Log("PaintingInteractable.Interact: Found MainPainting component. Checking if fully revealed.");
+        }
+        var gameState = FindFirstObjectByType<GameStateManager>();
+
+        bool revealedByCovers = mainPainting != null && mainPainting.IsFullyRevealed();
+        //bool revealedByProgress = gameState != null && gameState.GetCurrentLevelProgress() >= 4;
+
+        if (revealedByCovers) //  || revealedByProgress
+        {
+            if (gameState != null)
+            {
+                gameState.TriggerWinSequence();
+                Debug.Log("PaintingInteractable.Interact: WIN SEQUENCE TRIGGERED");
+                // No need to distract _enemy if win sequence will start
+                return;
+            }
+            else
+            {
+                Debug.LogWarning("PaintingInteractable.Interact: No GameStateManager found to trigger win sequence.");
+            }
+        }
+
         // Find the _enemy state machine in the scene and tell it to distract at this painting.
         var enemyStateMachine = FindFirstObjectByType<EnemyStateMachine>();
         if (enemyStateMachine == null)
@@ -66,33 +93,6 @@ public class PaintingInteractable : MonoBehaviour, IInteractable
         else
         {
             Debug.LogWarning("PaintingInteractable.Interact: Missing audio source, AudioList, or clip. Skipping SFX playback.");
-        }
-
-        // If this interactable is associated with the main painting, check if it's fully revealed
-        var mainPainting = GetComponent<MainPainting>() ?? GetComponentInParent<MainPainting>();
-
-        if (mainPainting != null)
-        {
-            Debug.Log("PaintingInteractable.Interact: Found MainPainting component. Checking if fully revealed.");
-        }
-        var gameState = FindFirstObjectByType<GameStateManager>();
-
-        bool revealedByCovers = mainPainting != null && mainPainting.IsFullyRevealed();
-        //bool revealedByProgress = gameState != null && gameState.GetCurrentLevelProgress() >= 4;
-
-        if (revealedByCovers) //  || revealedByProgress
-        {
-            if (gameState != null)
-            {
-                gameState.TriggerWinSequence();
-                Debug.Log("PaintingInteractable.Interact: WIN SEQUENCE TRIGGERED");
-                // No need to distract _enemy if win sequence will start
-                return;
-            }
-            else
-            {
-                Debug.LogWarning("PaintingInteractable.Interact: No GameStateManager found to trigger win sequence.");
-            }
         }
 
         // Hide the interact HUD after a successful interaction
