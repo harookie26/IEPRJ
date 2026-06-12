@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using static EventNames.GameStateEvents;
 
 public class Flashlight : MonoBehaviour
@@ -14,6 +15,7 @@ public class Flashlight : MonoBehaviour
     [SerializeField] private GameObject flashlightObject;
     [SerializeField] private GameObject flashlightBeam;
     [SerializeField] private TextMeshProUGUI batteryText;
+    [SerializeField] private Image batteryFill;
     [SerializeField] private Transform camTransform;
 
     [Header("Battery Settings")]
@@ -253,7 +255,12 @@ public class Flashlight : MonoBehaviour
     {
         if (batteryText != null)
         {
-            batteryText.text = $"Battery: {Mathf.CeilToInt(currentBattery)}%";
+            batteryText.text = $"{Mathf.CeilToInt(currentBattery)}%";
+        }
+
+        if (batteryFill != null)
+        {
+            batteryFill.fillAmount = currentBattery / maxBattery;
         }
     }
 

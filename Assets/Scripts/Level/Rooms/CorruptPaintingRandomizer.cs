@@ -145,7 +145,23 @@ public class CorruptPaintingRandomizer : MonoBehaviour
             Renderer renderer = painting.GetComponent<Renderer>();
             if (renderer != null && i < corruptedPaintingsTexture.Count)
             {
-                renderer.material = corruptedPaintingsTexture[i];
+                // 1. Get a copy of the current materials array
+                Material[] materialsArray = renderer.materials;
+
+                // 2. Ensure the painting actually has an Element 1 (index 1) slot allocated
+                if (materialsArray.Length > 1)
+                {
+                    materialsArray[1] = corruptedPaintingsTexture[i]; // Set Element 1
+                }
+                else
+                {
+                    Debug.LogWarning($"[Randomizer] {painting.name} does not have an Element 1 slot in its Renderer!");
+                    // Optional fallback: Overwrite Element 0 if Element 1 doesn't exist
+                    materialsArray[0] = corruptedPaintingsTexture[i];
+                }
+
+                // 3. Assign the modified array back to the renderer
+                renderer.materials = materialsArray;
             }
 
             GameObject assignedCover = null;
