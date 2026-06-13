@@ -212,6 +212,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2593133192732297198}
     m_Modifications:
+    - target: {fileID: 1926325681538965296, guid: 8a23d3ed997aab9498c2d61933d79ec9, type: 3}
+      propertyPath: m_Range
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1926325681538965296, guid: 8a23d3ed997aab9498c2d61933d79ec9, type: 3}
+      propertyPath: m_Intensity
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 5328180496469948185, guid: 8a23d3ed997aab9498c2d61933d79ec9, type: 3}
       propertyPath: m_Name
       value: Light

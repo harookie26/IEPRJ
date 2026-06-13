@@ -35,9 +35,17 @@ public class EnemyStateMachine : MonoBehaviour
     [Header("Animation")]
     public Animator animator;
 
+    [Header("Stun Glitch Effects")]
+    [Tooltip("The minimum duration (seconds) a single blink state lasts.")]
+    [SerializeField] private float minGlitchInterval = 0.35f;
+    [Tooltip("The maximum duration (seconds) a single blink state lasts.")]
+    [SerializeField] private float maxGlitchInterval = 0.55f;
+
+    private Coroutine stunGlitchCoroutine;
+
     [Header("Stun Configuration")]
     [Tooltip("Stun durations indexed by how many paintings are restored (0, 1, 2, 3+ paintings).")]
-    [SerializeField] private float[] stunDurationTiers = new float[] { 5f, 5f, 3.5f, 2f };
+    [SerializeField] private float[] stunDurationTiers = new float[] { 5f, 3.5f, 2.5f, 1.5f };
     private float currentStunDuration;
 
     [Header("Tension Management")]
@@ -164,8 +172,16 @@ public class EnemyStateMachine : MonoBehaviour
         }
         else
         {
-            DisableAgentPhysics();
-            SetGhostVisualsAndPhysics(false);
+            StopCoroutine(nameof(UnfreezeAfter));
+
+            if (stunGlitchCoroutine != null)
+            {
+                StopCoroutine(stunGlitchCoroutine);
+                stunGlitchCoroutine = null;
+            }
+
+            DisableAgentPhysics(); 
+            SetGhostVisuals(false);
             Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
         }
     }
@@ -329,15 +345,20 @@ public class EnemyStateMachine : MonoBehaviour
             navMeshAgent.ResetPath();
         }
 
-        if (isFrozen)
-        {
-            StopCoroutine(nameof(UnfreezeAfter));
-            StartCoroutine(UnfreezeAfter(duration));
-            return;
-        }
+        StopCoroutine(nameof(UnfreezeAfter));
 
         isFrozen = true;
+
         StartCoroutine(UnfreezeAfter(duration));
+
+        if (stunGlitchCoroutine == null)
+        {
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isStunned", true); 
+            animator.SetBool("isRunning", false); 
+            
+            stunGlitchCoroutine = StartCoroutine(StunGlitchLoop());
+        }
     }
 
     public void Unfreeze()
@@ -354,11 +375,51 @@ public class EnemyStateMachine : MonoBehaviour
 
     private IEnumerator UnfreezeAfter(float seconds)
     {
-        animator.SetBool("isWalking", false);
-        animator.SetBool("isStunned", true);
-        animator.SetBool("isRunning", false);
         yield return new WaitForSeconds(seconds);
-        Unfreeze();
+
+        if (stunGlitchCoroutine != null)
+        {
+            StopCoroutine(stunGlitchCoroutine);
+            stunGlitchCoroutine = null;
+        }
+
+        SetGhostVisuals(true);
+        isFrozen = false; 
+
+        if (navMeshAgent != null && navMeshAgent.enabled)
+        {
+            navMeshAgent.isStopped = false;
+        }
+
+        ChangeState(RoamState);
+    }
+
+    private IEnumerator StunGlitchLoop()
+    {
+        while (true)
+        {
+            float offDuration = Random.Range(minGlitchInterval, maxGlitchInterval);
+            SetGhostVisuals(false);
+            yield return new WaitForSeconds(offDuration);
+
+            float onDuration = Random.Range(minGlitchInterval, maxGlitchInterval);
+            SetGhostVisuals(true);
+            yield return new WaitForSeconds(onDuration);
+        }
+    }
+
+    private void SetGhostVisuals(bool visible)
+    {
+        if (enemy == null) return;
+
+        Renderer[] renderers = enemy.GetComponentsInChildren<Renderer>();
+        foreach (Renderer r in renderers)
+        {
+            if (r != null)
+            {
+                r.enabled = visible;
+            }
+        }
     }
 
     public static void FreezeAll(float duration = 0f)
@@ -500,13 +561,13 @@ public class EnemyStateMachine : MonoBehaviour
     //UNTESTED, PLAYTEST FIRST, THIS WILL NEED BALANCING// 
     private void AdjustEnemeyAggressiveness(int corruptedPaintingsChanneled)
     {
-        if (corruptedPaintingsChanneled == 2)
+        if (corruptedPaintingsChanneled == 1)
         {
-            MoveSpeed *= 1.2f;
+            MoveSpeed *= 1.3f;
         }
         else if (corruptedPaintingsChanneled == 3)
         {
-            MoveSpeed *= 1.4f;
+            MoveSpeed *= 1.5f;
         }
         else if (corruptedPaintingsChanneled == 4)
         {
