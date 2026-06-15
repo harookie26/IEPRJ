@@ -526,6 +526,85 @@ public class PlayerMovement : MonoBehaviour
         Debug.Log("[PlayerMovement] Velocity reset after teleportation and PB detached.");
     }
 
+    public bool TryFindSafeTeleportPosition(
+        Vector3 desiredPosition,
+        Vector3 searchDirection,
+        float searchDistance,
+        int searchSteps,
+        out Vector3 safePosition)
+    {
+        safePosition = desiredPosition;
+        if (IsPositionSafe(desiredPosition, SafePositionRadiusInset))
+        {
+            return true;
+        }
+
+        searchDirection = Vector3.ProjectOnPlane(searchDirection, Vector3.up).normalized;
+        if (searchDirection.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        searchSteps = Mathf.Max(1, searchSteps);
+        Vector3 lateralDirection = Vector3.Cross(Vector3.up, searchDirection);
+        float lateralSearchDistance = playerCapsule != null
+            ? playerCapsule.radius * 2f
+            : 1f;
+
+        for (int i = 1; i <= searchSteps; i++)
+        {
+            float distance = searchDistance * i / searchSteps;
+            Vector3 forwardCandidate = desiredPosition + searchDirection * distance;
+            if (IsPositionSafe(forwardCandidate, SafePositionRadiusInset))
+            {
+                safePosition = forwardCandidate;
+                return true;
+            }
+
+            float lateralDistance = lateralSearchDistance * i / searchSteps;
+            Vector3 leftCandidate = forwardCandidate - lateralDirection * lateralDistance;
+            if (IsPositionSafe(leftCandidate, SafePositionRadiusInset))
+            {
+                safePosition = leftCandidate;
+                return true;
+            }
+
+            Vector3 rightCandidate = forwardCandidate + lateralDirection * lateralDistance;
+            if (IsPositionSafe(rightCandidate, SafePositionRadiusInset))
+            {
+                safePosition = rightCandidate;
+                return true;
+            }
+        }
+
+        Debug.LogWarning(
+            $"[PlayerMovement] No collision-free elevator exit found from {desiredPosition} " +
+            $"within {searchDistance} units.");
+        return false;
+    }
+
+    public void TeleportToPose(Vector3 position, Quaternion rotation)
+    {
+        bool wasMovementEnabled = canMove;
+
+        rb.position = position;
+        rb.rotation = rotation;
+        transform.SetPositionAndRotation(position, rotation);
+        bodyYaw = rotation.eulerAngles.y;
+
+        moveInput = Vector2.zero;
+        lookInputTarget = Vector2.zero;
+        lookInputCurrent = Vector2.zero;
+        cachedMoveDirection = Vector3.zero;
+
+        ResetVelocity();
+        canMove = wasMovementEnabled;
+
+        lastValidPosition = position;
+        Physics.SyncTransforms();
+        ResolveCurrentRoomAtPosition();
+    }
+
     private void TriggerGhostNoise()
     {
         EnemyStateMachine ghost = Object.FindFirstObjectByType<EnemyStateMachine>();

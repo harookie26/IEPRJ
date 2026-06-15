@@ -36763,6 +36763,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 1714636262}
   verticalDirection: 2
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
   model: {fileID: 0}
   hasAnimation: 0
   disableAfterAnimation: 0
@@ -79154,7 +79158,7 @@ PrefabInstance:
       objectReference: {fileID: 1132584845}
     - target: {fileID: 12353257562119685, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 5532
+      value: 5535
       objectReference: {fileID: 0}
     - target: {fileID: 39919055225989092, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_BoundingSphereOverride.x
@@ -79210,7 +79214,7 @@ PrefabInstance:
       objectReference: {fileID: 677900709}
     - target: {fileID: 228289223938562428, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 7357
+      value: 7360
       objectReference: {fileID: 0}
     - target: {fileID: 234307648548742157, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_BoundingSphereOverride.w
@@ -79250,7 +79254,7 @@ PrefabInstance:
       objectReference: {fileID: 1708599077}
     - target: {fileID: 325171524690101537, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 5532
+      value: 5535
       objectReference: {fileID: 0}
     - target: {fileID: 344165970469149143, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_LocalScale.x
@@ -79646,7 +79650,7 @@ PrefabInstance:
       objectReference: {fileID: 471797975}
     - target: {fileID: 1659930887655590209, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 5532
+      value: 5535
       objectReference: {fileID: 0}
     - target: {fileID: 1661090216435873336, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_Size.x
@@ -79930,7 +79934,7 @@ PrefabInstance:
       objectReference: {fileID: 166385165}
     - target: {fileID: 3016096705029282368, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 5532
+      value: 5535
       objectReference: {fileID: 0}
     - target: {fileID: 3092046288672898299, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_ConstrainProportionsScale
@@ -79958,7 +79962,7 @@ PrefabInstance:
       objectReference: {fileID: 2083466183}
     - target: {fileID: 3275116413815734628, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 5532
+      value: 5535
       objectReference: {fileID: 0}
     - target: {fileID: 3301213212558141439, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_ReceiveGI
@@ -79974,7 +79978,7 @@ PrefabInstance:
       objectReference: {fileID: 203339236}
     - target: {fileID: 3347130998154233373, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 7357
+      value: 7360
       objectReference: {fileID: 0}
     - target: {fileID: 3452802678809111615, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_LocalPosition.x
@@ -80206,7 +80210,7 @@ PrefabInstance:
       objectReference: {fileID: 1335484490}
     - target: {fileID: 4202188747085698592, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 5532
+      value: 5535
       objectReference: {fileID: 0}
     - target: {fileID: 4226400251597750889, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_BoundingSphereOverride.w
@@ -80338,7 +80342,7 @@ PrefabInstance:
       objectReference: {fileID: 449487681}
     - target: {fileID: 4664716240490611846, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 5532
+      value: 5535
       objectReference: {fileID: 0}
     - target: {fileID: 4695916562790001213, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -81190,7 +81194,7 @@ PrefabInstance:
       objectReference: {fileID: 1125837831}
     - target: {fileID: 7918463437904452583, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_VersionIndex
-      value: 5532
+      value: 5535
       objectReference: {fileID: 0}
     - target: {fileID: 8121201892166717203, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_LocalPosition.x
@@ -83620,6 +83624,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 376888111}
   verticalDirection: 1
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
   model: {fileID: 0}
   hasAnimation: 0
   disableAfterAnimation: 0
@@ -98454,6 +98462,7 @@ MonoBehaviour:
   elevatorSFX: {fileID: 8300000, guid: 12443ac4a76022b4088d3b3f75de93c0, type: 3}
   paperPickupSFX: {fileID: 8300000, guid: 1b5c539c192634a44bda6cfbd507ac9b, type: 3}
   objectivesSFX: {fileID: 8300000, guid: 4ebb3451713371a409e7c56e9b8b6b44, type: 3}
+  keyPickupSFX: {fileID: 0}
   testMusic: {fileID: 0}
   testSFX: {fileID: 0}
   restorationMusicAudioSource: {fileID: 491255113}
