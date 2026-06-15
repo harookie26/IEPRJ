@@ -30726,6 +30726,7 @@ GameObject:
   - component: {fileID: 239145831}
   - component: {fileID: 239145830}
   - component: {fileID: 239145829}
+  - component: {fileID: 239145833}
   m_Layer: 0
   m_Name: CutsceneCamera
   m_TagString: CutsceneCamera
@@ -30851,6 +30852,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &239145833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 239145828}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2df7d05dd1c48f9bb561fcf1b4fc0c9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PaintingCutsceneDirector
+  cutsceneCamera: {fileID: 239145831}
+  fadeImage: {fileID: 53406928}
 --- !u!1 &239959941 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 8c231b88f384a51488fa0ba4f4eab87d, type: 3}

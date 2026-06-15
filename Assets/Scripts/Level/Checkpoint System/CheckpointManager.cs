@@ -50,12 +50,33 @@ public class CheckpointManager : MonoBehaviour
 
     public void SaveCheckpoint()
     {
-        _currentCheckpointIndex = _gameState.currentLevelProgress;
+        GameStateManager gameState = _gameState;
+        if (gameState != null)
+            _currentCheckpointIndex = gameState.currentLevelProgress;
+        else
+            Debug.LogWarning("[CheckpointManager] GameStateManager not found. Keeping the current checkpoint index.");
 
-        _playerSavedPosition = _player.transform.position;
-        _playerSavedRotation = _player.transform.eulerAngles;
+        GameObject player = _player;
+        if (player == null)
+        {
+            Debug.LogWarning("[CheckpointManager] Player not found. Checkpoint was not updated.");
+            return;
+        }
 
-        _enemySavedPosition = _enemy.transform.position;
+        _playerSavedPosition = player.transform.position;
+        _playerSavedRotation = player.transform.eulerAngles;
+
+        if (_enemy == null)
+            _enemy = GameObject.FindWithTag("Enemy");
+
+        if (_enemy != null)
+        {
+            _enemySavedPosition = _enemy.transform.position;
+        }
+        else
+        {
+            Debug.LogWarning("[CheckpointManager] Enemy not found. Saving player checkpoint without updating enemy position.");
+        }
 
         //if (_enemyStateMachine != null)
         //{
