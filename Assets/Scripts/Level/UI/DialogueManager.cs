@@ -4,6 +4,23 @@ using UnityEngine;
 
 namespace Level.UI
 {
+    public sealed class DialoguePlaybackHandle
+    {
+        public bool IsComplete { get; private set; }
+        public bool WasInterrupted { get; private set; }
+
+        internal void Complete()
+        {
+            IsComplete = true;
+        }
+
+        internal void Interrupt()
+        {
+            WasInterrupted = true;
+            IsComplete = true;
+        }
+    }
+
     public class DialogueManager : MonoBehaviour
     {
         public static DialogueManager Instance { get; private set; }
@@ -14,6 +31,8 @@ namespace Level.UI
         private RectTransform dialogueContainer;
         [SerializeField] private DialogueLabel labelPrefab;
         [SerializeField] private int initialPool = 2;
+        [SerializeField, Tooltip("2D AudioSource used for voiced dialogue lines.")]
+        private AudioSource voiceAudioSource;
 
         private struct DialogueRequest
         {
@@ -22,11 +41,14 @@ namespace Level.UI
             public float fadeIn;
             public float displayDuration;
             public float fadeOut;
+            public AudioClip voiceLine;
+            public DialoguePlaybackHandle playbackHandle;
         }
 
         private readonly Queue<DialogueLabel> pool = new Queue<DialogueLabel>();
         private readonly Queue<DialogueRequest> dialogueQueue = new Queue<DialogueRequest>();
         private DialogueLabel currentLabel;
+        private DialogueRequest currentRequest;
         private Coroutine finishCoroutine;
         private bool isPlaying = false;
 
@@ -38,6 +60,9 @@ namespace Level.UI
                 return;
             }
             Instance = this;
+
+            if (voiceAudioSource == null)
+                voiceAudioSource = GetComponent<AudioSource>();
 
             if (labelPrefab == null)
             {
@@ -92,15 +117,27 @@ namespace Level.UI
             Display(entry.characterName, entry.text, entry.fadeIn, entry.displayDuration, entry.fadeOut);
         }
 
-        public void DisplaySequence(IEnumerable<DialogueEntry> entries)
+        public DialoguePlaybackHandle DisplaySequence(IEnumerable<DialogueEntry> entries)
         {
-            if (entries == null || labelPrefab == null) return;
+            if (entries == null || labelPrefab == null) return null;
 
             var requests = new List<DialogueRequest>();
+            var playbackHandle = new DialoguePlaybackHandle();
 
             foreach (DialogueEntry entry in entries)
             {
                 if (entry == null) continue;
+
+                AudioClip voiceLine = entry is VoicedDialogueEntry voicedEntry
+                    ? voicedEntry.voiceLine
+                    : null;
+
+                if (entry is VoicedDialogueEntry && voiceLine == null)
+                {
+                    Debug.LogWarning(
+                        $"DialogueManager: Voiced dialogue entry '{entry.name}' has no voice clip. Using displayDuration.",
+                        entry);
+                }
 
                 requests.Add(new DialogueRequest
                 {
@@ -108,13 +145,20 @@ namespace Level.UI
                     text = entry.text,
                     fadeIn = entry.fadeIn,
                     displayDuration = entry.displayDuration,
-                    fadeOut = entry.fadeOut
+                    fadeOut = entry.fadeOut,
+                    voiceLine = voiceLine,
+                    playbackHandle = playbackHandle
                 });
             }
 
-            if (requests.Count == 0) return;
+            if (requests.Count == 0)
+            {
+                playbackHandle.Complete();
+                return playbackHandle;
+            }
 
             ReplaceWithSequence(requests);
+            return playbackHandle;
         }
 
         public void DisplayLatest(
@@ -178,6 +222,8 @@ namespace Level.UI
 
         private void StopCurrentDialogue()
         {
+            DialoguePlaybackHandle interruptedHandle = currentRequest.playbackHandle;
+
             if (finishCoroutine != null)
             {
                 StopCoroutine(finishCoroutine);
@@ -191,6 +237,15 @@ namespace Level.UI
                 currentLabel = null;
             }
 
+            if (voiceAudioSource != null)
+                voiceAudioSource.Stop();
+
+            interruptedHandle?.Interrupt();
+
+            foreach (DialogueRequest queuedRequest in dialogueQueue)
+                queuedRequest.playbackHandle?.Interrupt();
+
+            currentRequest = default;
             isPlaying = false;
         }
 
@@ -206,6 +261,7 @@ namespace Level.UI
                 return;
 
             var request = dialogueQueue.Dequeue();
+            currentRequest = request;
             isPlaying = true;
 
             currentLabel = GetLabel();
@@ -218,9 +274,27 @@ namespace Level.UI
             }
 
             currentLabel.gameObject.SetActive(true);
-            currentLabel.Show(request.characterName, request.text, request.fadeIn, request.displayDuration, request.fadeOut);
 
-            float totalDuration = request.fadeIn + request.displayDuration + request.fadeOut + 0.05f;
+            float holdDuration = request.displayDuration;
+            if (request.voiceLine != null)
+            {
+                holdDuration = Mathf.Max(0f, request.voiceLine.length - request.fadeIn);
+
+                if (voiceAudioSource != null)
+                {
+                    voiceAudioSource.Stop();
+                    voiceAudioSource.clip = request.voiceLine;
+                    voiceAudioSource.Play();
+                }
+                else
+                {
+                    Debug.LogWarning("DialogueManager: No voice AudioSource assigned. Subtitle timing will still use the clip length.", this);
+                }
+            }
+
+            currentLabel.Show(request.characterName, request.text, request.fadeIn, holdDuration, request.fadeOut);
+
+            float totalDuration = request.fadeIn + holdDuration + request.fadeOut + 0.05f;
             finishCoroutine = StartCoroutine(FinishCurrentDialogue(totalDuration));
         }
 
@@ -235,8 +309,34 @@ namespace Level.UI
             finishCoroutine = null;
             isPlaying = false;
 
+            if (voiceAudioSource != null)
+            {
+                voiceAudioSource.Stop();
+                voiceAudioSource.clip = null;
+            }
+
+            DialoguePlaybackHandle finishedHandle = currentRequest.playbackHandle;
+            currentRequest = default;
+
+            if (!QueueContainsHandle(finishedHandle))
+                finishedHandle?.Complete();
+
             if (dialogueQueue.Count > 0)
                 ProcessQueue();
+        }
+
+        private bool QueueContainsHandle(DialoguePlaybackHandle handle)
+        {
+            if (handle == null)
+                return false;
+
+            foreach (DialogueRequest request in dialogueQueue)
+            {
+                if (request.playbackHandle == handle)
+                    return true;
+            }
+
+            return false;
         }
 
         public bool CheckifEntryAlreadyInQueue(string characterName, string text)

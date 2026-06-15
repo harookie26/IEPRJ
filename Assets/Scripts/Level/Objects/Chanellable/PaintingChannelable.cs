@@ -1,4 +1,5 @@
 using Game.ObjectTypes;
+using Level.UI;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -232,9 +233,11 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         if (sfxAudioSource != null && audioList != null && audioList.paintingRestorationCompleteSFX != null)
             sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
 
+        DialoguePlaybackHandle dialoguePlayback = null;
+
         if(paintingId != "000") // Only post the event if a valid painting ID is assigned.
         {
-            DialogueTriggerManager.Instance.TriggerPaintingBGDialogue(paintingId);
+            dialoguePlayback = DialogueTriggerManager.Instance.TriggerPaintingBGDialogue(paintingId);
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.ADD_PAINTING_RESTORED);
         }
         else if(paintingId == "000")
@@ -266,6 +269,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             heightOffset,
             fadeDuration,
             moveDuration,
-            viewDuration));
+            viewDuration,
+            dialoguePlayback));
     }
 }

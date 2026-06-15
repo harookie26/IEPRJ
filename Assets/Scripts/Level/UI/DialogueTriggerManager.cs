@@ -147,37 +147,35 @@ public class DialogueTriggerManager : MonoBehaviour
         DialogueManager.Instance.DisplaySequence(new[] { findCorruptedDialogue1, findCorruptedDialogue2 });
     }
 
-    public void TriggerPaintingBGDialogue(string dialogueID)
+    public DialoguePlaybackHandle TriggerPaintingBGDialogue(string dialogueID)
     {
-        if (SaveCourier.IsLoadingSave) return;
+        if (SaveCourier.IsLoadingSave) return null;
 
         switch (dialogueID)
         {
             case "paint1":
-                if (triggeredDialogueIDs.Contains(8)) return;
+                if (triggeredDialogueIDs.Contains(8)) return null;
                 triggeredDialogueIDs.Add(8);
-                DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[0] });
-                break;
+                return DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[0] });
             case "paint2":
-                if (triggeredDialogueIDs.Contains(9)) return;
+                if (triggeredDialogueIDs.Contains(9)) return null;
                 triggeredDialogueIDs.Add(9);
-                DialogueManager.Instance.DisplaySequence(new[]
+                return DialogueManager.Instance.DisplaySequence(new[]
                 {
                     paintingBackstoryDialogues[1],
                     paintingBackstoryDialogues[2]
                 });
-                break;
             case "paint3":
-                if (triggeredDialogueIDs.Contains(10)) return;
+                if (triggeredDialogueIDs.Contains(10)) return null;
                 triggeredDialogueIDs.Add(10);
-                DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[3] });
-                break;
+                return DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[3] });
             case "paint4":
-                if (triggeredDialogueIDs.Contains(11)) return;
+                if (triggeredDialogueIDs.Contains(11)) return null;
                 triggeredDialogueIDs.Add(11);
-                DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[4] });
-                break;
+                return DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[4] });
         }
+
+        return null;
     }
 
     public void TriggerFinalPaintingFixedDialogue()

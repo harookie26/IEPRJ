@@ -1,4 +1,5 @@
 using System.Collections;
+using Level.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,7 +12,8 @@ public readonly struct PaintingCutsceneRequest
         float heightOffset,
         float fadeDuration,
         float moveDuration,
-        float viewDuration)
+        float viewDuration,
+        DialoguePlaybackHandle dialoguePlayback = null)
     {
         Target = target;
         StartDistance = startDistance;
@@ -20,6 +22,7 @@ public readonly struct PaintingCutsceneRequest
         FadeDuration = fadeDuration;
         MoveDuration = moveDuration;
         ViewDuration = viewDuration;
+        DialoguePlayback = dialoguePlayback;
     }
 
     public Transform Target { get; }
@@ -29,6 +32,7 @@ public readonly struct PaintingCutsceneRequest
     public float FadeDuration { get; }
     public float MoveDuration { get; }
     public float ViewDuration { get; }
+    public DialoguePlaybackHandle DialoguePlayback { get; }
 }
 
 [DisallowMultipleComponent]
@@ -140,6 +144,10 @@ public class PaintingCutsceneDirector : MonoBehaviour
         cutsceneCamera.transform.position = endPosition;
 
         yield return new WaitForSeconds(request.ViewDuration);
+
+        while (request.DialoguePlayback != null && !request.DialoguePlayback.IsComplete)
+            yield return null;
+
         yield return Fade(0f, 1f, request.FadeDuration);
 
         cutsceneCamera.enabled = false;
