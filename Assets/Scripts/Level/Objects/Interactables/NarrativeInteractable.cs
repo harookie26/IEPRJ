@@ -1,13 +1,15 @@
+using Game.ObjectTypes;
 using Level.UI;
 using System;
-using UnityEngine;
-using System.Collections.Generic;
-using Game.ObjectTypes;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 [FoldableInspector]
 public class NarrativeInteractable : MonoBehaviour, IInteractable
 {
+    [SerializeField] private string interactableId;
+
     [Tooltip("The list of dialogue entries that will be displayed when the player interacts with this object.")]
     [SerializeField] private List<DialogueEntry> dialogueList;
 
@@ -17,7 +19,7 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
     [SerializeField] private bool singleInteractionOnly = false;
 
     [SerializeField] private float dialogueInteractionCooldown = 0.5f; // Minimum time between interactions to prevent spamming
-    
+
     [Header("Highlight / Glow Settings")]
     [SerializeField, Tooltip("Should this interactable pulse its highlight/glow effect?")]
     private bool enableHighlight = true;
@@ -48,6 +50,8 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
     private List<Material> runtimeMaterials = new List<Material>();
     private List<Color> originalColors = new List<Color>();
 
+    private AudioList audioList;
+    private AudioSource audioSource;
 
     private void Awake()
     {
@@ -58,6 +62,9 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
         {
             SetupHighlightRenderer();
         }
+
+        audioList = FindFirstObjectByType<AudioList>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     private void OnDestroy()
@@ -175,7 +182,7 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
             }
 
 
-            if(singleInteractionOnly) hasBeenInteractedWith = true; //set to true to prevent future interactions if this is meant to be a one-time interaction
+            if (singleInteractionOnly) hasBeenInteractedWith = true; //set to true to prevent future interactions if this is meant to be a one-time interaction
 
             isInCooldown = true;
             StartCoroutine(InteractionCooldown()); //start cooldown timer to prevent spamming interactions and overwhelming the dialogue system with duplicate entries if the player clicks multiple times in quick succession
@@ -197,6 +204,10 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
         {
             Debug.Log("No pop-up display panel assigned to this NarrativeInteractable.");
         }
+
+        if (interactableId == "Newspaper")
+            if (audioList != null && audioSource != null)
+                audioSource.PlayOneShot(audioList.paperPickupSFX);
 
     }
 

@@ -4,10 +4,14 @@ using static EventNames;
 
 public class StairsInputManager : MonoBehaviour
 {
+    public static bool IsTransferInProgress { get; private set; }
+
     private bool _isCutsceneActive = false;
     private GameObject _player;
     private PlayerMovement _playerMovement;
     private UIManager _uiManager;
+    private AudioList _audioList;
+    private AudioSource _audioSource;
 
     [Header("Stair Cooldown")]
     [Tooltip("Seconds after initiating a stair transfer before another can be started.")]
@@ -27,10 +31,13 @@ public class StairsInputManager : MonoBehaviour
         _player = GameObject.FindGameObjectWithTag("Player");
         _playerMovement = FindFirstObjectByType<PlayerMovement>();
         _uiManager = FindFirstObjectByType<UIManager>();
+        _audioList = FindAnyObjectByType<AudioList>();
+        _audioSource = GetComponent<AudioSource>();
     }
 
     private void OnDisable()
     {
+        IsTransferInProgress = false;
         EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
         EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
     }
@@ -86,12 +93,14 @@ public class StairsInputManager : MonoBehaviour
         }
 
         _isTransferring = true;
+        IsTransferInProgress = true;
 
         if (screenFader == null)
         {
             Debug.LogWarning("[StairsInputManager] ScreenFader not found. Moving immediately without fade.");
             doorToUse.MoveToLinkedDoor();
             _isTransferring = false;
+            IsTransferInProgress = false;
             yield break;
         }
 
@@ -99,6 +108,7 @@ public class StairsInputManager : MonoBehaviour
         {
             Debug.LogError("[StairsInputManager] PlayerMovement is null! Cannot proceed with transfer.");
             _isTransferring = false;
+            IsTransferInProgress = false;
             yield break;
         }
 
@@ -106,7 +116,13 @@ public class StairsInputManager : MonoBehaviour
         {
             Debug.LogError("[StairsInputManager] EnemyStateMachine is null! Cannot proceed with transfer.");
             _isTransferring = false;
+            IsTransferInProgress = false;
             yield break;
+        }
+
+        if (_audioList != null && _audioSource != null)
+        {
+            _audioSource.PlayOneShot(_audioList.elevatorSFX);
         }
 
         _playerMovement.SetCanMove(false);
@@ -123,6 +139,9 @@ public class StairsInputManager : MonoBehaviour
         {
             yield return new WaitForSecondsRealtime(postFadeDelaySeconds);
         }
+
+        // Keep the elevator clip contained to the pre-teleport transition.
+        _audioSource?.Stop();
 
         if (doorToUse != null)
         {
@@ -141,5 +160,6 @@ public class StairsInputManager : MonoBehaviour
         }
         _playerMovement.SetCanMove(true);
         _isTransferring = false;
+        IsTransferInProgress = false;
     }
 }

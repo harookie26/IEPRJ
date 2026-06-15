@@ -22,6 +22,15 @@ public class AudioList : MonoBehaviour
     [Header("Player Collectible SFX Clip")]
     [SerializeField] public AudioClip playerCollectibleSFX;
 
+    [Header("Elevator Use SFX Clip")]
+    [SerializeField] public AudioClip elevatorSFX;
+
+    [Header("Map + Newspaper Pickup")]
+    [SerializeField] public AudioClip paperPickupSFX;
+
+    [Header("Objectives SFX")]
+    [SerializeField] public AudioClip objectivesSFX;
+
     [Header("Testing Clips")]
     [SerializeField] public AudioClip testMusic;
     [SerializeField] public AudioClip testSFX;

@@ -1,7 +1,6 @@
-﻿using System.Collections;
+﻿using Game.ObjectTypes;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Game.ObjectTypes;
 
 [DisallowMultipleComponent]
 [FoldableInspector]
@@ -148,7 +147,10 @@ public class PlayerInteractor : MonoBehaviour
                 if (collectible != null)
                 {
                     collectible.Collect();
-                    sfxAudioSource?.PlayOneShot(audioList.playerCollectibleSFX);
+                    if (collectible.GetID == "Map")
+                        sfxAudioSource?.PlayOneShot(audioList.paperPickupSFX);
+                    else
+                        sfxAudioSource?.PlayOneShot(audioList.playerCollectibleSFX);
                     return;
                 }
             }
