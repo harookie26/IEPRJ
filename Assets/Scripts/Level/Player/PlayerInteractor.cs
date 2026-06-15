@@ -149,6 +149,8 @@ public class PlayerInteractor : MonoBehaviour
                     collectible.Collect();
                     if (collectible.GetID == "Map")
                         sfxAudioSource?.PlayOneShot(audioList.paperPickupSFX);
+                    else if (collectible.GetID == "Key")
+                        sfxAudioSource?.PlayOneShot(audioList.keyPickupSFX);
                     else
                         sfxAudioSource?.PlayOneShot(audioList.playerCollectibleSFX);
                     return;

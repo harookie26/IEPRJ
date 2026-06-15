@@ -31,6 +31,9 @@ public class AudioList : MonoBehaviour
     [Header("Objectives SFX")]
     [SerializeField] public AudioClip objectivesSFX;
 
+    [Header("Key Pickup SFX")]
+    [SerializeField] public AudioClip keyPickupSFX;
+
     [Header("Testing Clips")]
     [SerializeField] public AudioClip testMusic;
     [SerializeField] public AudioClip testSFX;
