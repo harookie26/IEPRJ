@@ -112,13 +112,13 @@ public class StairsInputManager : MonoBehaviour
             yield break;
         }
 
-        if (enemy == null)
-        {
-            Debug.LogError("[StairsInputManager] EnemyStateMachine is null! Cannot proceed with transfer.");
-            _isTransferring = false;
-            IsTransferInProgress = false;
-            yield break;
-        }
+        //if (enemy == null)
+        //{
+        //    Debug.LogError("[StairsInputManager] EnemyStateMachine is null! Cannot proceed with transfer.");
+        //    _isTransferring = false;
+        //    IsTransferInProgress = false;
+        //    yield break;
+        //}
 
         if (_audioList != null && _audioSource != null)
         {
@@ -126,7 +126,8 @@ public class StairsInputManager : MonoBehaviour
         }
 
         _playerMovement.SetCanMove(false);
-        if (enemy.isEnemyActivated)
+
+        if (enemy != null && enemy.isEnemyActivated)
         {
             enemy.Freeze();
         }
@@ -154,7 +155,7 @@ public class StairsInputManager : MonoBehaviour
 
         yield return StartCoroutine(screenFader.FadeInSequence(0.25f));
 
-        if (enemy.isEnemyActivated)
+        if (enemy != null && enemy.isEnemyActivated)
         {
             enemy.Unfreeze();
         }
