@@ -30862,7 +30862,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b2df7d05dd1c48f9bb561fcf1b4fc0c9, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PaintingCutsceneDirector
   cutsceneCamera: {fileID: 239145831}
   fadeImage: {fileID: 53406928}
@@ -45781,7 +45781,7 @@ GameObject:
   - component: {fileID: 658161082}
   - component: {fileID: 658161081}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: CR_tapwater
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -45818,9 +45818,9 @@ MonoBehaviour:
   detectionMode: 0
   useTriggerRadius: 1
   triggerRadius: 5
-  clip: {fileID: 0}
+  clip: {fileID: 8300000, guid: d39b782693e9a934b9d7fa7a0246feda, type: 3}
   isLooping: 1
-  delayBeforeLooping: 0
+  delayBeforeLooping: 2
   playOnEnter: 1
   stopOnExit: 1
   minDistance: 1.5
@@ -86676,8 +86676,13 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 133187e54b1dcff4cb4d2c130e454226, type: 2}
   - {fileID: 11400000, guid: c20a58b01a2a1424a85a9398cf5329cf, type: 2}
   - {fileID: 11400000, guid: bfb524aec17acf94590ad90830903c98, type: 2}
-  - {fileID: 11400000, guid: c5c6e54feb115ad4ca51fcb5751207ef, type: 2}
+  - {fileID: 0}
   - {fileID: 11400000, guid: 8c73808f844665847a2844d06b33877d, type: 2}
+  paintingBackstorySequences:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 11400000, guid: 6caaa9e5bde94eb5ab5bdc943a42f315, type: 2}
+  - {fileID: 0}
   finalPaintingFixedDialogue: {fileID: 11400000, guid: 8298c26a1adaac14daed8e424dabba64, type: 2}
 --- !u!1 &1801230288 stripped
 GameObject:

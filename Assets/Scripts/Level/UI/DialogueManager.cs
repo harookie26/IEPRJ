@@ -50,6 +50,8 @@ namespace Level.UI
         private DialogueLabel currentLabel;
         private DialogueRequest currentRequest;
         private Coroutine finishCoroutine;
+        private Coroutine sequenceCoroutine;
+        private DialoguePlaybackHandle activeSequenceHandle;
         private bool isPlaying = false;
 
         void Awake()
@@ -161,6 +163,15 @@ namespace Level.UI
             return playbackHandle;
         }
 
+        public DialoguePlaybackHandle DisplaySequence(VoicedDialogueSequence sequence)
+        {
+            if (sequence == null || labelPrefab == null) return null;
+
+            var playbackHandle = new DialoguePlaybackHandle();
+            ReplaceWithVoicedSequence(sequence, playbackHandle);
+            return playbackHandle;
+        }
+
         public void DisplayLatest(
             string characterName,
             string text,
@@ -207,7 +218,7 @@ namespace Level.UI
 
         private void ReplaceWithSequence(IEnumerable<DialogueRequest> requests)
         {
-            bool shouldInterrupt = isPlaying;
+            bool shouldInterrupt = isPlaying || sequenceCoroutine != null || dialogueQueue.Count > 0;
 
             if (shouldInterrupt)
                 StopCurrentDialogue();
@@ -220,9 +231,26 @@ namespace Level.UI
             ProcessQueue();
         }
 
+        private void ReplaceWithVoicedSequence(VoicedDialogueSequence sequence, DialoguePlaybackHandle playbackHandle)
+        {
+            if (isPlaying || sequenceCoroutine != null || dialogueQueue.Count > 0)
+                StopCurrentDialogue();
+            else
+                dialogueQueue.Clear();
+
+            activeSequenceHandle = playbackHandle;
+            sequenceCoroutine = StartCoroutine(PlayVoicedSequence(sequence, playbackHandle));
+        }
+
         private void StopCurrentDialogue()
         {
             DialoguePlaybackHandle interruptedHandle = currentRequest.playbackHandle;
+
+            if (sequenceCoroutine != null)
+            {
+                StopCoroutine(sequenceCoroutine);
+                sequenceCoroutine = null;
+            }
 
             if (finishCoroutine != null)
             {
@@ -238,9 +266,14 @@ namespace Level.UI
             }
 
             if (voiceAudioSource != null)
+            {
                 voiceAudioSource.Stop();
+                voiceAudioSource.clip = null;
+            }
 
             interruptedHandle?.Interrupt();
+            activeSequenceHandle?.Interrupt();
+            activeSequenceHandle = null;
 
             foreach (DialogueRequest queuedRequest in dialogueQueue)
                 queuedRequest.playbackHandle?.Interrupt();
@@ -257,7 +290,7 @@ namespace Level.UI
 
         private void ProcessQueue()
         {
-            if (dialogueQueue.Count == 0 || isPlaying)
+            if (dialogueQueue.Count == 0 || isPlaying || sequenceCoroutine != null)
                 return;
 
             var request = dialogueQueue.Dequeue();
@@ -323,6 +356,119 @@ namespace Level.UI
 
             if (dialogueQueue.Count > 0)
                 ProcessQueue();
+        }
+
+        private IEnumerator PlayVoicedSequence(VoicedDialogueSequence sequence, DialoguePlaybackHandle playbackHandle)
+        {
+            if (sequence.voiceClip == null)
+            {
+                Debug.LogWarning($"DialogueManager: Voiced dialogue sequence '{sequence.name}' has no voice clip.", sequence);
+            }
+            else if (voiceAudioSource != null)
+            {
+                voiceAudioSource.Stop();
+                voiceAudioSource.clip = sequence.voiceClip;
+                voiceAudioSource.Play();
+            }
+            else
+            {
+                Debug.LogWarning("DialogueManager: No voice AudioSource assigned. Timed subtitles will still play.", this);
+            }
+
+            float sequenceLength = sequence.voiceClip != null ? sequence.voiceClip.length : GetTimedSequenceFallbackLength(sequence);
+            float sequenceStart = Time.unscaledTime;
+            int lineCount = sequence.lines != null ? sequence.lines.Count : 0;
+
+            for (int i = 0; i < lineCount; i++)
+            {
+                TimedDialogueLine line = sequence.lines[i];
+                if (line == null || string.IsNullOrEmpty(line.text))
+                    continue;
+
+                float startTime = Mathf.Max(0f, line.startTime);
+                float endTime = ResolveLineEndTime(sequence, i, sequenceLength);
+                if (endTime <= startTime)
+                    continue;
+
+                float waitUntilStart = sequenceStart + startTime - Time.unscaledTime;
+                if (waitUntilStart > 0f)
+                    yield return new WaitForSecondsRealtime(waitUntilStart);
+
+                currentLabel = GetLabel();
+
+                if (currentLabel.transform is RectTransform rt && dialogueContainer != null)
+                {
+                    rt.SetParent(dialogueContainer, false);
+                    rt.anchoredPosition = Vector2.zero;
+                }
+
+                currentLabel.gameObject.SetActive(true);
+
+                float totalLineDuration = endTime - startTime;
+                float fadeIn = Mathf.Max(0f, line.fadeIn);
+                float fadeOut = Mathf.Max(0f, line.fadeOut);
+                float hold = Mathf.Max(0f, totalLineDuration - fadeIn - fadeOut);
+                currentLabel.Show(line.characterName, line.text, fadeIn, hold, fadeOut);
+
+                float waitUntilEnd = sequenceStart + endTime - Time.unscaledTime;
+                if (waitUntilEnd > 0f)
+                    yield return new WaitForSecondsRealtime(waitUntilEnd);
+
+                if (currentLabel != null)
+                    ReturnLabel(currentLabel);
+
+                currentLabel = null;
+            }
+
+            float waitUntilClipEnd = sequenceStart + sequenceLength - Time.unscaledTime;
+            if (waitUntilClipEnd > 0f)
+                yield return new WaitForSecondsRealtime(waitUntilClipEnd);
+
+            if (voiceAudioSource != null)
+            {
+                voiceAudioSource.Stop();
+                voiceAudioSource.clip = null;
+            }
+
+            sequenceCoroutine = null;
+            activeSequenceHandle = null;
+            playbackHandle.Complete();
+
+            if (dialogueQueue.Count > 0)
+                ProcessQueue();
+        }
+
+        private float ResolveLineEndTime(VoicedDialogueSequence sequence, int index, float sequenceLength)
+        {
+            TimedDialogueLine line = sequence.lines[index];
+            if (line.endTime > line.startTime)
+                return Mathf.Min(line.endTime, sequenceLength);
+
+            for (int nextIndex = index + 1; nextIndex < sequence.lines.Count; nextIndex++)
+            {
+                TimedDialogueLine nextLine = sequence.lines[nextIndex];
+                if (nextLine != null && nextLine.startTime > line.startTime)
+                    return Mathf.Min(nextLine.startTime, sequenceLength);
+            }
+
+            return sequenceLength;
+        }
+
+        private float GetTimedSequenceFallbackLength(VoicedDialogueSequence sequence)
+        {
+            if (sequence.lines == null || sequence.lines.Count == 0)
+                return 0f;
+
+            float length = 0f;
+            foreach (TimedDialogueLine line in sequence.lines)
+            {
+                if (line == null)
+                    continue;
+
+                length = Mathf.Max(length, line.endTime, line.startTime + line.fadeIn + line.fadeOut);
+            }
+
+            return length;
         }
 
         private bool QueueContainsHandle(DialoguePlaybackHandle handle)
