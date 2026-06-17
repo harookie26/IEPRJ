@@ -65,7 +65,7 @@ public class StairsInputManager : MonoBehaviour
             return;
         }
 
-        if (doorToUse.isInaccesibleOnGameStart)
+        if (doorToUse.isInaccesibleOnGameStart || doorToUse.fullyinaccesible)
         {
             _uiManager?.ClearForcedHUD();
             DialogueTriggerManager.Instance.TriggerInaccessibleAreaDialogue();

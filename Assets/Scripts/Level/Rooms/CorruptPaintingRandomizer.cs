@@ -14,11 +14,10 @@ public class CorruptPaintingRandomizer : MonoBehaviour
     [SerializeField] private string channelableLayerName = "Channelable";
 
     [Header("Rooms")]
-    [SerializeField] private List<GameObject> Room1paintings;
-    [SerializeField] private List<GameObject> Room2paintings;
-    [SerializeField] private List<GameObject> Room3paintings;
-    [SerializeField] private List<GameObject> Room4paintings;
-    [SerializeField] private List<GameObject> Room5paintings;
+    [SerializeField] private List<GameObject> Room1paintings; // Gallery 2 , 4 paintings
+    [SerializeField] private List<GameObject> Room2paintings; // Gallery 3 , 3 paintings
+    [SerializeField] private List<GameObject> Room3paintings; // Gallery 4 , 5 paintings
+    [SerializeField] private List<GameObject> Room4paintings; // Office , 1 painting
 
     [Header("Debug")]
     [SerializeField] private bool isDebugMode = true;
@@ -32,7 +31,7 @@ public class CorruptPaintingRandomizer : MonoBehaviour
     {
         List<List<GameObject>> allRooms = new List<List<GameObject>>
         {
-            Room1paintings, Room2paintings, Room3paintings, Room4paintings, Room5paintings
+            Room1paintings, Room2paintings, Room3paintings, Room4paintings
         };
 
         foreach (var room in allRooms)
@@ -73,62 +72,49 @@ public class CorruptPaintingRandomizer : MonoBehaviour
     public void RunRandomizer()
     {
         Debug.Log($"[Randomizer] RunRandomizer called from: {System.Environment.StackTrace}");
-        int corruptedCount = 4;
         activeChosenPaintings.Clear();
 
-        // --- NEW: Force Room 3 to always be picked ---
-        if (Room3paintings != null && Room3paintings.Count > 0)
+        // Local helper function to safely pick 1 random painting from a given room
+        void PickAndAddFromRoom(List<GameObject> room, string roomName)
         {
-            // Find all valid paintings in Room 3 (future-proofs it just in case you ever add a 2nd painting)
-            List<GameObject> validRoom3 = Room3paintings.FindAll(p => p != null);
-            if (validRoom3.Count > 0)
+            if (room != null && room.Count > 0)
             {
-                ShuffleList(validRoom3);
-                activeChosenPaintings.Add(validRoom3[0]); // Adds the forced painting
-                if (isDebugMode) Debug.Log($"[Randomizer] Forced Room 3 painting: {validRoom3[0].name}");
+                // Filter out any null references just to be safe
+                List<GameObject> validPaintings = room.FindAll(p => p != null);
+                if (validPaintings.Count > 0)
+                {
+                    ShuffleList(validPaintings);
+                    activeChosenPaintings.Add(validPaintings[0]);
+                    if (isDebugMode) Debug.Log($"[Randomizer] Picked {validPaintings[0].name} for {roomName}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[Randomizer] {roomName} has no valid paintings!");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[Randomizer] {roomName} list is null or empty!");
             }
         }
 
-        // Add only the REMAINING rooms to the randomizer pool
-        List<List<GameObject>> remainingRooms = new List<List<GameObject>>
-        {
-            Room1paintings, Room2paintings, Room4paintings, Room5paintings
-        };
+        // Spawn Corrupted Painting 1 in Room 1
+        PickAndAddFromRoom(Room1paintings, "Room 1");
 
-        List<List<GameObject>> shuffledRooms = new List<List<GameObject>>(remainingRooms);
-        ShuffleList(shuffledRooms);
+        // Spawn Corrupted Painting 2 in Room 2
+        PickAndAddFromRoom(Room2paintings, "Room 2");
 
-        // Pass 1: Pick 1 painting from each of the other rooms until we hit 4 total
-        foreach (var room in shuffledRooms)
-        {
-            if (activeChosenPaintings.Count >= corruptedCount) break;
-            if (room == null || room.Count == 0) continue;
+        // Spawn Corrupted Painting 3 in Room 3
+        PickAndAddFromRoom(Room3paintings, "Room 3");
 
-            List<GameObject> validPaintings = room.FindAll(p => p != null && !activeChosenPaintings.Contains(p));
-            if (validPaintings.Count > 0)
-            {
-                ShuffleList(validPaintings);
-                activeChosenPaintings.Add(validPaintings[0]);
-            }
-        }
+        // Spawn Corrupted Painting 4 in Room 4
+        PickAndAddFromRoom(Room4paintings, "Room 4");
 
-        // Pass 2: Fill any remaining slots from the rest of the level if Pass 1 failed to find enough
-        if (activeChosenPaintings.Count < corruptedCount)
-        {
-            List<GameObject> remainingPool = new List<GameObject>();
-            foreach (var p in allPaintingsInLevel)
-            {
-                if (p != null && !activeChosenPaintings.Contains(p)) remainingPool.Add(p);
-            }
-            ShuffleList(remainingPool);
-
-            foreach (var p in remainingPool)
-            {
-                if (activeChosenPaintings.Count >= corruptedCount) break;
-                activeChosenPaintings.Add(p);
-            }
-        }
-
+        // Apply the corruption. 
+        // Because of the order above:
+        // activeChosenPaintings[0] gets corruptedPaintingsTexture[0]
+        // activeChosenPaintings[1] gets corruptedPaintingsTexture[1]
+        // etc.
         ApplyCorruptionToChosenList();
     }
 
@@ -178,7 +164,13 @@ public class CorruptPaintingRandomizer : MonoBehaviour
                 assignedCover.name = corruptedPaintingCover.name + "_" + painting.name;
             }
 
-            if (assignedCover != null) assignedCover.transform.rotation = Quaternion.Euler(0, assignedCover.transform.rotation.eulerAngles.y, assignedCover.transform.rotation.eulerAngles.z);
+            if (assignedCover != null)
+            {
+                // The painting is an FBX, so we need to tilt the cover 90 degrees 
+                // relative to whatever rotation it just copied.
+                // If it faces the wrong way, change 90f to -90f!
+                assignedCover.transform.Rotate(90f, 0f, 0f, Space.Self);
+            }
 
             PaintingChannelable pc = painting.GetComponent<PaintingChannelable>();
             if (pc == null) pc = painting.AddComponent<PaintingChannelable>();

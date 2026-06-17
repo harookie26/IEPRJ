@@ -52,6 +52,7 @@ public class StairsComponent : MonoBehaviour, IStair
     private bool _playerInZone = false;
 
     public bool isInaccesibleOnGameStart = false;
+    public bool fullyinaccesible = false;
 
     public static StairsComponent CurrentDoor;
     public int Id => GetInstanceID();
