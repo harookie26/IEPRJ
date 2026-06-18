@@ -167,12 +167,20 @@ public class EnemyStateMachine : MonoBehaviour
 
             SetGhostVisualsAndPhysics(true);
 
-            ChangeState(RoamState);
-            Debug.Log($"[{gameObject.name}] Awoken and revealed by Manager. Commencing Floor Roam.");
+            if (navMeshAgent != null && navMeshAgent.isOnNavMesh)
+            {
+                ChangeState(RoamState);
+                Debug.Log($"[{gameObject.name}] Awoken and revealed by Manager. Commencing Floor Roam.");
+            }
+            else
+            {
+                StartCoroutine(DelayedRoamActivation());
+            }
         }
         else
         {
             StopCoroutine(nameof(UnfreezeAfter));
+            StopCoroutine(nameof(DelayedRoamActivation));
 
             if (stunGlitchCoroutine != null)
             {
@@ -183,6 +191,15 @@ public class EnemyStateMachine : MonoBehaviour
             DisableAgentPhysics(); 
             SetGhostVisuals(false);
             Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
+        }
+    }
+    private IEnumerator DelayedRoamActivation()
+    {
+        yield return null; 
+        if (isEnemyActivated && navMeshAgent != null && navMeshAgent.isOnNavMesh)
+        {
+            ChangeState(RoamState);
+            Debug.Log($"[{gameObject.name}] Delayed Awaken successful after frame correction.");
         }
     }
 
@@ -213,15 +230,19 @@ public class EnemyStateMachine : MonoBehaviour
         StopChaseAudio();
         if (navMeshAgent != null)
         {
-            navMeshAgent.velocity = Vector3.zero;
-            navMeshAgent.ResetPath();
-            navMeshAgent.enabled = false; // Disabling entirely prevents navigation calculations on inactive layers
+            if (navMeshAgent.isOnNavMesh)
+            {
+                navMeshAgent.velocity = Vector3.zero;
+                navMeshAgent.ResetPath();
+            }
+
+            navMeshAgent.enabled = false;
         }
     }
 
     private void Update()
     {
-        if (!isEnemyActivated) return; //if enemy has not been activated yet
+        if (!isEnemyActivated) return; 
 
         if (isFrozen) return;
 
@@ -336,6 +357,8 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void Freeze(float duration = 0f)
     {
+        if (!isEnemyActivated) return;
+
         StopChaseAudio();
 
         if (navMeshAgent != null && navMeshAgent.enabled)
@@ -693,23 +716,6 @@ public class EnemyStateMachine : MonoBehaviour
         if (navMeshAgent != null)
             navMeshAgent.isStopped = false;
         ChangeState(RoamState);
-    }
-
-    public void scriptedEncounterCheck()
-    {
-        scriptedEncounters++;
-
-        if (scriptedEncounters == 3)
-        {
-            isEnemyActivated = true;
-            AudioSource source = this.gameObject.GetComponent<AudioSource>();
-            source.Play();
-            if (navMeshAgent != null)
-                navMeshAgent.isStopped = false;
-
-            ChangeState(RoamState); // only start moving now
-        }
-
     }
 
     public void ReactToLoudNoise(int roomId)

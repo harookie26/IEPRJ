@@ -184,7 +184,7 @@ public class EnemyManager : MonoBehaviour
         if (currentTriggerCount >= triggersRequiredToActivate)
         {
             systemIsActivated = true;
-            Debug.Log("[EnemyManager] 3 Triggers hit.");
+            Debug.Log("[EnemyManager]" + triggersRequiredToActivate + " Triggers hit.");
 
             EvaluateAndSwitchFloors();
         }
@@ -266,13 +266,30 @@ public class EnemyManager : MonoBehaviour
         if (safePointsOnFloor.Count > 0)
         {
             Transform chosenPoint = safePointsOnFloor[Random.Range(0, safePointsOnFloor.Count)];
-            ghost.Enemy.transform.position = chosenPoint.position;
 
-            Debug.Log($"[EnemyManager] Safe relocation successful. {ghost.gameObject.name} moved to: {chosenPoint.name} ({Vector3.Distance(playerPos, chosenPoint.position)}m away)");
+            if (ghost.NavAgent != null)
+            {
+                ghost.NavAgent.enabled = true; 
+
+                if (UnityEngine.AI.NavMesh.SamplePosition(chosenPoint.position, out UnityEngine.AI.NavMeshHit hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    ghost.NavAgent.Warp(hit.position);
+                }
+                else
+                {
+                    ghost.NavAgent.Warp(chosenPoint.position);
+                }
+            }
+            else
+            {
+                    ghost.Enemy.transform.position = chosenPoint.position;
+            }
+
+            Debug.Log($"[EnemyManager] Safe relocation successful. {ghost.gameObject.name} warped to: {chosenPoint.name}");
         }
         else
         {
-            Debug.LogWarning($"[EnemyManager] Could not find any teleport nodes outside the {minimumSpawnDistance}m radius on this floor! Ghost will stay at its default starting location.");
+            Debug.LogWarning($"[EnemyManager] Could not find any teleport nodes outside the {minimumSpawnDistance}m radius on this floor!");
         }
     }
 

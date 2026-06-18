@@ -133,7 +133,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 715144462282737622, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 715144462282737622, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -43810,7 +43810,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 715144462282737622, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 715144462282737622, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -67685,7 +67685,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 715144462282737622, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 715144462282737622, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_StaticEditorFlags
@@ -69988,11 +69988,8 @@ MonoBehaviour:
   entranceDoor002: {fileID: 0}
   entranceDoor003: {fileID: 0}
   blockingCollider: {fileID: 0}
-  entranceDoor002OpenAngle: -90
-  entranceDoor003OpenAngle: 90
-  useAutomaticHingeAxis: 1
-  entranceDoor002HingeSide: {x: -1, y: 0, z: 0}
-  entranceDoor003HingeSide: {x: 1, y: 0, z: 0}
+  entranceDoor002OpenEulerOffset: {x: 0, y: -90, z: 0}
+  entranceDoor003OpenEulerOffset: {x: 0, y: 90, z: 0}
   hasOpened: 0
 --- !u!114 &1253800837
 MonoBehaviour:
