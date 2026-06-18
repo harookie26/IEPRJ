@@ -48,7 +48,7 @@ public class EnemyManager : MonoBehaviour
     private int currentIntervalIndex = 0;
     private float checkTimer = 0f;
     private EnemyStateMachine activeGhost = null;
-
+    private bool isCutscenePlaying = false;
     private void Start()
     {
         if (targetPlayer == null)
@@ -93,6 +93,8 @@ public class EnemyManager : MonoBehaviour
 
     private void Update()
     {
+        if (isCutscenePlaying) return;
+
         HandleProximityEffects();
 
         if (!systemIsActivated || managedEnemies.Count == 0 || targetPlayer == null) return;
@@ -290,6 +292,57 @@ public class EnemyManager : MonoBehaviour
         else
         {
             Debug.LogWarning($"[EnemyManager] Could not find any teleport nodes outside the {minimumSpawnDistance}m radius on this floor!");
+        }
+    }
+
+    public void PauseEnemyForCutscene()
+    {
+        isCutscenePlaying = true;
+
+        if (vignetteComponent != null) vignetteComponent.intensity.value = minVignetteIntensity;
+        if (colorAdjustments != null) colorAdjustments.saturation.value = 0f;
+        if (chromaticAberration != null) chromaticAberration.intensity.value = 0f;
+        if (playerCamera != null) playerCamera.fieldOfView = defaultFieldOfView;
+
+        if (activeGhost != null)
+        {
+            activeGhost.IsInCutscene = true;
+            activeGhost.StopChaseAudio(); 
+
+            if (activeGhost.NavAgent != null && activeGhost.NavAgent.enabled && activeGhost.NavAgent.isOnNavMesh)
+            {
+                activeGhost.NavAgent.isStopped = true;
+                activeGhost.NavAgent.velocity = Vector3.zero;
+            }
+
+            AudioSource ghostVoice = activeGhost.Enemy.GetComponent<AudioSource>();
+            if (ghostVoice != null)
+            {
+                ghostVoice.mute = true;
+            }
+        }
+    }
+
+    public void ResumeEnemyFromCutscene()
+    {
+        isCutscenePlaying = false;
+
+        if (activeGhost != null)
+        {
+            activeGhost.IsInCutscene = false;
+
+            if (activeGhost.isEnemyActivated && !activeGhost.IsFrozen)
+            {
+                AudioSource ghostVoice = activeGhost.Enemy.GetComponent<AudioSource>();
+                if (ghostVoice != null) ghostVoice.mute = false;
+
+                if (activeGhost.NavAgent != null && activeGhost.NavAgent.enabled && activeGhost.NavAgent.isOnNavMesh)
+                {
+                    activeGhost.NavAgent.isStopped = false;
+                }
+
+                activeGhost.ChangeState(activeGhost.RoamState);
+            }
         }
     }
 

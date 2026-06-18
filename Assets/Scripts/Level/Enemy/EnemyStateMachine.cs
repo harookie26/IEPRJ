@@ -51,6 +51,8 @@ public class EnemyStateMachine : MonoBehaviour
     [Header("Tension Management")]
     [SerializeField] private float maxSilentPassiveDuration = 45f;
     private float passiveTensionTimer = 0f;
+
+    public bool IsInCutscene { get; set; } = false;
     public float StunDuration => currentStunDuration;
 
     private EnemyState currentState;
@@ -242,7 +244,9 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Update()
     {
-        if (!isEnemyActivated) return; 
+        if (!isEnemyActivated) return;
+
+        if (navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.isStopped) return;
 
         if (isFrozen) return;
 
@@ -399,6 +403,13 @@ public class EnemyStateMachine : MonoBehaviour
     private IEnumerator UnfreezeAfter(float seconds)
     {
         yield return new WaitForSeconds(seconds);
+
+        while (IsInCutscene)
+        {
+            yield return null;
+        }
+
+        if (!isEnemyActivated) yield break;
 
         if (stunGlitchCoroutine != null)
         {

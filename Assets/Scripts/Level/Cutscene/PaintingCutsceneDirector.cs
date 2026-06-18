@@ -115,6 +115,18 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     private IEnumerator PlayCutscene(PaintingCutsceneRequest request)
     {
+        EnemyManager enemyManager = FindFirstObjectByType<EnemyManager>();
+
+        if (enemyManager != null)
+        {
+            enemyManager.PauseEnemyForCutscene();
+            Debug.Log("[PaintingCutsceneDirector] EnemyManager found. Pausing enemies for cutscene.");
+        }
+        else
+        {
+            Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be paused during the cutscene.");
+        }
+
         Vector3 outwardDirection = GetTrueOutwardDirection(request.Target);
         Vector3 paintingCenter = request.Target.position + new Vector3(0f, request.HeightOffset, 0f);
 
@@ -156,7 +168,17 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         yield return Fade(1f, 0f, request.FadeDuration);
 
-        gameplayCamera = null;
+        if (enemyManager != null)
+        {
+            enemyManager.ResumeEnemyFromCutscene();
+            Debug.Log("[PaintingCutsceneDirector] Resuming enemies after cutscene.");
+        }
+        else
+        {             
+            Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be resumed after the cutscene."); 
+        }
+
+            gameplayCamera = null;
         activeCutscene = null;
     }
 
