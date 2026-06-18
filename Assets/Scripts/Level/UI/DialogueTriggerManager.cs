@@ -158,25 +158,25 @@ public class DialogueTriggerManager : MonoBehaviour
             case "paint1":
                 if (triggeredDialogueIDs.Contains(8)) return null;
                 triggeredDialogueIDs.Add(8);
-                return DisplayPaintingBackstory(0, paintingBackstoryDialogues[0]);
+                return DisplayPaintingBackstory(0, 0);
             case "paint2":
                 if (triggeredDialogueIDs.Contains(9)) return null;
                 triggeredDialogueIDs.Add(9);
-                return DisplayPaintingBackstory(1, paintingBackstoryDialogues[1], paintingBackstoryDialogues[2]);
+                return DisplayPaintingBackstory(1, 1, 2);
             case "paint3":
                 if (triggeredDialogueIDs.Contains(10)) return null;
                 triggeredDialogueIDs.Add(10);
-                return DisplayPaintingBackstory(2, paintingBackstoryDialogues[3]);
+                return DisplayPaintingBackstory(2, 3);
             case "paint4":
                 if (triggeredDialogueIDs.Contains(11)) return null;
                 triggeredDialogueIDs.Add(11);
-                return DisplayPaintingBackstory(3, paintingBackstoryDialogues[4]);
+                return DisplayPaintingBackstory(3, 4);
         }
 
         return null;
     }
 
-    private DialoguePlaybackHandle DisplayPaintingBackstory(int sequenceIndex, params DialogueEntry[] fallbackEntries)
+    private DialoguePlaybackHandle DisplayPaintingBackstory(int sequenceIndex, params int[] fallbackEntryIndices)
     {
         VoicedDialogueSequence sequence = null;
         if (paintingBackstorySequences != null
@@ -188,6 +188,23 @@ public class DialogueTriggerManager : MonoBehaviour
 
         if (sequence != null)
             return DialogueManager.Instance.DisplaySequence(sequence);
+
+        List<DialogueEntry> fallbackEntries = new List<DialogueEntry>();
+        foreach (int fallbackEntryIndex in fallbackEntryIndices)
+        {
+            if (paintingBackstoryDialogues == null
+                || fallbackEntryIndex < 0
+                || fallbackEntryIndex >= paintingBackstoryDialogues.Count)
+            {
+                Debug.LogWarning(
+                    $"[Dialogue] Missing painting backstory dialogue entry at index {fallbackEntryIndex}. " +
+                    $"Assign either paintingBackstorySequences[{sequenceIndex}] or enough paintingBackstoryDialogues entries.",
+                    this);
+                continue;
+            }
+
+            fallbackEntries.Add(paintingBackstoryDialogues[fallbackEntryIndex]);
+        }
 
         return DialogueManager.Instance.DisplaySequence(fallbackEntries);
     }
