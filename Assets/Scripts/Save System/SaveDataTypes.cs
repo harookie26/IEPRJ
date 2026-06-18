@@ -19,6 +19,8 @@ public class GameSaveData
     // Flashlight 
     public FlashlightSaveData flashlight;
 
+    public DrawerSaveData drawerState;
+
     public LockedDoorSaveData lockeddoorState;
 
     public DialogueSaveData dialogue;
@@ -45,6 +47,12 @@ public class FlashlightSaveData
 {
     public float currentBattery;
     public bool isOn;
+}
+
+[System.Serializable]
+public class DrawerSaveData
+{
+    public bool hasDrawerOpened;
 }
 
 [System.Serializable]

@@ -961,8 +961,8 @@ Transform:
   m_GameObject: {fileID: 1216877701878298583}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.125, y: 0, z: -0.7}
-  m_LocalScale: {x: 1.0619, y: 1.0619, z: 1.5418241}
+  m_LocalPosition: {x: -4.125, y: -1.73, z: -0.382}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5815342909047313975}
@@ -980,7 +980,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b85a3e8219bdd246864eec7eb9b4373, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LockedDoorInteractable
+  useRotatingDoorUnlock: 0
   doorObject: {fileID: 2094490630712403420}
+  entranceDoor002: {fileID: 0}
+  entranceDoor003: {fileID: 0}
+  blockingCollider: {fileID: 0}
+  entranceDoor002OpenEulerOffset: {x: 0, y: 0, z: -90}
+  entranceDoor003OpenEulerOffset: {x: 0, y: 0, z: 90}
   hasOpened: 0
 --- !u!82 &112630324002106573
 AudioSource:
@@ -1293,7 +1299,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 3569597467590390480}
   verticalDirection: 2
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 0
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &1302268949419404328
 GameObject:
@@ -1770,7 +1786,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 8327871988831029711}
   verticalDirection: 2
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 0
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &1599737555020137503
 GameObject:
@@ -2321,7 +2347,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 4583726562250756062}
   verticalDirection: 1
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 1
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &2094490630712403420
 GameObject:
@@ -2348,7 +2384,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2094490630712403420}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2728,6 +2764,12 @@ MonoBehaviour:
   pauseOnConsecutiveCompletions: 1
   coverObject: {fileID: 5065669639761610801}
   paintingId: 000
+  startDistance: 0.5
+  endDistance: 2
+  heightOffset: 0
+  fadeDuration: 1
+  moveDuration: 4
+  viewDuration: 5
 --- !u!114 &593727883758541133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2870,7 +2912,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 8221592210084798493}
   verticalDirection: 1
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 0
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &2634725135790839420
 GameObject:
@@ -8469,7 +8521,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 8522952934189086320}
   verticalDirection: 2
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 0
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &3421924155704419388
 GameObject:
@@ -34727,9 +34789,9 @@ Transform:
   m_GameObject: {fileID: 4732341573778197541}
   serializedVersion: 2
   m_LocalRotation: {x: -0.5, y: -0.5, z: -0.5, w: 0.5}
-  m_LocalPosition: {x: -0.7490137, y: -0.49233913, z: -0.0046179695}
-  m_LocalScale: {x: 4.166667, y: 69.09895, z: 3.5626676}
-  m_ConstrainProportionsScale: 0
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 12.500001, y: 12.5, z: 12.5}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 5815342909047313975}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -36199,7 +36261,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 1118836512649506481}
   verticalDirection: 1
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 0
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &6139131899583229049
 GameObject:
@@ -36474,7 +36546,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 7598367553633672350}
   verticalDirection: 1
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 1
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &6272999497464911159
 GameObject:
@@ -42531,8 +42613,8 @@ Transform:
   m_GameObject: {fileID: 7142214495174223898}
   serializedVersion: 2
   m_LocalRotation: {x: -0.5, y: -0.5, z: -0.5, w: 0.5}
-  m_LocalPosition: {x: 0.0654231, y: -0.49182442, z: 0.0093333125}
-  m_LocalScale: {x: 4.166667, y: 69.09895, z: 3.5626676}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 12.500001, y: 12.5, z: 12.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6700671782410082472}
@@ -43058,7 +43140,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 2643874838976768850}
   verticalDirection: 1
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 0
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &7616064425321951692
 GameObject:
@@ -48416,7 +48508,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 6445626327049125832}
   verticalDirection: 2
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 0
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &7931525129618604251
 GameObject:
@@ -48545,7 +48647,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DoorsComponent
   partnerDoor: {fileID: 2418282374932912176}
   verticalDirection: 2
+  minimumExitDistance: 1.25
+  exitClearance: 0.35
+  safePositionSearchDistance: 2
+  safePositionSearchSteps: 8
+  model: {fileID: 0}
+  hasAnimation: 0
+  disableAfterAnimation: 0
+  modelAnimator: {fileID: 0}
+  animationStateName: TriggerAnimation
   isInaccesibleOnGameStart: 0
+  fullyinaccesible: 0
   weight: 1
 --- !u!1 &7939220975138875590
 GameObject:
@@ -49169,8 +49281,8 @@ Transform:
   m_GameObject: {fileID: 8272964511901328269}
   serializedVersion: 2
   m_LocalRotation: {x: -0.5, y: -0.5, z: -0.5, w: 0.5}
-  m_LocalPosition: {x: 0.0654231, y: -0.49182442, z: 0.0093333125}
-  m_LocalScale: {x: 4.166667, y: 69.09895, z: 3.5626676}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 12.500001, y: 12.5, z: 12.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6700671782410082472}
@@ -49742,7 +49854,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.402, y: 1.756618, z: 0.69}
-  m_LocalScale: {x: 0.1809, y: 3.508607, z: 3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5799764059245028160}
@@ -49823,7 +49935,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}

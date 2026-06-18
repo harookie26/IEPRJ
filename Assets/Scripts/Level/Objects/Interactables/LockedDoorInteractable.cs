@@ -11,8 +11,8 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
     [SerializeField] private Transform entranceDoor002;
     [SerializeField] private Transform entranceDoor003;
     [SerializeField] private Collider blockingCollider;
-    [SerializeField] private Vector3 entranceDoor002OpenEulerOffset = new Vector3(0f, -90f, 0f);
-    [SerializeField] private Vector3 entranceDoor003OpenEulerOffset = new Vector3(0f, 90f, 0f);
+    [SerializeField] private Vector3 entranceDoor002OpenEulerOffset = new Vector3(0f, 0f, -90f);
+    [SerializeField] private Vector3 entranceDoor003OpenEulerOffset = new Vector3(0f, 0f, 90f);
 
     private PlayerCollectibleManager collectibles;
     private AudioSource sfxAudioSource;

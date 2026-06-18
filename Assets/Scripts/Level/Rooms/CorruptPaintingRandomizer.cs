@@ -7,8 +7,11 @@ public class CorruptPaintingRandomizer : MonoBehaviour
 {
     [Header("Setup")]
     [SerializeField] private GameObject corruptedPaintingCover;
-    [Tooltip("Place materials in order: Main1, Main2, Main3, Main4")]
+    [Tooltip("Place corrupted materials in order: Main1, Main2, Main3, Main4")]
     [SerializeField] private List<Material> corruptedPaintingsTexture;
+
+    [Tooltip("Place true materials in order: Main1, Main2, Main3, Main4")]
+    [SerializeField] private List<Material> truePaintingsTexture;
 
     [Header("Layer Settings")]
     [SerializeField] private string channelableLayerName = "Channelable";
@@ -185,6 +188,23 @@ public class CorruptPaintingRandomizer : MonoBehaviour
 
                 painting.tag = "Untagged";
                 painting.layer = 0;
+
+                if (i < truePaintingsTexture.Count)
+                {
+                    Renderer completedRenderer = painting.GetComponent<Renderer>();
+                    if (completedRenderer != null)
+                    {
+                        Material[] mats = completedRenderer.materials;
+
+                        if (mats.Length > 1)
+                        {
+                            mats[1] = truePaintingsTexture[i];
+
+                            completedRenderer.materials = mats;
+                        }
+                    }
+                }
+
                 continue;
             }
 
@@ -193,6 +213,19 @@ public class CorruptPaintingRandomizer : MonoBehaviour
             {
                 FieldInfo coverField = typeof(PaintingChannelable).GetField("coverObject", flags);
                 if (coverField != null) coverField.SetValue(pc, assignedCover);
+            }
+
+            if (i < truePaintingsTexture.Count)
+            {
+                FieldInfo trueMatField = typeof(PaintingChannelable).GetField("truePaintingMaterial", flags);
+                if (trueMatField != null)
+                {
+                    trueMatField.SetValue(pc, truePaintingsTexture[i]);
+                }
+                else
+                {
+                    Debug.LogWarning($"[Randomizer] Could not find 'truePaintingMaterial' field on {painting.name}!");
+                }
             }
 
             FieldInfo durationField = typeof(PaintingChannelable).GetField("requiredChannelDuration", flags);

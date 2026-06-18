@@ -33,6 +33,13 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [Tooltip("Optional child object that acts as a cover and should be disabled upon completion.")]
     [SerializeField] private GameObject coverObject;
 
+    [Header("True Painting Material")]
+    [Tooltip("Optional child object that acts as a cover and should be disabled upon completion.")]
+    [SerializeField] private Material truePaintingMaterial;
+
+    [Tooltip("How long the crossfade between corrupted and true material should take.")]
+    [SerializeField] private float materialFadeDuration = 3.0f;
+
     [Header("Painting ID")]
     [Tooltip("Unique string ID for this painting. Assign in inspector (e.g. 'paint1').")]
     [SerializeField] private string paintingId = "";
@@ -172,7 +179,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     }
 
     private void Update()
-    {       
+    {
         if (isChanneling && !isCompleted)
         {
             channelTimer += Time.deltaTime;
@@ -223,24 +230,27 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             Debug.LogWarning("[PaintingChannelable] No CorruptedRoomsManager instance found to restore room.");
         }
 
-        /*if (pauseOnConsecutiveCompletions && consecutiveCompletions >= Mathf.Max(1, consecutiveCompletionsToPause))
+        if (truePaintingMaterial != null)
         {
-            Debug.Log($"[PaintingChannelable] Consecutive completions threshold reached ({consecutiveCompletions}). Pausing game (Time.timeScale = 0).");
-            Time.timeScale = 0f;
-        }*/
+            Renderer paintingRenderer = GetComponent<Renderer>();
 
-        // Additional completion effects can be added here.
+            if (paintingRenderer != null)
+            {
+                StartCoroutine(FadeMaterialRoutine(paintingRenderer));
+            }
+        }
+
         if (sfxAudioSource != null && audioList != null && audioList.paintingRestorationCompleteSFX != null)
             sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
 
         DialoguePlaybackHandle dialoguePlayback = null;
 
-        if(paintingId != "000") // Only post the event if a valid painting ID is assigned.
+        if (paintingId != "000")
         {
             dialoguePlayback = DialogueTriggerManager.Instance.TriggerPaintingBGDialogue(paintingId);
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.ADD_PAINTING_RESTORED);
         }
-        else if(paintingId == "000")
+        else if (paintingId == "000")
         {
             DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
@@ -271,5 +281,68 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             moveDuration,
             viewDuration,
             dialoguePlayback));
+    }
+
+    private System.Collections.IEnumerator FadeMaterialRoutine(Renderer paintingRenderer)
+    {
+        Material[] mats = paintingRenderer.materials;
+
+        yield return new WaitForSeconds(2.0f);
+
+        if (mats.Length > 1)
+        {
+            Material corruptedMat = mats[1];
+
+            Material transitionMat = new Material(corruptedMat);
+
+            transitionMat.EnableKeyword("_EMISSION");
+
+            mats[1] = transitionMat;
+            paintingRenderer.materials = mats;
+
+            float halfDuration = materialFadeDuration / 2f;
+            float elapsedTime = 0f;
+
+            Color glowColor = Color.white * 3f;
+
+            while (elapsedTime < halfDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / halfDuration);
+                float eased = Mathf.SmoothStep(0f, 1f, t);
+
+                if (transitionMat.HasProperty("_EmissionColor"))
+                    transitionMat.SetColor("_EmissionColor", Color.Lerp(Color.black, glowColor, eased));
+
+                yield return null;
+            }
+
+            if (transitionMat.HasProperty("_EmissionColor"))
+                transitionMat.SetColor("_EmissionColor", glowColor);
+
+            if (transitionMat.HasProperty("_BaseMap")) transitionMat.SetTexture("_BaseMap", truePaintingMaterial.GetTexture("_BaseMap"));
+            if (transitionMat.HasProperty("_MainTex")) transitionMat.mainTexture = truePaintingMaterial.mainTexture;
+
+            elapsedTime = 0f;
+
+            while (elapsedTime < halfDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / halfDuration);
+                float eased = Mathf.SmoothStep(0f, 1f, t);
+
+                if (transitionMat.HasProperty("_EmissionColor"))
+                    transitionMat.SetColor("_EmissionColor", Color.Lerp(glowColor, Color.black, eased));
+
+                yield return null;
+            }
+
+            mats[1] = truePaintingMaterial;
+            paintingRenderer.materials = mats;
+
+            Destroy(transitionMat);
+
+            Debug.Log($"[PaintingChannelable] Successfully finished Emission Flash transition on {gameObject.name}");
+        }
     }
 }
