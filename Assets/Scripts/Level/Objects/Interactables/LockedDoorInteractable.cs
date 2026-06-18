@@ -5,11 +5,20 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
 {
     public static LockedDoorInteractable Instance { get; private set; }
 
+    public bool useRotatingDoorUnlock = false;
+
     [SerializeField] private GameObject doorObject;
+    [SerializeField] private Transform entranceDoor002;
+    [SerializeField] private Transform entranceDoor003;
+    [SerializeField] private Collider blockingCollider;
+    [SerializeField] private Vector3 entranceDoor002OpenEulerOffset = new Vector3(0f, -90f, 0f);
+    [SerializeField] private Vector3 entranceDoor003OpenEulerOffset = new Vector3(0f, 90f, 0f);
 
     private PlayerCollectibleManager collectibles;
     private AudioSource sfxAudioSource;
     private AudioList audioList;
+    private Quaternion entranceDoor002ClosedRotation;
+    private Quaternion entranceDoor003ClosedRotation;
 
     public bool hasOpened = false;
 
@@ -28,6 +37,8 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         }
 
         collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
+        ResolveDoorReferences();
+        CacheClosedDoorRotations();
 
         //Find the AudioList object in the scene
         audioList = FindAnyObjectByType<AudioList>();
@@ -48,7 +59,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
     {
         if (hasOpened)
         {
-            doorObject.gameObject.SetActive(false);
+            ApplyUnlockedState();
         }
     }
 
@@ -60,7 +71,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT2_START);
             sfxAudioSource.PlayOneShot(audioList.lockedDoorSFX);
 
-            doorObject.gameObject.SetActive(false);
+            ApplyUnlockedState();
             SpatialSFX.Deactivate("door_banging");
         }
         else
@@ -88,9 +99,93 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
 
         if (this.hasOpened)
         {
-            doorObject.gameObject.SetActive(false);
+            ApplyUnlockedState();
         }
 
+    }
+
+    private void ApplyUnlockedState()
+    {
+        if (!useRotatingDoorUnlock)
+        {
+            if (doorObject != null)
+            {
+                doorObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        if (doorObject != null)
+        {
+            doorObject.SetActive(true);
+        }
+
+        if (entranceDoor002 != null)
+        {
+            entranceDoor002.localRotation = entranceDoor002ClosedRotation * Quaternion.Euler(entranceDoor002OpenEulerOffset);
+        }
+
+        if (entranceDoor003 != null)
+        {
+            entranceDoor003.localRotation = entranceDoor003ClosedRotation * Quaternion.Euler(entranceDoor003OpenEulerOffset);
+        }
+
+        if (blockingCollider != null)
+        {
+            blockingCollider.enabled = false;
+        }
+    }
+
+    private void ResolveDoorReferences()
+    {
+        if (doorObject != null)
+        {
+            if (entranceDoor002 == null)
+            {
+                entranceDoor002 = FindChildByName(doorObject.transform, "Entrance_Door_002");
+            }
+
+            if (entranceDoor003 == null)
+            {
+                entranceDoor003 = FindChildByName(doorObject.transform, "Entrance_Door_003");
+            }
+        }
+
+        if (blockingCollider == null)
+        {
+            GameObject blockingColliderObject = GameObject.Find("BlockingCollider");
+            if (blockingColliderObject != null)
+            {
+                blockingCollider = blockingColliderObject.GetComponent<Collider>();
+            }
+        }
+    }
+
+    private void CacheClosedDoorRotations()
+    {
+        if (entranceDoor002 != null)
+        {
+            entranceDoor002ClosedRotation = entranceDoor002.localRotation;
+        }
+
+        if (entranceDoor003 != null)
+        {
+            entranceDoor003ClosedRotation = entranceDoor003.localRotation;
+        }
+    }
+
+    private Transform FindChildByName(Transform parent, string childName)
+    {
+        foreach (Transform child in parent.GetComponentsInChildren<Transform>(true))
+        {
+            if (child.name == childName)
+            {
+                return child;
+            }
+        }
+
+        return null;
     }
 
 }
