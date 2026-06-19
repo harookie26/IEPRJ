@@ -50700,6 +50700,7 @@ MonoBehaviour:
   isflashlightHintTrigger: 0
   model: {fileID: 1642392112}
   sfx: {fileID: 8300000, guid: e08c0613c94aafe4bb30e4b0c940284c, type: 3}
+  playScreamSFX: 0
   enemyStateMachine: {fileID: 1924547533}
   hasAnimation: 1
   disableAfterAnimation: 0
@@ -52033,6 +52034,7 @@ MonoBehaviour:
   isflashlightHintTrigger: 0
   model: {fileID: 0}
   sfx: {fileID: 8300000, guid: b214930fff046484cae258686f6d0567, type: 3}
+  playScreamSFX: 0
   enemyStateMachine: {fileID: 1924547533}
   hasAnimation: 0
   disableAfterAnimation: 1
@@ -104400,6 +104402,7 @@ MonoBehaviour:
   paperPickupSFX: {fileID: 8300000, guid: 1b5c539c192634a44bda6cfbd507ac9b, type: 3}
   objectivesSFX: {fileID: 8300000, guid: 4ebb3451713371a409e7c56e9b8b6b44, type: 3}
   keyPickupSFX: {fileID: 8300000, guid: 8f0240ecaa80c51419d551a06685b189, type: 3}
+  screamSFX: {fileID: 8300000, guid: 5fc8169cc4cf4a34db092937eb37f54f, type: 3}
   buttonClickSFX: {fileID: 8300000, guid: 51c6d99ceec20cc4fbdd9b7a01473fd5, type: 3}
   sfxSettingAdjustment: {fileID: 8300000, guid: 75c9cee1bcd35f444a2562aa4ad7c9a4, type: 3}
   testMusic: {fileID: 0}
@@ -108493,6 +108496,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1134820679}
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: playScreamSFX
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: enemyIntroModel
       value: 
       objectReference: {fileID: 1134820677}
@@ -108588,6 +108595,10 @@ PrefabInstance:
       propertyPath: modelAnimator
       value: 
       objectReference: {fileID: 699871120}
+    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: playScreamSFX
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: enemyIntroModel
       value: 

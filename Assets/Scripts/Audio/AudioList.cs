@@ -38,6 +38,9 @@ public class AudioList : MonoBehaviour
     [Header("Key Pickup SFX")]
     [SerializeField] public AudioClip keyPickupSFX;
 
+    [Header("Scream SFX")]
+    [SerializeField] public AudioClip screamSFX;
+
     [Header("Button Click SFX")]
     [SerializeField] public AudioClip buttonClickSFX;
 
@@ -91,6 +94,11 @@ public class AudioList : MonoBehaviour
     public void PlaySFXSettingAdjustment()
     {
         PlaySFX(sfxSettingAdjustment);
+    }
+
+    public void PlayScreamSFX()
+    {
+        PlaySFX(screamSFX);
     }
 
     public void PlaySFX(AudioClip clip)
