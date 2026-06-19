@@ -10,6 +10,13 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
 {
     [SerializeField] private string interactableId;
 
+    [Header("Dialogue Settings")]
+    [Tooltip("Use a timed voice sequence instead of the existing non-voiced dialogue entries.")]
+    [SerializeField] private bool useTimedVoiceSequence = false;
+
+    [Tooltip("The voice clip and timed subtitles played when Use Timed Voice Sequence is enabled.")]
+    [SerializeField] private VoicedDialogueSequence timedVoiceSequence;
+
     [Tooltip("The list of dialogue entries that will be displayed when the player interacts with this object.")]
     [SerializeField] private List<DialogueEntry> dialogueList;
 
@@ -161,7 +168,20 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
     {
         if (!hasBeenInteractedWith && !isInCooldown)
         {
-            if (dialogueList != null && dialogueList.Count > 0)
+            if (useTimedVoiceSequence)
+            {
+                if (timedVoiceSequence != null)
+                {
+                    DialogueManager.Instance.DisplaySequence(timedVoiceSequence);
+                }
+                else
+                {
+                    Debug.LogWarning(
+                        "Timed voice sequence is enabled, but no sequence is assigned to this NarrativeInteractable.",
+                        this);
+                }
+            }
+            else if (dialogueList != null && dialogueList.Count > 0)
             {
                 var pendingEntries = new List<DialogueEntry>();
 

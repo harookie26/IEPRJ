@@ -91254,7 +91254,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 11400000, guid: af4a29eec095cce4b98d6521d7d1c34a, type: 2}
   - {fileID: 11400000, guid: 60b015f8d0dc6764582e0b5d00bda8f8, type: 2}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: c0bd1f56893178948a9782dbcbf9ce23, type: 2}
   finalPaintingFixedDialogue: {fileID: 11400000, guid: 8298c26a1adaac14daed8e424dabba64, type: 2}
 --- !u!1 &1801230288 stripped
 GameObject:
@@ -108448,14 +108448,6 @@ PrefabInstance:
       value: -15.904
       objectReference: {fileID: 0}
     - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx.Array.data[0]
-      value: 
-      objectReference: {fileID: 8300000, guid: 3c746c2e53c8ff546b85e9f57210fa92, type: 3}
-    - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: model
       value: 
       objectReference: {fileID: 112520839}
@@ -108468,6 +108460,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 112520841}
     - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: sfx.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: enemyIntroModel
       value: 
       objectReference: {fileID: 112520839}
@@ -108476,21 +108472,13 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1924547533}
     - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: 'sfx.Array.data[0]'
+      value: 
+      objectReference: {fileID: 8300000, guid: 3c746c2e53c8ff546b85e9f57210fa92, type: 3}
+    - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: disableAfterAnimation
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx.Array.data[0]
-      value: 
-      objectReference: {fileID: 8300000, guid: d88fbd557c141e64e9c4eb8b233d4867, type: 3}
-    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx.Array.data[1]
-      value: 
-      objectReference: {fileID: 8300000, guid: 5fc8169cc4cf4a34db092937eb37f54f, type: 3}
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: model
       value: 
@@ -108504,6 +108492,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1134820679}
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: sfx.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: enemyIntroModel
       value: 
       objectReference: {fileID: 1134820677}
@@ -108511,6 +108503,14 @@ PrefabInstance:
       propertyPath: enemyStateMachine
       value: 
       objectReference: {fileID: 1924547533}
+    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: 'sfx.Array.data[0]'
+      value: 
+      objectReference: {fileID: 8300000, guid: d88fbd557c141e64e9c4eb8b233d4867, type: 3}
+    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: 'sfx.Array.data[1]'
+      value: 
+      objectReference: {fileID: 8300000, guid: 5fc8169cc4cf4a34db092937eb37f54f, type: 3}
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: disableAfterAnimation
       value: 1
@@ -108580,18 +108580,6 @@ PrefabInstance:
       value: -3.2067013
       objectReference: {fileID: 0}
     - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx.Array.data[0]
-      value: 
-      objectReference: {fileID: 8300000, guid: e6054d1c37f3aa84db5d482d9085715a, type: 3}
-    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx.Array.data[1]
-      value: 
-      objectReference: {fileID: 8300000, guid: 5fc8169cc4cf4a34db092937eb37f54f, type: 3}
-    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: model
       value: 
       objectReference: {fileID: 699871118}
@@ -108604,6 +108592,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 699871120}
     - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: sfx.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: enemyIntroModel
       value: 
       objectReference: {fileID: 699871118}
@@ -108611,6 +108603,14 @@ PrefabInstance:
       propertyPath: enemyStateMachine
       value: 
       objectReference: {fileID: 1924547533}
+    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: 'sfx.Array.data[0]'
+      value: 
+      objectReference: {fileID: 8300000, guid: e6054d1c37f3aa84db5d482d9085715a, type: 3}
+    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: 'sfx.Array.data[1]'
+      value: 
+      objectReference: {fileID: 8300000, guid: 5fc8169cc4cf4a34db092937eb37f54f, type: 3}
     - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: disableAfterAnimation
       value: 1
