@@ -50699,8 +50699,8 @@ MonoBehaviour:
   uniqueID: elevatorTrigger
   isflashlightHintTrigger: 0
   model: {fileID: 1642392112}
-  sfx: {fileID: 8300000, guid: e08c0613c94aafe4bb30e4b0c940284c, type: 3}
-  playScreamSFX: 0
+  sfx:
+  - {fileID: 8300000, guid: e08c0613c94aafe4bb30e4b0c940284c, type: 3}
   enemyStateMachine: {fileID: 1924547533}
   hasAnimation: 1
   disableAfterAnimation: 0
@@ -52033,8 +52033,8 @@ MonoBehaviour:
   uniqueID: LoungeTrigger
   isflashlightHintTrigger: 0
   model: {fileID: 0}
-  sfx: {fileID: 8300000, guid: b214930fff046484cae258686f6d0567, type: 3}
-  playScreamSFX: 0
+  sfx:
+  - {fileID: 8300000, guid: b214930fff046484cae258686f6d0567, type: 3}
   enemyStateMachine: {fileID: 1924547533}
   hasAnimation: 0
   disableAfterAnimation: 1
@@ -108448,7 +108448,11 @@ PrefabInstance:
       value: -15.904
       objectReference: {fileID: 0}
     - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx
+      propertyPath: sfx.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: sfx.Array.data[0]
       value: 
       objectReference: {fileID: 8300000, guid: 3c746c2e53c8ff546b85e9f57210fa92, type: 3}
     - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
@@ -108459,10 +108463,6 @@ PrefabInstance:
       propertyPath: hasAnimation
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: lightsOutSFX
-      value: 
-      objectReference: {fileID: 8300000, guid: 3c746c2e53c8ff546b85e9f57210fa92, type: 3}
     - target: {fileID: 2332838917761664198, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: modelAnimator
       value: 
@@ -108480,9 +108480,17 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx
+      propertyPath: sfx.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: sfx.Array.data[0]
       value: 
       objectReference: {fileID: 8300000, guid: d88fbd557c141e64e9c4eb8b233d4867, type: 3}
+    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: sfx.Array.data[1]
+      value: 
+      objectReference: {fileID: 8300000, guid: 5fc8169cc4cf4a34db092937eb37f54f, type: 3}
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: model
       value: 
@@ -108495,10 +108503,6 @@ PrefabInstance:
       propertyPath: modelAnimator
       value: 
       objectReference: {fileID: 1134820679}
-    - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: playScreamSFX
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: enemyIntroModel
       value: 
@@ -108576,9 +108580,17 @@ PrefabInstance:
       value: -3.2067013
       objectReference: {fileID: 0}
     - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: sfx
+      propertyPath: sfx.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: sfx.Array.data[0]
       value: 
       objectReference: {fileID: 8300000, guid: e6054d1c37f3aa84db5d482d9085715a, type: 3}
+    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
+      propertyPath: sfx.Array.data[1]
+      value: 
+      objectReference: {fileID: 8300000, guid: 5fc8169cc4cf4a34db092937eb37f54f, type: 3}
     - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: model
       value: 
@@ -108588,17 +108600,9 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: lightsOutSFX
-      value: 
-      objectReference: {fileID: 8300000, guid: e6054d1c37f3aa84db5d482d9085715a, type: 3}
-    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: modelAnimator
       value: 
       objectReference: {fileID: 699871120}
-    - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
-      propertyPath: playScreamSFX
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 7398794144448917802, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: enemyIntroModel
       value: 

@@ -16,8 +16,7 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
     [SerializeField] private bool isflashlightHintTrigger = false;
 
     [SerializeField] private GameObject model;
-    [SerializeField] private AudioClip sfx;
-    [SerializeField] private bool playScreamSFX = false;
+    [SerializeField] private List<AudioClip> sfx = new();
     [SerializeField] private EnemyStateMachine enemyStateMachine;
 
     [Header("Animation Setup")]
@@ -68,11 +67,7 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
             {
                 DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
             }
-            sfxAudioSource.PlayOneShot(sfx);
-            if (playScreamSFX && AudioList.Current != null)
-            {
-                AudioList.Current.PlayScreamSFX();
-            }
+            PlaySFX();
 
             EnemyManager manager = FindFirstObjectByType<EnemyManager>();
             if (manager != null)
@@ -91,6 +86,31 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
             else
             {
                 if (model != null) model.SetActive(false);
+            }
+        }
+    }
+
+    private void PlaySFX()
+    {
+        if (sfx == null)
+        {
+            return;
+        }
+
+        foreach (AudioClip clip in sfx)
+        {
+            if (clip == null)
+            {
+                continue;
+            }
+
+            if (AudioList.Current != null)
+            {
+                AudioList.Current.PlaySFX(clip);
+            }
+            else if (sfxAudioSource != null)
+            {
+                sfxAudioSource.PlayOneShot(clip);
             }
         }
     }

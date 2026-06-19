@@ -96,11 +96,6 @@ public class AudioList : MonoBehaviour
         PlaySFX(sfxSettingAdjustment);
     }
 
-    public void PlayScreamSFX()
-    {
-        PlaySFX(screamSFX);
-    }
-
     public void PlaySFX(AudioClip clip)
     {
         if (clip == null)
