@@ -28,11 +28,10 @@ public class StairsInputManager : MonoBehaviour
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
 
-        _player = GameObject.FindGameObjectWithTag("Player");
-        _playerMovement = FindFirstObjectByType<PlayerMovement>();
+        ResolvePlayerReferences();
         _uiManager = FindFirstObjectByType<UIManager>();
         _audioList = FindAnyObjectByType<AudioList>();
-        _audioSource = GetComponent<AudioSource>();
+        _audioSource = GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
     }
 
     private void OnDisable()
@@ -44,7 +43,11 @@ public class StairsInputManager : MonoBehaviour
 
     private void Update()
     {
-        if (_isCutsceneActive || _player == null)
+        if (_isCutsceneActive)
+            return;
+
+        ResolvePlayerReferences();
+        if (_player == null)
             return;
 
         if (_isTransferring)
@@ -104,6 +107,7 @@ public class StairsInputManager : MonoBehaviour
             yield break;
         }
 
+        ResolvePlayerReferences();
         if (_playerMovement == null)
         {
             Debug.LogError("[StairsInputManager] PlayerMovement is null! Cannot proceed with transfer.");
@@ -120,7 +124,7 @@ public class StairsInputManager : MonoBehaviour
         //    yield break;
         //}
 
-        if (_audioList != null && _audioSource != null)
+        if (_audioList != null && _audioList.elevatorSFX != null && _audioSource != null)
         {
             _audioSource.PlayOneShot(_audioList.elevatorSFX);
         }
@@ -162,5 +166,27 @@ public class StairsInputManager : MonoBehaviour
         _playerMovement.SetCanMove(true);
         _isTransferring = false;
         IsTransferInProgress = false;
+    }
+
+    private void ResolvePlayerReferences()
+    {
+        if (_player == null)
+        {
+            _player = GameObject.FindGameObjectWithTag("Player");
+        }
+
+        if (_playerMovement == null && _player != null)
+        {
+            _playerMovement = _player.GetComponent<PlayerMovement>();
+            _playerMovement ??= _player.GetComponentInChildren<PlayerMovement>(true);
+            _playerMovement ??= _player.GetComponentInParent<PlayerMovement>(true);
+        }
+
+        _playerMovement ??= FindFirstObjectByType<PlayerMovement>(FindObjectsInactive.Include);
+
+        if (_player == null && _playerMovement != null)
+        {
+            _player = _playerMovement.gameObject;
+        }
     }
 }
