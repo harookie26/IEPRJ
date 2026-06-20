@@ -58,7 +58,7 @@ public class EnemyStateMachine : MonoBehaviour
     private EnemyState currentState;
 
     private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
-    private bool enemyCaught = false;
+    private static bool captureInProgress;
 
     private bool configWarned = false;
     private int scriptedEncounters = 0;
@@ -109,6 +109,11 @@ public class EnemyStateMachine : MonoBehaviour
     private bool hasInitialized = false;
     private void OnEnable()
     {
+        if (AllInstances.Count == 0)
+        {
+            captureInProgress = false;
+        }
+
         AllInstances.Add(this);
         EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
@@ -296,6 +301,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void ChangeState(EnemyState newState)
     {
+        EnemyState previousState = currentState;
         currentState = newState;
 
         if (navMeshAgent != null && navMeshAgent.enabled)
@@ -315,7 +321,7 @@ public class EnemyStateMachine : MonoBehaviour
         {
             StartChaseAudio();
         }
-        else if (currentState == ChaseState && newState != ChaseState)
+        else if (previousState == ChaseState)
         {
             StopChaseAudio();
         }
@@ -522,16 +528,21 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void PlayerCaught()
     {
-        if (enemyCaught) return;
-        enemyCaught = true;
+        StopAllChaseAudio();
 
-        StopChaseAudio();
+        if (currentState == ChaseState)
+        {
+            ChangeState(RoamState);
+        }
+
+        if (captureInProgress) return;
+
+        captureInProgress = true;
 
         // Teleport enemy to a random room that isn't the player's current room,
         // preventing an immediate re-catch after the player respawns.
         TeleportToRandomRoom();
 
-        ChangeState(RoamState);
         StartCoroutine(KillSequence());
     }
 
@@ -555,9 +566,14 @@ public class EnemyStateMachine : MonoBehaviour
         yield return new WaitForSeconds(1);
         EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESTART);
 
-        checkpoint.ReturnToCheckpoint();
+        CheckpointManager checkpointManager = checkpoint;
+        if (checkpointManager != null)
+        {
+            checkpointManager.ReturnToCheckpoint();
+            yield return new WaitUntil(() => !checkpointManager.IsRespawnInProgress);
+        }
 
-        enemyCaught = false;
+        captureInProgress = false;
 
     }
 
@@ -674,6 +690,8 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void StartChaseAudio()
     {
+        if (captureInProgress || targetPlayer == null) return;
+
         targetPlayer.TryGetComponent<AudioSource>(out AudioSource playerAudioSource);
 
         if (playerAudioSource != null && !playerAudioSource.isPlaying)
@@ -685,12 +703,31 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void StopChaseAudio()
     {
-        targetPlayer.TryGetComponent<AudioSource>(out AudioSource playerAudioSource);
+        if (targetPlayer == null) return;
 
-        if (playerAudioSource != null && playerAudioSource.isPlaying)
+        AudioSource[] playerAudioSources = targetPlayer.GetComponents<AudioSource>();
+        foreach (AudioSource playerAudioSource in playerAudioSources)
         {
-            playerAudioSource.Stop();
-            Debug.Log("Player Heartbeat SFX Stopped.");
+            if (playerAudioSource == null || playerAudioSource.clip == null) continue;
+
+            bool isHeartbeat = playerAudioSource.loop
+                || playerAudioSource.clip.name.IndexOf("heartbeat", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (isHeartbeat)
+            {
+                playerAudioSource.Stop();
+            }
+        }
+    }
+
+    public static void StopAllChaseAudio()
+    {
+        foreach (EnemyStateMachine enemyStateMachine in AllInstances)
+        {
+            if (enemyStateMachine != null)
+            {
+                enemyStateMachine.StopChaseAudio();
+            }
         }
     }
 

@@ -7,6 +7,8 @@ using UnityEngine.AI;
 public class CheckpointManager : MonoBehaviour
 {
     private int _currentCheckpointIndex;
+    private bool _respawnInProgress;
+    public bool IsRespawnInProgress => _respawnInProgress;
 
     [SerializeField] private bool forceRespawnAtLobby = true;
     [SerializeField] private Transform playerSpawnPoint;
@@ -116,6 +118,14 @@ public class CheckpointManager : MonoBehaviour
 
     public void ReturnToCheckpoint() // respawn logic
     {
+        if (_respawnInProgress)
+        {
+            return;
+        }
+
+        _respawnInProgress = true;
+        EnemyStateMachine.StopAllChaseAudio();
+
         if (forceRespawnAtLobby)
         {
             StartCoroutine(ReturnToInitialSpawn());
@@ -202,6 +212,9 @@ public class CheckpointManager : MonoBehaviour
         // 8. Fade back in and restore control
         yield return StartCoroutine(_screenFader.FadeInSequence(0.5f));
         _playerMovement.SetCanMove(true);
+        EnemyStateMachine.StopAllChaseAudio();
+        AudioList.Current?.StopSurpriseEncounterSFX();
+        _respawnInProgress = false;
 
         Debug.Log($"[CheckpointManager] Instant respawn completed. PlayerPos: {player.transform.position}");
     }
@@ -239,12 +252,18 @@ public class CheckpointManager : MonoBehaviour
         {
             // Hide all HUDs if no _enemy or when aborting
             if (_uiManager != null) _uiManager.HideAll();
+            EnemyStateMachine.StopAllChaseAudio();
+            AudioList.Current?.StopSurpriseEncounterSFX();
+            _respawnInProgress = false;
             yield break;
         }
 
         if (_enemyStateMachine == null)
         {
             if (_uiManager != null) _uiManager.HideAll();
+            EnemyStateMachine.StopAllChaseAudio();
+            AudioList.Current?.StopSurpriseEncounterSFX();
+            _respawnInProgress = false;
             yield break;
         }
 
@@ -303,6 +322,9 @@ public class CheckpointManager : MonoBehaviour
 
         yield return StartCoroutine(_screenFader.FadeInSequence(0.5f));
         _playerMovement.SetCanMove(true);
+        EnemyStateMachine.StopAllChaseAudio();
+        AudioList.Current?.StopSurpriseEncounterSFX();
+        _respawnInProgress = false;
 
         Debug.Log($"[CheckpointManager] Returned to checkpoint at index {_currentCheckpointIndex}. PlayerPos: {_playerSavedPosition}, EnemyPos: {_enemySavedPosition}, EnemyState: {_enemySavedStateName}");
     }
