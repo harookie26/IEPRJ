@@ -35855,6 +35855,10 @@ PrefabInstance:
       value: 2147483647
       objectReference: {fileID: 0}
     - target: {fileID: 2829771494748568546, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
+      propertyPath: canBePickedUp
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2829771494748568546, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: interactableId
       value: Newspaper
       objectReference: {fileID: 0}
@@ -36007,6 +36011,14 @@ PrefabInstance:
       value: 2147483647
       objectReference: {fileID: 0}
     - target: {fileID: 4655060664438595603, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
+      propertyPath: playSFXOnce
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4655060664438595603, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
+      propertyPath: canBePickedUp
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4655060664438595603, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: interactableId
       value: Newspaper
       objectReference: {fileID: 0}
@@ -36023,6 +36035,10 @@ PrefabInstance:
       value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4655060664438595603, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
+      propertyPath: interactionSFX.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4655060664438595603, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: 'dialogueList.Array.data[4]'
       value: 
       objectReference: {fileID: 11400000, guid: 1de4a92a6834ce143a2e37e8c91f87c4, type: 2}
@@ -36034,6 +36050,10 @@ PrefabInstance:
       propertyPath: 'dialogueList.Array.data[6]'
       value: 
       objectReference: {fileID: 11400000, guid: 47d4f06f3a24faf44b19cf31ac3f0b7b, type: 2}
+    - target: {fileID: 4655060664438595603, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
+      propertyPath: 'interactionSFX.Array.data[0]'
+      value: 
+      objectReference: {fileID: 8300000, guid: f7caa1207bb9d1e44817fb26e459e591, type: 3}
     - target: {fileID: 4714456494664369729, guid: 3fc9d543aa18f224da5f4ce967a3538e, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 2147483647
@@ -37562,7 +37582,7 @@ PrefabInstance:
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: 'sfx.Array.data[1]'
       value: 
-      objectReference: {fileID: 8300000, guid: 5fc8169cc4cf4a34db092937eb37f54f, type: 3}
+      objectReference: {fileID: 8300000, guid: 57bda3f0326284241afd4412e91ee45e, type: 3}
     - target: {fileID: 5599430864161757345, guid: 91ced538f6c41544fbf645c24a38bbda, type: 3}
       propertyPath: disableAfterAnimation
       value: 0
