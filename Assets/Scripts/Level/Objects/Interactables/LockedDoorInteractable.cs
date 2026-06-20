@@ -69,7 +69,10 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         {
             hasOpened = true;
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT2_START);
-            sfxAudioSource.PlayOneShot(audioList.lockedDoorSFX);
+            if (sfxAudioSource != null && audioList != null && audioList.unlockDoorSFX != null)
+            {
+                sfxAudioSource.PlayOneShot(audioList.unlockDoorSFX);
+            }
 
             ApplyUnlockedState();
             SpatialSFX.Deactivate("door_banging");
@@ -78,7 +81,10 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         {
             Debug.Log("Door is locked. You need a key to open it.");
             DialogueTriggerManager.Instance.TriggerLockedDoorDialogue();
-            sfxAudioSource.PlayOneShot(audioList.unlockDoorSFX);
+            if (sfxAudioSource != null && audioList != null && audioList.lockedDoorSFX != null)
+            {
+                sfxAudioSource.PlayOneShot(audioList.lockedDoorSFX);
+            }
 
         }
     }
