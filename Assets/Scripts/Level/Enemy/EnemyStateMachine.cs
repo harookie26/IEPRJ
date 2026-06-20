@@ -192,6 +192,7 @@ public class EnemyStateMachine : MonoBehaviour
 
             DisableAgentPhysics(); 
             SetGhostVisuals(false);
+            SetGhostGlitchSpeed(5f);
             Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
         }
     }
@@ -245,6 +246,24 @@ public class EnemyStateMachine : MonoBehaviour
     private void Update()
     {
         if (!isEnemyActivated) return;
+
+        if (isFrozen)
+        {
+            if (targetPlayer != null)
+            {
+                Vector3 directionToPlayer = targetPlayer.transform.position - enemy.transform.position;
+
+                directionToPlayer.y = 0f;
+
+                if (directionToPlayer.sqrMagnitude > Mathf.Epsilon)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+
+                    enemy.transform.rotation = Quaternion.Slerp(enemy.transform.rotation, targetRotation, Time.deltaTime * 5f);
+                }
+            }
+            return;
+        }
 
         if (navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.isStopped) return;
 
@@ -382,8 +401,8 @@ public class EnemyStateMachine : MonoBehaviour
         {
             animator.SetBool("isWalking", false);
             animator.SetBool("isStunned", true); 
-            animator.SetBool("isRunning", false); 
-            
+            animator.SetBool("isRunning", false);
+
             stunGlitchCoroutine = StartCoroutine(StunGlitchLoop());
         }
     }
@@ -418,6 +437,8 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         SetGhostVisuals(true);
+        SetGhostGlitchSpeed(5f);
+
         isFrozen = false; 
 
         if (navMeshAgent != null && navMeshAgent.enabled)
@@ -430,6 +451,10 @@ public class EnemyStateMachine : MonoBehaviour
 
     private IEnumerator StunGlitchLoop()
     {
+        yield return null;
+
+        SetGhostGlitchSpeed(0f);
+
         while (true)
         {
             float offDuration = Random.Range(minGlitchInterval, maxGlitchInterval);
@@ -439,6 +464,27 @@ public class EnemyStateMachine : MonoBehaviour
             float onDuration = Random.Range(minGlitchInterval, maxGlitchInterval);
             SetGhostVisuals(true);
             yield return new WaitForSeconds(onDuration);
+        }
+    }
+
+    private void SetGhostGlitchSpeed(float speedValue)
+    {
+        if (enemy == null) return;
+
+        Renderer[] renderers = enemy.GetComponentsInChildren<Renderer>();
+        foreach (Renderer r in renderers)
+        {
+            if (r == null) continue;
+
+            // Using .materials array covers multi-material rendering steps seamlessly
+            Material[] sharedMaterials = r.materials;
+            foreach (Material mat in sharedMaterials)
+            {
+                if (mat != null && mat.HasProperty("_GlitchSpeed"))
+                {
+                    mat.SetFloat("_GlitchSpeed", speedValue);
+                }
+            }
         }
     }
 

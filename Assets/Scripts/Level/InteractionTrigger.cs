@@ -17,7 +17,6 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
 
     [SerializeField] private GameObject model;
     [SerializeField] private List<AudioClip> sfx = new();
-    [SerializeField] private EnemyStateMachine enemyStateMachine;
 
     [Header("Animation Setup")]
     [SerializeField] bool hasAnimation = false;

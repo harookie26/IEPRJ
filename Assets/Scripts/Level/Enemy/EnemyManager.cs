@@ -95,9 +95,9 @@ public class EnemyManager : MonoBehaviour
     {
         if (isCutscenePlaying) return;
 
-        HandleProximityEffects();
-
         if (!systemIsActivated || managedEnemies.Count == 0 || targetPlayer == null) return;
+
+        HandleProximityEffects();
 
         checkTimer += Time.deltaTime;
         float currentTargetDuration = intervals[Mathf.Clamp(currentIntervalIndex, 0, intervals.Length - 1)];
