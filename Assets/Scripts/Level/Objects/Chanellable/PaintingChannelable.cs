@@ -45,6 +45,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [SerializeField] private string paintingId = "";
 
     [Header("Dynamic Cutscene Settings")]
+    [Tooltip("Place this transform strictly in front of the visible canvas. If omitted, a child named CutsceneCameraAnchor is used.")]
+    [SerializeField] private Transform cutsceneCameraAnchor;
     [Tooltip("Distance from the painting to start the camera.")]
     [SerializeField] private float startDistance = .5f;
     [Tooltip("Distance from the painting to end the camera zoom.")]
@@ -74,6 +76,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
 
     void Awake()
     {
+        EnsureCutsceneCameraAnchor();
+
         audioList = FindAnyObjectByType<AudioList>();
         //Find the SFX audio source object in the scene by its tag
         GameObject audioObject1 = GameObject.FindWithTag("SFXAudioSource");
@@ -274,6 +278,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
 
         director.TryPlay(new PaintingCutsceneRequest(
             transform,
+            EnsureCutsceneCameraAnchor(),
             startDistance,
             endDistance,
             heightOffset,
@@ -281,6 +286,37 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             moveDuration,
             viewDuration,
             dialoguePlayback));
+    }
+
+    public Transform EnsureCutsceneCameraAnchor()
+    {
+        if (cutsceneCameraAnchor != null)
+            return cutsceneCameraAnchor;
+
+        cutsceneCameraAnchor = transform.Find("CutsceneCameraAnchor");
+
+        if (cutsceneCameraAnchor == null)
+        {
+            GameObject anchorObject = new GameObject("CutsceneCameraAnchor");
+            cutsceneCameraAnchor = anchorObject.transform;
+            cutsceneCameraAnchor.SetParent(transform, false);
+
+            // The painting FBXs in this project are imported with their visible
+            // canvas facing local -Y. Project that axis horizontally because the
+            // models themselves are mounted with a 90-degree rotation in-scene.
+            Vector3 frontDirection = Vector3.ProjectOnPlane(-transform.up, Vector3.up);
+            if (frontDirection.sqrMagnitude < 0.0001f)
+                frontDirection = Vector3.ProjectOnPlane(-transform.forward, Vector3.up);
+            if (frontDirection.sqrMagnitude < 0.0001f)
+                frontDirection = Vector3.forward;
+
+            frontDirection.Normalize();
+            float anchorDistance = Mathf.Max(startDistance, endDistance, 0.5f);
+            cutsceneCameraAnchor.position = transform.position + frontDirection * anchorDistance;
+            cutsceneCameraAnchor.rotation = Quaternion.LookRotation(-frontDirection, Vector3.up);
+        }
+
+        return cutsceneCameraAnchor;
     }
 
     private System.Collections.IEnumerator FadeMaterialRoutine(Renderer paintingRenderer)
