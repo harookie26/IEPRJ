@@ -306,7 +306,7 @@ public class EnemyManager : MonoBehaviour
 
         if (activeGhost != null)
         {
-            activeGhost.IsInCutscene = true;
+            activeGhost.SuspendForCutscene();
             activeGhost.StopChaseAudio(); 
 
             if (activeGhost.NavAgent != null && activeGhost.NavAgent.enabled && activeGhost.NavAgent.isOnNavMesh)
@@ -329,7 +329,7 @@ public class EnemyManager : MonoBehaviour
 
         if (activeGhost != null)
         {
-            activeGhost.IsInCutscene = false;
+            activeGhost.ResumeFromCutscene();
 
             if (activeGhost.isEnemyActivated && !activeGhost.IsFrozen)
             {

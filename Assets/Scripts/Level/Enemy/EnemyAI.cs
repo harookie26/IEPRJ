@@ -46,6 +46,9 @@ public class EnemyAI : MonoBehaviour
 
     private void Update()
     {
+        if (enemyStateMachine != null && enemyStateMachine.IsInCutscene)
+            return;
+
         if (player == null || playerLocationUpdater == null)
             return;
 

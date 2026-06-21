@@ -48,6 +48,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     private Coroutine activeCutscene;
     private Camera gameplayCamera;
+    private EnemyManager pausedEnemyManager;
     private bool ownsCutsceneState;
 
     public bool IsPlaying => activeCutscene != null;
@@ -66,6 +67,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     private void OnDestroy()
     {
+        ResumeEnemy();
         EndCutsceneState();
 
         if (Instance == this)
@@ -151,16 +153,6 @@ public class PaintingCutsceneDirector : MonoBehaviour
     {
         EnemyManager enemyManager = FindFirstObjectByType<EnemyManager>();
 
-        if (enemyManager != null)
-        {
-            enemyManager.PauseEnemyForCutscene();
-            Debug.Log("[PaintingCutsceneDirector] EnemyManager found. Pausing enemies for cutscene.");
-        }
-        else
-        {
-            Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be paused during the cutscene.");
-        }
-
         Vector3 paintingCenter = request.Target.position + new Vector3(0f, request.HeightOffset, 0f);
 
         gameplayCamera = Camera.main;
@@ -177,6 +169,17 @@ public class PaintingCutsceneDirector : MonoBehaviour
             yield break;
         }
         outwardDirection.Normalize();
+
+        if (enemyManager != null)
+        {
+            pausedEnemyManager = enemyManager;
+            pausedEnemyManager.PauseEnemyForCutscene();
+            Debug.Log("[PaintingCutsceneDirector] EnemyManager found. Pausing enemies for cutscene.");
+        }
+        else
+        {
+            Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be paused during the cutscene.");
+        }
 
         Vector3 startPosition = paintingCenter + outwardDirection * request.StartDistance;
         Vector3 endPosition = paintingCenter + outwardDirection * request.EndDistance;
@@ -216,19 +219,20 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         yield return Fade(1f, 0f, request.FadeDuration);
 
-        if (enemyManager != null)
-        {
-            enemyManager.ResumeEnemyFromCutscene();
-            Debug.Log("[PaintingCutsceneDirector] Resuming enemies after cutscene.");
-        }
-        else
-        {             
-            Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be resumed after the cutscene."); 
-        }
+        ResumeEnemy();
 
         gameplayCamera = null;
         activeCutscene = null;
         EndCutsceneState();
+    }
+
+    private void ResumeEnemy()
+    {
+        if (pausedEnemyManager == null) return;
+
+        pausedEnemyManager.ResumeEnemyFromCutscene();
+        pausedEnemyManager = null;
+        Debug.Log("[PaintingCutsceneDirector] Resuming enemies after cutscene.");
     }
 
     private IEnumerator Fade(float startAlpha, float endAlpha, float duration)
