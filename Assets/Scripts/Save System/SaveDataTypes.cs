@@ -104,8 +104,12 @@ public class PaintbrushSaveData
 [System.Serializable]
 public class PaintingRandomizerSaveData
 {
-    // Because names are unique now, this will never fail!
+    // Legacy field retained so saves created before room-local indices still load.
     public List<string> savedPaintingNames;
+
+    // One index per room. Unlike GameObject names, these remain unambiguous when
+    // multiple painting prefabs use the same imported object name.
+    public List<int> savedPaintingIndices;
 }
 
 [System.Serializable]

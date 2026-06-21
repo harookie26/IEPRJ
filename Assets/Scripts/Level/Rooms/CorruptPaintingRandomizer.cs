@@ -30,14 +30,17 @@ public class CorruptPaintingRandomizer : MonoBehaviour
     private List<GameObject> allPaintingsInLevel = new List<GameObject>();
     private List<GameObject> activeChosenPaintings = new List<GameObject>();
 
-    private void Awake()
+    private List<List<GameObject>> GetRooms()
     {
-        List<List<GameObject>> allRooms = new List<List<GameObject>>
+        return new List<List<GameObject>>
         {
             Room1paintings, Room2paintings, Room3paintings, Room4paintings
         };
+    }
 
-        foreach (var room in allRooms)
+    private void Awake()
+    {
+        foreach (var room in GetRooms())
         {
             if (room != null)
             {
@@ -266,14 +269,28 @@ public class CorruptPaintingRandomizer : MonoBehaviour
     public PaintingRandomizerSaveData GetSaveData()
     {
         List<string> namesToSave = new List<string>();
+        List<int> indicesToSave = new List<int>();
+        List<List<GameObject>> rooms = GetRooms();
+
         foreach (GameObject painting in activeChosenPaintings)
         {
             if (painting != null) namesToSave.Add(painting.name);
         }
 
+        for (int roomIndex = 0; roomIndex < rooms.Count; roomIndex++)
+        {
+            GameObject selectedPainting = roomIndex < activeChosenPaintings.Count
+                ? activeChosenPaintings[roomIndex]
+                : null;
+            indicesToSave.Add(rooms[roomIndex] != null
+                ? rooms[roomIndex].IndexOf(selectedPainting)
+                : -1);
+        }
+
         return new PaintingRandomizerSaveData
         {
-            savedPaintingNames = namesToSave
+            savedPaintingNames = namesToSave,
+            savedPaintingIndices = indicesToSave
         };
     }
 
@@ -281,31 +298,56 @@ public class CorruptPaintingRandomizer : MonoBehaviour
     {
         Debug.Log($"[Randomizer] LoadSaveData called from: {System.Environment.StackTrace}");
 
-        if (data == null || data.savedPaintingNames == null || data.savedPaintingNames.Count == 0)
+        if (data == null)
         {
             if (isDebugMode) Debug.Log("[Save System] No saved paintings found. Running fresh randomizer.");
             RunRandomizer();
             return;
         }
 
-        if (isDebugMode) Debug.Log($"[Save System] Loaded {data.savedPaintingNames.Count} saved paintings!");
-
         activeChosenPaintings.Clear();
+        List<List<GameObject>> rooms = GetRooms();
 
-        // Because names are unique, this easily finds the exact 4 paintings!
-        foreach (string savedName in data.savedPaintingNames)
+        for (int roomIndex = 0; roomIndex < rooms.Count; roomIndex++)
         {
-            GameObject foundObj = allPaintingsInLevel.Find(p => p != null && p.name == savedName);
-            if (foundObj != null)
+            List<GameObject> room = rooms[roomIndex];
+            GameObject selectedPainting = null;
+
+            // Current format: restore the selection by its position in its room.
+            if (room != null && data.savedPaintingIndices != null &&
+                roomIndex < data.savedPaintingIndices.Count)
             {
-                activeChosenPaintings.Add(foundObj);
+                int savedIndex = data.savedPaintingIndices[roomIndex];
+                if (savedIndex >= 0 && savedIndex < room.Count)
+                    selectedPainting = room[savedIndex];
             }
+
+            // Legacy format: names were saved in room order. Limit lookup to the
+            // expected room so duplicate prefab names cannot select another room.
+            if (selectedPainting == null && room != null &&
+                data.savedPaintingNames != null && roomIndex < data.savedPaintingNames.Count)
+            {
+                string savedName = data.savedPaintingNames[roomIndex];
+                selectedPainting = room.Find(p => p != null && p.name == savedName);
+            }
+
+            // Scene edits can invalidate old names/indices. Preserve the gameplay
+            // invariant by selecting a replacement in that room instead of loading
+            // with no corrupted painting there.
+            if (selectedPainting == null && room != null)
+            {
+                List<GameObject> validPaintings = room.FindAll(p => p != null);
+                if (validPaintings.Count > 0)
+                    selectedPainting = validPaintings[Random.Range(0, validPaintings.Count)];
+            }
+
+            if (selectedPainting != null)
+                activeChosenPaintings.Add(selectedPainting);
             else
-            {
-                Debug.LogWarning($"[Save System] Could not find painting named {savedName} in the level! Did you rename it?");
-            }
+                Debug.LogWarning($"[Save System] Room {roomIndex + 1} has no valid painting to restore.");
         }
 
+        if (isDebugMode) Debug.Log($"[Save System] Restored {activeChosenPaintings.Count} saved paintings.");
         ApplyCorruptionToChosenList();
     }
 
