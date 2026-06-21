@@ -6812,6 +6812,7 @@ GameObject:
   - component: {fileID: 1765587103}
   - component: {fileID: 1765587106}
   - component: {fileID: 1765587105}
+  - component: {fileID: 1765587107}
   m_Layer: 0
   m_Name: IntroScripts
   m_TagString: Untagged
@@ -6866,13 +6867,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00b838604d251dd40b7c0c2ed698012d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DialogueIntroSceneManager
-  introDialogues:
-  - {fileID: 11400000, guid: 48855730ca42f7042a10a408d5705f0d, type: 2}
-  - {fileID: 11400000, guid: da5a8529c4582804c8ee72698b941ef8, type: 2}
-  - {fileID: 11400000, guid: b37f43ba6c5f4fc4896bc4e0740a7136, type: 2}
-  - {fileID: 11400000, guid: cfdee5046f5416c48b97a97d23bec279, type: 2}
-  - {fileID: 11400000, guid: b93a7ff880b5a1f49a3a3b066781ad5a, type: 2}
-  - {fileID: 11400000, guid: 57520863faf7ba448ace9a136de35116, type: 2}
+  introVoiceSequence: {fileID: 11400000, guid: 82e4582678ba5ee45a4fb382678d4c82, type: 2}
+  introDialogues: []
 --- !u!114 &1765587106
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6889,7 +6885,104 @@ MonoBehaviour:
   dialogueContainer: {fileID: 304162169}
   labelPrefab: {fileID: 1819262349}
   initialPool: 4
-  voiceAudioSource: {fileID: 0}
+  voiceAudioSource: {fileID: 1765587107}
+--- !u!82 &1765587107
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1765587102}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: -5483012979918329034, guid: 89d80aa3e9f44404ca1df8aec8f50490, type: 2}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!4 &1819262348 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3335232472557876801, guid: d33a0ed3a84b11d45aa7155d33ab44cf, type: 3}
