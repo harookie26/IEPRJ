@@ -110,9 +110,16 @@ public class PlayerInteractor : MonoBehaviour
         Debug.Log("[PlayerInteractor] HandleInteract called");
         if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
         {
-            var selected = EventSystem.current.currentSelectedGameObject;
-            ExecuteEvents.Execute(selected, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler);
-            return;
+            // A UI selection can survive an elevator/fade transition. It should
+            // consume submit input only while the player is actually in UI mode.
+            if (Cursor.visible || Cursor.lockState != CursorLockMode.Locked)
+            {
+                var selected = EventSystem.current.currentSelectedGameObject;
+                ExecuteEvents.Execute(selected, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler);
+                return;
+            }
+
+            EventSystem.current.SetSelectedGameObject(null);
         }
 
         if (rayOrigin == null)
