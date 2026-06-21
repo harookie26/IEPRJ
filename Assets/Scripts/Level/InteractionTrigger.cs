@@ -64,6 +64,7 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
             hasTriggered = true;
             if (isflashlightHintTrigger)
             {
+                AudioList.Current?.PlayPostEnemyIntroAmbient();
                 DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
             }
             PlaySFX();
@@ -174,6 +175,8 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
         var data = (EnemyIntroSaveData)state;
         this.hasTriggered = data.hasTriggered;
 
+        SyncEnemyIntroAmbient();
+
         if (this.hasTriggered && model != null)
         {
             model.SetActive(false);
@@ -194,9 +197,28 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
 
         this.hasTriggered = data.hasTriggered;
 
+        SyncEnemyIntroAmbient();
+
         if (this.hasTriggered && model != null)
         {
             model.SetActive(false);
+        }
+    }
+
+    private void SyncEnemyIntroAmbient()
+    {
+        if (!isflashlightHintTrigger || AudioList.Current == null)
+        {
+            return;
+        }
+
+        if (hasTriggered)
+        {
+            AudioList.Current.PlayPostEnemyIntroAmbient();
+        }
+        else
+        {
+            AudioList.Current.PlayPreEnemyIntroAmbient();
         }
     }
 }

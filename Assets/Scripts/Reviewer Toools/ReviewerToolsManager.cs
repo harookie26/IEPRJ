@@ -24,6 +24,7 @@ public class ReviewerToolsManager : MonoBehaviour
     PlayerMovement playerMovement;
 
     SaveManager saveManager;
+    CheckpointManager checkpointManager;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -32,6 +33,7 @@ public class ReviewerToolsManager : MonoBehaviour
         performanceOverlay = FindObjectOfType<PerformanceOverlay>();
         buildVersionToggle = FindObjectOfType<BuildVersionToggle>();
         saveManager = FindObjectOfType<SaveManager>();
+        checkpointManager = FindObjectOfType<CheckpointManager>();
 
         playerCamera = FindObjectOfType<PlayerCamera>();
         playerMovement = FindObjectOfType<PlayerMovement>();
@@ -73,8 +75,25 @@ public class ReviewerToolsManager : MonoBehaviour
     public void OnGameRestart()
     {
         Time.timeScale = 1f;
-        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME); // optional safety
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
+
+        isVisible = false;
+        if (reviewerMenuPanel != null)
+            reviewerMenuPanel.SetActive(false);
+
+        gameStateManager?.UpdateCursorVisibility(false);
+
+        if (checkpointManager == null)
+            checkpointManager = FindObjectOfType<CheckpointManager>();
+
+        if (checkpointManager != null)
+        {
+            checkpointManager.StartReturnToCheckpoint();
+        }
+        else
+        {
+            Debug.LogError("[ReviewerTools] Cannot respawn: CheckpointManager was not found.");
+        }
     }
 
     public void OnGameSaved()

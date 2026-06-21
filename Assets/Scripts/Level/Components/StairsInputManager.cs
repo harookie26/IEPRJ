@@ -151,6 +151,12 @@ public class StairsInputManager : MonoBehaviour
         if (doorToUse != null)
         {
             doorToUse.MoveToLinkedDoor();
+
+            // PlayerMovement uses Rigidbody interpolation. Keep the screen black
+            // until physics has accepted both parts of the teleported pose so the
+            // destination rotation is never rendered at the previous position.
+            yield return new WaitForFixedUpdate();
+            Physics.SyncTransforms();
         }
         else
         {

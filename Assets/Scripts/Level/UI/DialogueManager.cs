@@ -79,6 +79,11 @@ namespace Level.UI
                 Debug.LogWarning("DialogueManager: Dialogue Container not assigned. Defaulting to Parent Canvas.", this);
             }
 
+            // A scene instance may be assigned as the label template. Keep its
+            // placeholder text hidden; only pooled runtime copies should display.
+            if (labelPrefab.gameObject.scene.IsValid())
+                labelPrefab.HideImmediately();
+
             for (int i = 0; i < initialPool; i++)
                 pool.Enqueue(CreateNew());
         }
@@ -360,6 +365,8 @@ namespace Level.UI
 
         private IEnumerator PlayVoicedSequence(VoicedDialogueSequence sequence, DialoguePlaybackHandle playbackHandle)
         {
+            double sequenceStartTime = AudioSettings.dspTime;
+
             if (sequence.voiceClip == null)
             {
                 Debug.LogWarning($"DialogueManager: Voiced dialogue sequence '{sequence.name}' has no voice clip.", sequence);
@@ -368,15 +375,16 @@ namespace Level.UI
             {
                 voiceAudioSource.Stop();
                 voiceAudioSource.clip = sequence.voiceClip;
-                voiceAudioSource.Play();
+                sequenceStartTime = AudioSettings.dspTime + 0.05d;
+                voiceAudioSource.PlayScheduled(sequenceStartTime);
             }
             else
             {
                 Debug.LogWarning("DialogueManager: No voice AudioSource assigned. Timed subtitles will still play.", this);
             }
 
-            float sequenceLength = sequence.voiceClip != null ? sequence.voiceClip.length : GetTimedSequenceFallbackLength(sequence);
-            float sequenceStart = Time.unscaledTime;
+            float audioLength = sequence.voiceClip != null ? sequence.voiceClip.length : 0f;
+            float sequenceLength = Mathf.Max(audioLength, GetTimedSequenceFallbackLength(sequence));
             int lineCount = sequence.lines != null ? sequence.lines.Count : 0;
 
             for (int i = 0; i < lineCount; i++)
@@ -390,9 +398,7 @@ namespace Level.UI
                 if (endTime <= startTime)
                     continue;
 
-                float waitUntilStart = sequenceStart + startTime - Time.unscaledTime;
-                if (waitUntilStart > 0f)
-                    yield return new WaitForSecondsRealtime(waitUntilStart);
+                yield return WaitForSequenceTime(sequenceStartTime, startTime);
 
                 currentLabel = GetLabel();
 
@@ -410,9 +416,7 @@ namespace Level.UI
                 float hold = Mathf.Max(0f, totalLineDuration - fadeIn - fadeOut);
                 currentLabel.Show(line.characterName, line.text, fadeIn, hold, fadeOut);
 
-                float waitUntilEnd = sequenceStart + endTime - Time.unscaledTime;
-                if (waitUntilEnd > 0f)
-                    yield return new WaitForSecondsRealtime(waitUntilEnd);
+                yield return WaitForSequenceTime(sequenceStartTime, endTime);
 
                 if (currentLabel != null)
                     ReturnLabel(currentLabel);
@@ -420,9 +424,7 @@ namespace Level.UI
                 currentLabel = null;
             }
 
-            float waitUntilClipEnd = sequenceStart + sequenceLength - Time.unscaledTime;
-            if (waitUntilClipEnd > 0f)
-                yield return new WaitForSecondsRealtime(waitUntilClipEnd);
+            yield return WaitForSequenceTime(sequenceStartTime, sequenceLength);
 
             if (voiceAudioSource != null)
             {
@@ -436,6 +438,13 @@ namespace Level.UI
 
             if (dialogueQueue.Count > 0)
                 ProcessQueue();
+        }
+
+        private static IEnumerator WaitForSequenceTime(double sequenceStartTime, float targetTime)
+        {
+            double targetDspTime = sequenceStartTime + Mathf.Max(0f, targetTime);
+            while (AudioSettings.dspTime < targetDspTime)
+                yield return null;
         }
 
         private float ResolveLineEndTime(VoicedDialogueSequence sequence, int index, float sequenceLength)

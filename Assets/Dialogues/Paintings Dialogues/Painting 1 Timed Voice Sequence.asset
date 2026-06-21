@@ -10,37 +10,37 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e64a84a6c1b496e9d878d241c45b38f, type: 3}
-  m_Name: Painting 4 Timed Voice Sequence
+  m_Name: Painting 1 Timed Voice Sequence
   m_EditorClassIdentifier: Assembly-CSharp::Level.UI.VoicedDialogueSequence
-  voiceClip: {fileID: 8300000, guid: 3dd5e02f8cd7d76478aa9a2733ba0514, type: 3}
+  voiceClip: {fileID: 8300000, guid: 818abab3c70ed9440a6e26ed0123634a, type: 3}
   lines:
   - characterName: Georgie
-    text: This painting is called The Silenced.
-    startTime: 1
-    endTime: 3.5
+    text: This painting is called The Mother.
+    startTime: 2
+    endTime: 5
     fadeIn: 0.25
     fadeOut: 0.25
   - characterName: Georgie
-    text: Some memories fight to stay buried.
-    startTime: 4
-    endTime: 7
+    text: She was the center of his world. Everything he built began with her.
+    startTime: 6
+    endTime: 12
     fadeIn: 0.25
     fadeOut: 0.25
-  - characterName: Elena
-    text: You're scaring me.
-    startTime: 7
-    endTime: 9
+  - characterName: You
+    text: What does she do?
+    startTime: 12
+    endTime: 14
     fadeIn: 0.25
     fadeOut: 0.25
-  - characterName: Miguel
-    text: Stop.
-    startTime: 9.5
-    endTime: 11
+  - characterName: Georgie
+    text: She painted memories. He preserved them. They thought that would last forever.
+    startTime: 14
+    endTime: 20.5
     fadeIn: 0.25
     fadeOut: 0.25
-  - characterName: Elena
-    text: Please look at me.
-    startTime: 11
-    endTime: 18
+  - characterName: Georgie
+    text: Sometimes love can hold on too tightly.
+    startTime: 22
+    endTime: 26
     fadeIn: 0.25
     fadeOut: 0.25

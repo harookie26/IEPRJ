@@ -78,7 +78,6 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
             }
 
             ApplyUnlockedState(true);
-            SpatialSFX.Deactivate("door_banging");
         }
         else
         {
@@ -115,6 +114,8 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
 
     private void ApplyUnlockedState(bool animate)
     {
+        SpatialSFX.Deactivate("door_banging");
+
         if (!useRotatingDoorUnlock)
         {
             if (doorObject != null)

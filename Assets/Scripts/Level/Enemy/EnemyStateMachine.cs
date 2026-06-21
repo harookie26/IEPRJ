@@ -54,6 +54,10 @@ public class EnemyStateMachine : MonoBehaviour
     private float passiveTensionTimer = 0f;
 
     public bool IsInCutscene { get; set; } = false;
+    private Renderer[] cutsceneRenderers;
+    private bool[] cutsceneRendererStates;
+    private Collider[] cutsceneColliders;
+    private bool[] cutsceneColliderStates;
     public float StunDuration => currentStunDuration;
 
     private EnemyState currentState;
@@ -202,6 +206,53 @@ public class EnemyStateMachine : MonoBehaviour
             SetGhostGlitchSpeed(5f);
             Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
         }
+    }
+
+    public void SuspendForCutscene()
+    {
+        if (IsInCutscene || enemy == null) return;
+
+        IsInCutscene = true;
+
+        cutsceneRenderers = enemy.GetComponentsInChildren<Renderer>(true);
+        cutsceneRendererStates = new bool[cutsceneRenderers.Length];
+        for (int i = 0; i < cutsceneRenderers.Length; i++)
+        {
+            cutsceneRendererStates[i] = cutsceneRenderers[i].enabled;
+            cutsceneRenderers[i].enabled = false;
+        }
+
+        cutsceneColliders = enemy.GetComponentsInChildren<Collider>(true);
+        cutsceneColliderStates = new bool[cutsceneColliders.Length];
+        for (int i = 0; i < cutsceneColliders.Length; i++)
+        {
+            cutsceneColliderStates[i] = cutsceneColliders[i].enabled;
+            cutsceneColliders[i].enabled = false;
+        }
+    }
+
+    public void ResumeFromCutscene()
+    {
+        if (!IsInCutscene) return;
+
+        IsInCutscene = false;
+
+        for (int i = 0; cutsceneRenderers != null && i < cutsceneRenderers.Length; i++)
+        {
+            if (cutsceneRenderers[i] != null)
+                cutsceneRenderers[i].enabled = cutsceneRendererStates[i];
+        }
+
+        for (int i = 0; cutsceneColliders != null && i < cutsceneColliders.Length; i++)
+        {
+            if (cutsceneColliders[i] != null)
+                cutsceneColliders[i].enabled = cutsceneColliderStates[i];
+        }
+
+        cutsceneRenderers = null;
+        cutsceneRendererStates = null;
+        cutsceneColliders = null;
+        cutsceneColliderStates = null;
     }
     private IEnumerator DelayedRoamActivation()
     {
@@ -515,6 +566,7 @@ public class EnemyStateMachine : MonoBehaviour
     private void SetGhostVisuals(bool visible)
     {
         if (enemy == null) return;
+        if (IsInCutscene && visible) return;
 
         Renderer[] renderers = enemy.GetComponentsInChildren<Renderer>();
         foreach (Renderer r in renderers)
