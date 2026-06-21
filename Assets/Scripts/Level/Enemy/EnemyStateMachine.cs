@@ -42,6 +42,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float maxGlitchInterval = 0.55f;
 
     private Coroutine stunGlitchCoroutine;
+    private Coroutine unfreezeCoroutine;
 
     [Header("Stun Configuration")]
     [Tooltip("Stun durations indexed by how many paintings are restored (0, 1, 2, 3+ paintings).")]
@@ -59,6 +60,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
     private static bool captureInProgress;
+    private bool isRespawning;
 
     private bool configWarned = false;
     private int scriptedEncounters = 0;
@@ -186,7 +188,7 @@ public class EnemyStateMachine : MonoBehaviour
         }
         else
         {
-            StopCoroutine(nameof(UnfreezeAfter));
+            CancelUnfreezeTimer();
             StopCoroutine(nameof(DelayedRoamActivation));
 
             if (stunGlitchCoroutine != null)
@@ -250,7 +252,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Update()
     {
-        if (!isEnemyActivated) return;
+        if (!isEnemyActivated || isRespawning) return;
 
         if (isFrozen)
         {
@@ -397,11 +399,16 @@ public class EnemyStateMachine : MonoBehaviour
             navMeshAgent.ResetPath();
         }
 
-        StopCoroutine(nameof(UnfreezeAfter));
+        CancelUnfreezeTimer();
 
         isFrozen = true;
 
-        StartCoroutine(UnfreezeAfter(duration));
+        // A duration of zero is an indefinite freeze used by pause/cutscene flows.
+        // Positive durations are refreshed while the flashlight remains on target.
+        if (duration > 0f)
+        {
+            unfreezeCoroutine = StartCoroutine(UnfreezeAfter(duration));
+        }
 
         if (stunGlitchCoroutine == null)
         {
@@ -415,6 +422,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void Unfreeze()
     {
+        CancelUnfreezeTimer();
         isFrozen = false;
 
         if (navMeshAgent != null && navMeshAgent.enabled)
@@ -436,6 +444,8 @@ public class EnemyStateMachine : MonoBehaviour
 
         if (!isEnemyActivated) yield break;
 
+        unfreezeCoroutine = null;
+
         if (stunGlitchCoroutine != null)
         {
             StopCoroutine(stunGlitchCoroutine);
@@ -453,6 +463,14 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         ChangeState(RoamState);
+    }
+
+    private void CancelUnfreezeTimer()
+    {
+        if (unfreezeCoroutine == null) return;
+
+        StopCoroutine(unfreezeCoroutine);
+        unfreezeCoroutine = null;
     }
 
     private IEnumerator StunGlitchLoop()
@@ -528,27 +546,69 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void PlayerCaught()
     {
-        StopAllChaseAudio();
-
-        if (currentState == ChaseState)
-        {
-            ChangeState(RoamState);
-        }
+        PrepareForRespawn();
 
         if (captureInProgress) return;
 
         captureInProgress = true;
-
-        // Teleport enemy to a random room that isn't the player's current room,
-        // preventing an immediate re-catch after the player respawns.
-        TeleportToRandomRoom();
-
         StartCoroutine(KillSequence());
+    }
+
+    private void PrepareForRespawn()
+    {
+        isRespawning = true;
+        StopChaseAudio();
+        CancelUnfreezeTimer();
+
+        if (stunGlitchCoroutine != null)
+        {
+            StopCoroutine(stunGlitchCoroutine);
+            stunGlitchCoroutine = null;
+        }
+
+        isFrozen = false;
+        SetGhostGlitchSpeed(5f);
+
+        // Set the logical state immediately, but do not enter Roam yet. Entering it
+        // would assign a new path while the checkpoint sequence is moving objects.
+        currentState = RoamState;
+
+        if (navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.isOnNavMesh)
+        {
+            navMeshAgent.isStopped = true;
+            navMeshAgent.velocity = Vector3.zero;
+            navMeshAgent.ResetPath();
+        }
+
+        if (animator != null)
+        {
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isStunned", false);
+            animator.SetBool("isRunning", false);
+        }
+    }
+
+    private void FinishRespawn()
+    {
+        // The checkpoint flow may restore a saved enemy position. Relocate after
+        // that flow so the enemy cannot remain beside the location of the catch.
+        if (isEnemyActivated)
+        {
+            TeleportToRandomRoom();
+        }
+
+        isRespawning = false;
+
+        if (isEnemyActivated && navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.isOnNavMesh)
+        {
+            navMeshAgent.isStopped = false;
+            ChangeState(RoamState);
+        }
     }
 
     private void TeleportToRandomRoom()
     {
-        if (navMeshAgent == null) return;
+        if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
 
         Vector3 destination = GetRandomPointExcludingPlayerRoom();
 
@@ -571,6 +631,16 @@ public class EnemyStateMachine : MonoBehaviour
         {
             checkpointManager.ReturnToCheckpoint();
             yield return new WaitUntil(() => !checkpointManager.IsRespawnInProgress);
+        }
+
+        // Every enemy observes the catch event and is suspended above. Resume all
+        // of them only after the player has reached the final respawn position.
+        foreach (EnemyStateMachine enemyStateMachine in new List<EnemyStateMachine>(AllInstances))
+        {
+            if (enemyStateMachine != null)
+            {
+                enemyStateMachine.FinishRespawn();
+            }
         }
 
         captureInProgress = false;
