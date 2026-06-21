@@ -12,59 +12,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e64a84a6c1b496e9d878d241c45b38f, type: 3}
   m_Name: Painting 1 Timed Voice Sequence
   m_EditorClassIdentifier: Assembly-CSharp::Level.UI.VoicedDialogueSequence
-  voiceClip: {fileID: 8300000, guid: 597e735916add8d4aa3f3d1c93cb0343, type: 3}
+  voiceClip: {fileID: 8300000, guid: 818abab3c70ed9440a6e26ed0123634a, type: 3}
   lines:
   - characterName: Georgie
-    text: This painting is called The Watcher.
-    startTime: 1
-    endTime: 4
+    text: This painting is called The Mother.
+    startTime: 2
+    endTime: 5
     fadeIn: 0.25
     fadeOut: 0.25
-  - characterName: Miguel
-    text: You're working late again.
-    startTime: 4
-    endTime: 7
+  - characterName: Georgie
+    text: She was the center of his world. Everything he built began with her.
+    startTime: 6
+    endTime: 12
     fadeIn: 0.25
     fadeOut: 0.25
-  - characterName: Elena
-    text: I have an exhibition next week.
-    startTime: 7
-    endTime: 9
+  - characterName: You
+    text: What does she do?
+    startTime: 12
+    endTime: 14
     fadeIn: 0.25
     fadeOut: 0.25
-  - characterName: Miguel
-    text: You've been saying that for months.
-    startTime: 9
-    endTime: 11
-    fadeIn: 0.25
-    fadeOut: 0.25
-  - characterName: Elena
-    text: What is that supposed to mean?
-    startTime: 11
-    endTime: 13
-    fadeIn: 0.25
-    fadeOut: 0.25
-  - characterName: Miguel
-    text: Nothing.
+  - characterName: Georgie
+    text: She painted memories. He preserved them. They thought that would last forever.
     startTime: 14
-    endTime: 16
+    endTime: 20.5
     fadeIn: 0.25
     fadeOut: 0.25
-  - characterName: Miguel
-    text: You've been different.
-    startTime: 16.5
-    endTime: 19
-    fadeIn: 0.25
-    fadeOut: 0.25
-  - characterName: Elena
-    text: Miguel...
-    startTime: 19
-    endTime: 21
-    fadeIn: 0.25
-    fadeOut: 0.25
-  - characterName: Elena
-    text: I'm just worried.
-    startTime: 21
-    endTime: 24
+  - characterName: Georgie
+    text: Sometimes love can hold on too tightly.
+    startTime: 22
+    endTime: 26
     fadeIn: 0.25
     fadeOut: 0.25
