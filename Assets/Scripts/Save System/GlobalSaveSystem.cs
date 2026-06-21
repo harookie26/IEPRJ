@@ -23,6 +23,7 @@ public static class GlobalSaveSystem
 
         data.spatialSFXStates = new List<SpatialSFXSaveData>();
         data.spatialTriggerStates = new List<SpatialTriggerSaveData>();
+        data.savedEnemies = new List<EnemySaveData>();
 
         foreach (var s in saveables)
         {
@@ -42,6 +43,17 @@ public static class GlobalSaveSystem
                     (SpatialTriggerSaveData)stx.CaptureState()
                 );
             }
+
+            if (s is EnemyManager manager)
+            {
+                data.enemyManagerData = (EnemyManagerSaveData)manager.CaptureState();
+            }
+            else if (s is EnemyStateMachine ghost)
+            {
+                EnemySaveData ghostData = (EnemySaveData)ghost.CaptureState();
+                ghostData.enemyGameObjectName = ghost.SaveKey; // Matches the key cleanly
+                data.savedEnemies.Add(ghostData);
+            }
         }
     }
 
@@ -51,17 +63,38 @@ public static class GlobalSaveSystem
 
         foreach (var s in saveables)
         {
+            if (s is EnemyStateMachine ghost && data.savedEnemies != null)
+            {
+                foreach (var ghostData in data.savedEnemies)
+                {
+                    if (ghostData.enemyGameObjectName == ghost.SaveKey)
+                    {
+                        ghost.RestoreState(ghostData);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (data.enemyManagerData != null)
+        {
+            foreach (var s in saveables)
+            {
+                if (s is EnemyManager manager)
+                {
+                    manager.LoadSaveData(data.enemyManagerData);
+                    break;
+                }
+            }
+        }
+
+        foreach (var s in saveables)
+        {
             if (s is SpatialSFX sfx && data.spatialSFXStates != null)
             {
                 foreach (var state in data.spatialSFXStates)
                 {
-                    if (state.id == sfx.SaveKey)
-                    {
-                        Debug.Log($"[Global Save System] Restoring state for SpatialSFX: {sfx.SaveKey}");
-
-                        sfx.RestoreState(state);
-                        break;
-                    }
+                    if (state.id == sfx.SaveKey) { sfx.RestoreState(state); break; }
                 }
             }
 
@@ -69,13 +102,7 @@ public static class GlobalSaveSystem
             {
                 foreach (var state in data.spatialTriggerStates)
                 {
-                    if (state.id == stx.SaveKey)
-                    {
-                        Debug.Log($"[Global Save System] Restoring state for SpatialTrigger: {stx.SaveKey}");
-
-                        stx.RestoreState(state);
-                        break;
-                    }
+                    if (state.id == stx.SaveKey) { stx.RestoreState(state); break; }
                 }
             }
         }

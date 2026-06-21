@@ -1797,6 +1797,10 @@ PrefabInstance:
       propertyPath: m_Mesh
       value: 
       objectReference: {fileID: 1195612409}
+    - target: {fileID: 3293599737957757086, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3347130998154233373, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_Mesh
       value: 
@@ -2118,6 +2122,8 @@ PrefabInstance:
     - {fileID: 2618379010926421660, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
     - {fileID: 6590243077367543547, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
     - {fileID: 8849116498638566804, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+    - {fileID: 1552742731751154478, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+    - {fileID: 7575781893290289842, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 4806226089914051585, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       insertIndex: 5
@@ -14876,6 +14882,8 @@ MonoBehaviour:
   buttonClickSFX: {fileID: 0}
   sfxSettingAdjustment: {fileID: 0}
   playerCaughtSFX: {fileID: 0}
+  preEnemyIntroAmbient: {fileID: 0}
+  postEnemyIntroAmbient: {fileID: 0}
   testMusic: {fileID: 0}
   testSFX: {fileID: 0}
   restorationMusicAudioSource: {fileID: 0}

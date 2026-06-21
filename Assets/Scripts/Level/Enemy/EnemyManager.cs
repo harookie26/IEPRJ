@@ -1,11 +1,14 @@
+using Game.States;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-public class EnemyManager : MonoBehaviour
+public class EnemyManager : MonoBehaviour, ISaveable
 {
+    public string SaveKey => "GlobalEnemyManager";
+
     [Header("Player Tracking")]
     [SerializeField] private GameObject targetPlayer;
 
@@ -79,16 +82,14 @@ public class EnemyManager : MonoBehaviour
             Debug.LogWarning("[EnemyManager] PostProcess Volume component is missing from inspector!");
         }
 
-        foreach (var ghost in managedEnemies)
+        if (string.IsNullOrEmpty(SaveCourier.SaveSlotToLoad))
         {
-            if (ghost != null)
+            ResetManager();
+            foreach (var ghost in managedEnemies)
             {
-                ghost.SetActiveGhost(false);
+                if (ghost != null) ghost.SetActiveGhost(false);
             }
         }
-
-
-        ResetManager();
     }
 
     private void Update()
@@ -358,5 +359,124 @@ public class EnemyManager : MonoBehaviour
         {
             if (ghost != null) ghost.SetActiveGhost(false);
         }
+    }
+
+    private void OnEnable()
+    {
+        GlobalSaveSystem.Register(this);
+    }
+
+    private void OnDisable()
+    {
+        GlobalSaveSystem.Unregister(this);
+    }
+
+    public object CaptureState()
+    {
+        // 1. Pack the manager's state
+        EnemyManagerSaveData managerData = new EnemyManagerSaveData
+        {
+            systemIsActivated = this.systemIsActivated,
+            currentIntervalIndex = this.currentIntervalIndex,
+            checkTimer = this.checkTimer,
+            currentTriggerCount = this.currentTriggerCount,
+            activeGhostName = (activeGhost != null) ? activeGhost.gameObject.name : ""
+        };
+
+        return managerData;
+    }
+
+    public void RestoreState(object state)
+    {
+        if (state is not EnemyManagerSaveData data) return;
+
+        // 2. Restore manager variables
+        this.systemIsActivated = data.systemIsActivated;
+        this.currentIntervalIndex = data.currentIntervalIndex;
+        this.checkTimer = data.checkTimer;
+        this.currentTriggerCount = data.currentTriggerCount;
+
+        // Active ghost mapping will be handled simultaneously when restoring instances
+        activeGhost = null;
+    }
+
+    public void LoadSaveData(EnemyManagerSaveData data)
+    {
+        if (data == null) return;
+
+        this.systemIsActivated = data.systemIsActivated;
+        this.currentIntervalIndex = data.currentIntervalIndex;
+        this.checkTimer = data.checkTimer;
+        this.currentTriggerCount = data.currentTriggerCount;
+
+        StopAllCoroutines();
+
+        StartCoroutine(PostLoadEvaluationRoutine());
+    }
+
+    private System.Collections.IEnumerator PostLoadEvaluationRoutine()
+    {
+        // Wait 3 frames to let everything settle
+        yield return null;
+        yield return null;
+        yield return null;
+
+        string targetGhostName = SaveCourier.LoadedActiveGhostName;
+        Debug.Log($"[EnemyManager] Post-load evaluation running. Saved Activation State: {systemIsActivated}");
+
+        EnemyStateMachine ghostToActivate = null;
+
+        // 1. Check if a ghost name was explicitly registered by the save system
+        if (!string.IsNullOrEmpty(targetGhostName))
+        {
+            foreach (var ghost in managedEnemies)
+            {
+                if (ghost != null && ghost.gameObject.name == targetGhostName)
+                {
+                    ghostToActivate = ghost;
+                    break;
+                }
+            }
+        }
+
+        // 2. Execute final state enforcement
+        if (ghostToActivate != null)
+        {
+            this.systemIsActivated = true;
+            this.activeGhost = ghostToActivate;
+
+            // Force every other ghost to sleep, and cleanly turn your target on
+            foreach (var ghost in managedEnemies)
+            {
+                if (ghost == ghostToActivate)
+                {
+                    ghost.SetActiveGhost(true);
+                }
+                else if (ghost != null)
+                {
+                    ghost.SetActiveGhost(false);
+                }
+            }
+
+            EvaluateAndSwitchFloors();
+            Debug.Log($"<color=green>[EnemyManager] Save courier override complete! Ghost successfully locked on floor: {activeGhost.gameObject.name}</color>");
+        }
+        else if (systemIsActivated)
+        {
+            // No ghost was active during save, but the tracking manager system is active overall
+            this.activeGhost = null;
+            EvaluateAndSwitchFloors();
+        }
+        else
+        {
+            // System is completely dormant. Put everyone away safely.
+            foreach (var ghost in managedEnemies)
+            {
+                if (ghost != null) ghost.SetActiveGhost(false);
+            }
+        }
+
+        // Clear the courier reference so it doesn't taint future manual room/floor triggers
+        SaveCourier.LoadedActiveGhostName = "";
     }
 }
