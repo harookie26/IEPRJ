@@ -99,8 +99,12 @@ public class LevelCameraCompanion : MonoBehaviour
         }
 
         // Mouse look
-        float rawMouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float rawMouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        float rawMouseX = GameState.IsCutsceneActive
+            ? 0f
+            : Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+        float rawMouseY = GameState.IsCutsceneActive
+            ? 0f
+            : Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
         // Preview vertical change and cancel it if it would place the camera above the allowed height
         float tentativeRotationY = rotationY + (invertY ? rawMouseY : -rawMouseY);

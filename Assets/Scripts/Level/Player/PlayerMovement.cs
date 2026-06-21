@@ -189,6 +189,19 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isGamePaused) return; // Prevent processing input when the game is paused
 
+        // Cutscene-authored external movement may continue, but all player input
+        // (including look and sprint) is suppressed for the cutscene duration.
+        if (GameState.IsCutsceneActive && !useExternalMovement)
+        {
+            moveInput = Vector2.zero;
+            lookInputTarget = Vector2.zero;
+            lookInputCurrent = Vector2.zero;
+            cachedMoveDirection = Vector3.zero;
+            isCurrentlySprinting = false;
+            currentHorizontalVelocity = Vector3.zero;
+            return;
+        }
+
         if (!canMove || PBController.IsCompanionManualModeActive)
         {
             moveInput = Vector2.zero;
@@ -224,6 +237,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (GameState.IsCutsceneActive && !useExternalMovement)
+        {
+            currentHorizontalVelocity = Vector3.zero;
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            return;
+        }
+
         if (!canMove) return;
 
         if (isGamePaused) return;

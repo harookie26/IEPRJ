@@ -45,6 +45,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     private Coroutine activeCutscene;
     private Camera gameplayCamera;
+    private bool ownsCutsceneState;
 
     public bool IsPlaying => activeCutscene != null;
 
@@ -62,6 +63,8 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     private void OnDestroy()
     {
+        EndCutsceneState();
+
         if (Instance == this)
             Instance = null;
     }
@@ -87,8 +90,27 @@ public class PaintingCutsceneDirector : MonoBehaviour
             return false;
         }
 
+        BeginCutsceneState();
         activeCutscene = StartCoroutine(PlayCutscene(request));
         return true;
+    }
+
+    private void BeginCutsceneState()
+    {
+        if (ownsCutsceneState) return;
+
+        ownsCutsceneState = true;
+        if (GameState.BeginCutscene())
+            EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_START);
+    }
+
+    private void EndCutsceneState()
+    {
+        if (!ownsCutsceneState) return;
+
+        ownsCutsceneState = false;
+        if (GameState.EndCutscene())
+            EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_END);
     }
 
     private void ResolveDependencies()
@@ -127,13 +149,17 @@ public class PaintingCutsceneDirector : MonoBehaviour
             Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be paused during the cutscene.");
         }
 
-        Vector3 outwardDirection = GetTrueOutwardDirection(request.Target);
         Vector3 paintingCenter = request.Target.position + new Vector3(0f, request.HeightOffset, 0f);
+
+        gameplayCamera = Camera.main;
+        Vector3 viewerPosition = gameplayCamera != null
+            ? gameplayCamera.transform.position
+            : paintingCenter + request.Target.forward;
+        Vector3 outwardDirection = GetPaintingSurfaceDirection(request.Target, viewerPosition);
 
         Vector3 startPosition = paintingCenter + outwardDirection * request.StartDistance;
         Vector3 endPosition = paintingCenter + outwardDirection * request.EndDistance;
 
-        gameplayCamera = Camera.main;
         if (gameplayCamera != null)
             gameplayCamera.enabled = false;
 
@@ -154,6 +180,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
         }
 
         cutsceneCamera.transform.position = endPosition;
+        cutsceneCamera.transform.LookAt(paintingCenter);
 
         yield return new WaitForSeconds(request.ViewDuration);
 
@@ -178,59 +205,66 @@ public class PaintingCutsceneDirector : MonoBehaviour
             Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be resumed after the cutscene."); 
         }
 
-            gameplayCamera = null;
+        gameplayCamera = null;
         activeCutscene = null;
+        EndCutsceneState();
     }
 
-    private static Vector3 GetTrueOutwardDirection(Transform painting)
+    private static Vector3 GetPaintingSurfaceDirection(Transform painting, Vector3 viewerPosition)
     {
-        PaintbrushChanneller player = FindFirstObjectByType<PaintbrushChanneller>();
-        Vector3 directionToPlayer;
+        MeshFilter meshFilter = painting.GetComponent<MeshFilter>();
+        if (meshFilter == null)
+            meshFilter = painting.GetComponentInChildren<MeshFilter>();
 
-        if (player != null)
+        Transform meshTransform = meshFilter != null ? meshFilter.transform : painting;
+        Vector3 meshSize = meshFilter != null && meshFilter.sharedMesh != null
+            ? meshFilter.sharedMesh.bounds.size
+            : Vector3.one;
+        Vector3 scale = meshTransform.lossyScale;
+        meshSize = Vector3.Scale(meshSize, new Vector3(
+            Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
+
+        // A framed painting's thinnest mesh dimension is perpendicular to its
+        // visible surface. Restricting the camera to this axis prevents edge-on
+        // shots regardless of how the imported FBX is rotated.
+        Vector3[] localAxes = { meshTransform.right, meshTransform.up, meshTransform.forward };
+        float[] dimensions = { meshSize.x, meshSize.y, meshSize.z };
+        Vector3 surfaceDirection = Vector3.zero;
+
+        for (int selection = 0; selection < dimensions.Length; selection++)
         {
-            directionToPlayer = player.transform.position - painting.position;
-            directionToPlayer.y = 0f;
-            directionToPlayer.Normalize();
-        }
-        else
-        {
-            directionToPlayer = new Vector3(
-                painting.forward.x,
-                0f,
-                painting.forward.z).normalized;
-        }
-
-        Vector3[] axes =
-        {
-            painting.forward,
-            -painting.forward,
-            painting.up,
-            -painting.up,
-            painting.right,
-            -painting.right
-        };
-
-        Vector3 bestAxis = painting.forward;
-        float maxDot = -Mathf.Infinity;
-
-        foreach (Vector3 axis in axes)
-        {
-            Vector3 flatAxis = new Vector3(axis.x, 0f, axis.z);
-            if (flatAxis.sqrMagnitude < 0.01f)
-                continue;
-
-            flatAxis.Normalize();
-
-            float dot = Vector3.Dot(flatAxis, directionToPlayer);
-            if (dot > maxDot)
+            int smallestIndex = 0;
+            for (int i = 1; i < dimensions.Length; i++)
             {
-                maxDot = dot;
-                bestAxis = flatAxis;
+                if (dimensions[i] < dimensions[smallestIndex])
+                    smallestIndex = i;
+            }
+
+            Vector3 flatAxis = Vector3.ProjectOnPlane(localAxes[smallestIndex], Vector3.up);
+            dimensions[smallestIndex] = float.PositiveInfinity;
+
+            if (flatAxis.sqrMagnitude > 0.0001f)
+            {
+                surfaceDirection = flatAxis.normalized;
+                break;
             }
         }
 
-        return bestAxis.normalized;
+        if (surfaceDirection.sqrMagnitude < 0.0001f)
+            surfaceDirection = Vector3.ProjectOnPlane(painting.forward, Vector3.up).normalized;
+        if (surfaceDirection.sqrMagnitude < 0.0001f)
+            surfaceDirection = Vector3.forward;
+
+        Vector3 directionToViewer = Vector3.ProjectOnPlane(
+            viewerPosition - painting.position,
+            Vector3.up);
+        if (directionToViewer.sqrMagnitude > 0.0001f &&
+            Vector3.Dot(surfaceDirection, directionToViewer) < 0f)
+        {
+            surfaceDirection = -surfaceDirection;
+        }
+
+        return surfaceDirection;
     }
 
     private IEnumerator Fade(float startAlpha, float endAlpha, float duration)

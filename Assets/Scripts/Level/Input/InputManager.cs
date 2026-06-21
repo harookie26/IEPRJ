@@ -57,6 +57,8 @@ public class InputManager : MonoBehaviour
         inputActions.Player.Move.canceled += ctx => moveInput = Vector2.zero;
         inputActions.Player.Sprint.performed += ctx =>
         {
+            if (!CanProcessGameplayInput()) return;
+
             sprintHeld = true;
             EventBroadcaster.Instance.PostEvent(PlayerEvents.PLAYER_STARTED_SPRINT);
         };
@@ -121,6 +123,17 @@ public class InputManager : MonoBehaviour
 
                 return;
             }
+        }
+
+        if (GameState.IsCutsceneActive)
+        {
+            moveInput = Vector2.zero;
+            sprintHeld = false;
+            interactPressed = false;
+            corruptedRoomPressed = false;
+            debugModePressed = false;
+            ResetInteractionInput();
+            return;
         }
 
         // Reset per-frame interact & stealth unless we set them below
@@ -216,10 +229,10 @@ public class InputManager : MonoBehaviour
     }
 
     // Polling API for other scripts
-    public Vector2 GetMoveInput() => (onlyAllowLMBOrEnter || blockInputUntilRelease) ? Vector2.zero : moveInput;
-    public bool IsSprinting() => !onlyAllowLMBOrEnter && !blockInputUntilRelease && sprintHeld;
-    public bool WasInteractPressed() => !blockInputUntilRelease && interactPressed;
-    public bool IsChanneling() => !blockInputUntilRelease && !onlyAllowLMBOrEnter && channeling;
+    public Vector2 GetMoveInput() => (GameState.IsCutsceneActive || onlyAllowLMBOrEnter || blockInputUntilRelease) ? Vector2.zero : moveInput;
+    public bool IsSprinting() => !GameState.IsCutsceneActive && !onlyAllowLMBOrEnter && !blockInputUntilRelease && sprintHeld;
+    public bool WasInteractPressed() => !GameState.IsCutsceneActive && !blockInputUntilRelease && interactPressed;
+    public bool IsChanneling() => !GameState.IsCutsceneActive && !blockInputUntilRelease && !onlyAllowLMBOrEnter && channeling;
     public bool WasDebugModePressed() => !blockInputUntilRelease && debugModePressed;
 
     public bool WasAnyKeyExceptChannelPressed()
@@ -312,7 +325,7 @@ public class InputManager : MonoBehaviour
 
     private bool CanProcessGameplayInput()
     {
-        return applicationHasFocus && !applicationPaused;
+        return applicationHasFocus && !applicationPaused && !GameState.IsCutsceneActive;
     }
 
     private void ResetInteractionInput()
