@@ -91,7 +91,7 @@ public class PlayerSaveHandler : MonoBehaviour
         enemyIntroTrigger.LoadSaveData(data.enemyIntro);
         hintManager.LoadSaveData(data.hint);
         tutorialManager.LoadSaveData(data.tutorial);
-        enemyStateMachine.LoadSaveData(data.enemyState);
+        //enemyStateMachine.LoadSaveData(data.enemyState);
         paintbrushChanneller.LoadSaveData(data.paintbrush);
         corruptedPaintingsRandomizer.LoadSaveData(data.randomizedPaintings);
         Debug.Log("[Master Save] ALL player data loaded successfully!");
