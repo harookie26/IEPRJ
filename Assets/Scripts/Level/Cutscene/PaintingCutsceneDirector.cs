@@ -7,6 +7,7 @@ public readonly struct PaintingCutsceneRequest
 {
     public PaintingCutsceneRequest(
         Transform target,
+        Transform cameraAnchor,
         float startDistance,
         float endDistance,
         float heightOffset,
@@ -16,6 +17,7 @@ public readonly struct PaintingCutsceneRequest
         DialoguePlaybackHandle dialoguePlayback = null)
     {
         Target = target;
+        CameraAnchor = cameraAnchor;
         StartDistance = startDistance;
         EndDistance = endDistance;
         HeightOffset = heightOffset;
@@ -26,6 +28,7 @@ public readonly struct PaintingCutsceneRequest
     }
 
     public Transform Target { get; }
+    public Transform CameraAnchor { get; }
     public float StartDistance { get; }
     public float EndDistance { get; }
     public float HeightOffset { get; }
@@ -45,6 +48,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     private Coroutine activeCutscene;
     private Camera gameplayCamera;
+    private EnemyManager pausedEnemyManager;
     private bool ownsCutsceneState;
 
     public bool IsPlaying => activeCutscene != null;
@@ -63,6 +67,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     private void OnDestroy()
     {
+        ResumeEnemy();
         EndCutsceneState();
 
         if (Instance == this)
@@ -80,6 +85,15 @@ public class PaintingCutsceneDirector : MonoBehaviour
         if (request.Target == null)
         {
             Debug.LogWarning("[PaintingCutsceneDirector] Cannot play a cutscene without a painting target.", this);
+            return false;
+        }
+
+        if (request.CameraAnchor == null)
+        {
+            Debug.LogError(
+                $"[PaintingCutsceneDirector] '{request.Target.name}' has no CutsceneCameraAnchor. " +
+                "The cutscene was skipped because front-facing placement cannot be guaranteed.",
+                request.Target);
             return false;
         }
 
@@ -139,23 +153,33 @@ public class PaintingCutsceneDirector : MonoBehaviour
     {
         EnemyManager enemyManager = FindFirstObjectByType<EnemyManager>();
 
+        Vector3 paintingCenter = request.Target.position + new Vector3(0f, request.HeightOffset, 0f);
+
+        gameplayCamera = Camera.main;
+        Vector3 outwardDirection = Vector3.ProjectOnPlane(
+            request.CameraAnchor.position - paintingCenter,
+            Vector3.up);
+        if (outwardDirection.sqrMagnitude < 0.0001f)
+        {
+            Debug.LogError(
+                $"[PaintingCutsceneDirector] '{request.CameraAnchor.name}' must be positioned in front of '{request.Target.name}', not at its center.",
+                request.CameraAnchor);
+            activeCutscene = null;
+            EndCutsceneState();
+            yield break;
+        }
+        outwardDirection.Normalize();
+
         if (enemyManager != null)
         {
-            enemyManager.PauseEnemyForCutscene();
+            pausedEnemyManager = enemyManager;
+            pausedEnemyManager.PauseEnemyForCutscene();
             Debug.Log("[PaintingCutsceneDirector] EnemyManager found. Pausing enemies for cutscene.");
         }
         else
         {
             Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be paused during the cutscene.");
         }
-
-        Vector3 paintingCenter = request.Target.position + new Vector3(0f, request.HeightOffset, 0f);
-
-        gameplayCamera = Camera.main;
-        Vector3 viewerPosition = gameplayCamera != null
-            ? gameplayCamera.transform.position
-            : paintingCenter + request.Target.forward;
-        Vector3 outwardDirection = GetPaintingSurfaceDirection(request.Target, viewerPosition);
 
         Vector3 startPosition = paintingCenter + outwardDirection * request.StartDistance;
         Vector3 endPosition = paintingCenter + outwardDirection * request.EndDistance;
@@ -195,76 +219,20 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         yield return Fade(1f, 0f, request.FadeDuration);
 
-        if (enemyManager != null)
-        {
-            enemyManager.ResumeEnemyFromCutscene();
-            Debug.Log("[PaintingCutsceneDirector] Resuming enemies after cutscene.");
-        }
-        else
-        {             
-            Debug.LogWarning("[PaintingCutsceneDirector] No EnemyManager found. Enemies will not be resumed after the cutscene."); 
-        }
+        ResumeEnemy();
 
         gameplayCamera = null;
         activeCutscene = null;
         EndCutsceneState();
     }
 
-    private static Vector3 GetPaintingSurfaceDirection(Transform painting, Vector3 viewerPosition)
+    private void ResumeEnemy()
     {
-        MeshFilter meshFilter = painting.GetComponent<MeshFilter>();
-        if (meshFilter == null)
-            meshFilter = painting.GetComponentInChildren<MeshFilter>();
+        if (pausedEnemyManager == null) return;
 
-        Transform meshTransform = meshFilter != null ? meshFilter.transform : painting;
-        Vector3 meshSize = meshFilter != null && meshFilter.sharedMesh != null
-            ? meshFilter.sharedMesh.bounds.size
-            : Vector3.one;
-        Vector3 scale = meshTransform.lossyScale;
-        meshSize = Vector3.Scale(meshSize, new Vector3(
-            Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
-
-        // A framed painting's thinnest mesh dimension is perpendicular to its
-        // visible surface. Restricting the camera to this axis prevents edge-on
-        // shots regardless of how the imported FBX is rotated.
-        Vector3[] localAxes = { meshTransform.right, meshTransform.up, meshTransform.forward };
-        float[] dimensions = { meshSize.x, meshSize.y, meshSize.z };
-        Vector3 surfaceDirection = Vector3.zero;
-
-        for (int selection = 0; selection < dimensions.Length; selection++)
-        {
-            int smallestIndex = 0;
-            for (int i = 1; i < dimensions.Length; i++)
-            {
-                if (dimensions[i] < dimensions[smallestIndex])
-                    smallestIndex = i;
-            }
-
-            Vector3 flatAxis = Vector3.ProjectOnPlane(localAxes[smallestIndex], Vector3.up);
-            dimensions[smallestIndex] = float.PositiveInfinity;
-
-            if (flatAxis.sqrMagnitude > 0.0001f)
-            {
-                surfaceDirection = flatAxis.normalized;
-                break;
-            }
-        }
-
-        if (surfaceDirection.sqrMagnitude < 0.0001f)
-            surfaceDirection = Vector3.ProjectOnPlane(painting.forward, Vector3.up).normalized;
-        if (surfaceDirection.sqrMagnitude < 0.0001f)
-            surfaceDirection = Vector3.forward;
-
-        Vector3 directionToViewer = Vector3.ProjectOnPlane(
-            viewerPosition - painting.position,
-            Vector3.up);
-        if (directionToViewer.sqrMagnitude > 0.0001f &&
-            Vector3.Dot(surfaceDirection, directionToViewer) < 0f)
-        {
-            surfaceDirection = -surfaceDirection;
-        }
-
-        return surfaceDirection;
+        pausedEnemyManager.ResumeEnemyFromCutscene();
+        pausedEnemyManager = null;
+        Debug.Log("[PaintingCutsceneDirector] Resuming enemies after cutscene.");
     }
 
     private IEnumerator Fade(float startAlpha, float endAlpha, float duration)

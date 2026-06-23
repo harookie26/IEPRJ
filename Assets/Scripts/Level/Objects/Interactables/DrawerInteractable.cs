@@ -62,10 +62,30 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
         if (drawerObject == null || hasOpened || isSliding) return;
 
         hasOpened = true;
-        keyCollectible.GetComponent<Collider>().enabled = true;
+
+        // Multiple interaction listeners can run during the same input event. Delay
+        // activation so a later listener cannot collect the key with this press.
+        StartCoroutine(EnableKeyNextFrame());
 
         // Start the smooth slide animation via code
         StartCoroutine(SlideDrawerRoutine());
+    }
+
+    private IEnumerator EnableKeyNextFrame()
+    {
+        yield return null;
+
+        if (keyCollectible == null) yield break;
+
+        Collider keyCollider = keyCollectible.GetComponent<Collider>();
+        if (keyCollider != null)
+        {
+            keyCollider.enabled = true;
+        }
+        else
+        {
+            Debug.LogWarning("DrawerInteractable: key collectible has no Collider.", keyCollectible);
+        }
     }
 
     // This handles sliding the drawer physically over time instead of using an Animation Clip

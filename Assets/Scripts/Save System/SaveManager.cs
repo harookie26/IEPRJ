@@ -116,8 +116,8 @@ public class SaveManager : MonoBehaviour
             if (!string.IsNullOrEmpty(json))
             {
                 GameSaveData loadedData = JsonUtility.FromJson<GameSaveData>(json);
-                playerSaveHandler.LoadSaveData(loadedData);
                 GlobalSaveSystem.RestoreFrom(loadedData);
+                playerSaveHandler.LoadSaveData(loadedData);
 
                 Debug.Log($"<color=cyan>Game Loaded locally from slot: {slotName}!</color>");
             }

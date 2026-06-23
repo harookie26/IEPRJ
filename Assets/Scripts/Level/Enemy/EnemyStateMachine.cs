@@ -1,4 +1,5 @@
 using Game.Level;
+using Game.States;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,8 +7,10 @@ using UnityEngine.AI;
 using static EventNames;
 
 [FoldableInspector(hideFieldHeaders: true)]
-public class EnemyStateMachine : MonoBehaviour
+public class EnemyStateMachine : MonoBehaviour, ISaveable
 {
+    public string SaveKey => gameObject.name;
+
     [Header("References")]
     [Tooltip("The player GameObject this enemy will target.")]
     [SerializeField] private GameObject targetPlayer;
@@ -54,6 +57,10 @@ public class EnemyStateMachine : MonoBehaviour
     private float passiveTensionTimer = 0f;
 
     public bool IsInCutscene { get; set; } = false;
+    private Renderer[] cutsceneRenderers;
+    private bool[] cutsceneRendererStates;
+    private Collider[] cutsceneColliders;
+    private bool[] cutsceneColliderStates;
     public float StunDuration => currentStunDuration;
 
     private EnemyState currentState;
@@ -117,6 +124,7 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         AllInstances.Add(this);
+        GlobalSaveSystem.Register(this);
         EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
     }
@@ -124,8 +132,22 @@ public class EnemyStateMachine : MonoBehaviour
     private void OnDisable()
     {
         AllInstances.Remove(this);
+        GlobalSaveSystem.Unregister(this);
         EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
+    }
+
+    public object CaptureState()
+    {
+        return GetSaveData();
+    }
+
+    public void RestoreState(object state)
+    {
+        if (state is EnemySaveData ghostData)
+        {
+            LoadSaveData(ghostData);
+        }
     }
 
 
@@ -202,6 +224,53 @@ public class EnemyStateMachine : MonoBehaviour
             SetGhostGlitchSpeed(5f);
             Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
         }
+    }
+
+    public void SuspendForCutscene()
+    {
+        if (IsInCutscene || enemy == null) return;
+
+        IsInCutscene = true;
+
+        cutsceneRenderers = enemy.GetComponentsInChildren<Renderer>(true);
+        cutsceneRendererStates = new bool[cutsceneRenderers.Length];
+        for (int i = 0; i < cutsceneRenderers.Length; i++)
+        {
+            cutsceneRendererStates[i] = cutsceneRenderers[i].enabled;
+            cutsceneRenderers[i].enabled = false;
+        }
+
+        cutsceneColliders = enemy.GetComponentsInChildren<Collider>(true);
+        cutsceneColliderStates = new bool[cutsceneColliders.Length];
+        for (int i = 0; i < cutsceneColliders.Length; i++)
+        {
+            cutsceneColliderStates[i] = cutsceneColliders[i].enabled;
+            cutsceneColliders[i].enabled = false;
+        }
+    }
+
+    public void ResumeFromCutscene()
+    {
+        if (!IsInCutscene) return;
+
+        IsInCutscene = false;
+
+        for (int i = 0; cutsceneRenderers != null && i < cutsceneRenderers.Length; i++)
+        {
+            if (cutsceneRenderers[i] != null)
+                cutsceneRenderers[i].enabled = cutsceneRendererStates[i];
+        }
+
+        for (int i = 0; cutsceneColliders != null && i < cutsceneColliders.Length; i++)
+        {
+            if (cutsceneColliders[i] != null)
+                cutsceneColliders[i].enabled = cutsceneColliderStates[i];
+        }
+
+        cutsceneRenderers = null;
+        cutsceneRendererStates = null;
+        cutsceneColliders = null;
+        cutsceneColliderStates = null;
     }
     private IEnumerator DelayedRoamActivation()
     {
@@ -515,6 +584,7 @@ public class EnemyStateMachine : MonoBehaviour
     private void SetGhostVisuals(bool visible)
     {
         if (enemy == null) return;
+        if (IsInCutscene && visible) return;
 
         Renderer[] renderers = enemy.GetComponentsInChildren<Renderer>();
         foreach (Renderer r in renderers)
@@ -828,6 +898,7 @@ public class EnemyStateMachine : MonoBehaviour
             transform.position = data.position;
         }
 
+
         // Restore Stun Tier Limits
         int tierIndex = Mathf.Clamp(corruptedPaintingsChanneled, 0, stunDurationTiers.Length - 1);
         currentStunDuration = stunDurationTiers[tierIndex];
@@ -840,15 +911,23 @@ public class EnemyStateMachine : MonoBehaviour
             AdjustEnemeyAggressiveness(corruptedPaintingsChanneled);
         }
 
-        // Resume state based on activation
+        SetActiveGhost(this.isEnemyActivated);
+
         if (isEnemyActivated)
         {
-            if (navMeshAgent != null) navMeshAgent.isStopped = false;
-            ChangeState(RoamState); // Always default to roam on load for fairness
+            SaveCourier.LoadedActiveGhostName = gameObject.name;
+
+            if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh)
+            {
+                navMeshAgent.isStopped = false;
+            }
+            ChangeState(RoamState);
+
+            Debug.Log($"<color=green>[EnemyStateMachine] {gameObject.name} successfully FORCED AWAKE via Loaded Data!</color>");
         }
         else
         {
-            if (navMeshAgent != null)
+            if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh)
             {
                 navMeshAgent.isStopped = true;
                 navMeshAgent.velocity = Vector3.zero;
