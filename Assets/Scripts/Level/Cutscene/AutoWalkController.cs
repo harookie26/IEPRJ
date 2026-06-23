@@ -9,14 +9,18 @@ public class AutoWalkController : MonoBehaviour
 
     [SerializeField] private float stopDistance = 0.15f;
     [SerializeField] private float rotationSpeed = 5f;
+    private Coroutine activeCutscene;
+    private bool ownsCutsceneState;
 
     public void PlayCutscene()
     {
-        StartCoroutine(CutsceneRoutine());
+        if (activeCutscene == null)
+            activeCutscene = StartCoroutine(CutsceneRoutine());
     }
 
     private IEnumerator CutsceneRoutine()
     {
+        BeginCutsceneState();
         player.SetCanMove(true);
 
         foreach (Transform point in waypoints)
@@ -25,6 +29,35 @@ public class AutoWalkController : MonoBehaviour
         }
 
         player.ClearExternalMovement();
+        activeCutscene = null;
+        EndCutsceneState();
+    }
+
+    private void OnDisable()
+    {
+        if (player != null)
+            player.ClearExternalMovement();
+
+        activeCutscene = null;
+        EndCutsceneState();
+    }
+
+    private void BeginCutsceneState()
+    {
+        if (ownsCutsceneState) return;
+
+        ownsCutsceneState = true;
+        if (GameState.BeginCutscene())
+            EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_START);
+    }
+
+    private void EndCutsceneState()
+    {
+        if (!ownsCutsceneState) return;
+
+        ownsCutsceneState = false;
+        if (GameState.EndCutscene())
+            EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_END);
     }
 
     private IEnumerator MovePlayerTo(Vector3 targetPos)

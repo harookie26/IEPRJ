@@ -5,50 +5,60 @@ ModelImporter:
   internalIDToNameTable: []
   externalObjects:
   - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Lights
+    second: {fileID: 2100000, guid: 414acb0fce88ab04097459a0d4213859, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: art display
+    second: {fileID: 2100000, guid: d8214cb25b0e22e448f7bcea2afe646b, type: 2}
+  - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: Lights_DefaultMaterial_BaseColor
-    second: {fileID: 2800000, guid: 7bbcd6e5e60188e4d876d3c0e67c68f5, type: 3}
+    second: {fileID: 2800000, guid: 3a0e32a4b424be744b17f46d2031c7e0, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: Lights_DefaultMaterial_Emissive
-    second: {fileID: 2800000, guid: ed34b4249480af44097b8864073e9a78, type: 3}
+    second: {fileID: 2800000, guid: 78e1be0edd833974f914edcc9403c66a, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: Lights_DefaultMaterial_Metallic
-    second: {fileID: 2800000, guid: fe937a37bcc286c48b2cd78f3a429306, type: 3}
+    second: {fileID: 2800000, guid: fe9f434b748a60c40a640dc4381cbdc3, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: Lights_DefaultMaterial_Normal
-    second: {fileID: 2800000, guid: c281cb3c6782ca24e8e952c358bf5f14, type: 3}
+    second: {fileID: 2800000, guid: 164cb1373c980de40a27bd20bcade51e, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: Lights_DefaultMaterial_Roughness
-    second: {fileID: 2800000, guid: 0899808f2d743fb41897146aa35f917c, type: 3}
+    second: {fileID: 2800000, guid: 766f96ce142c0b74ab637fcfeaf38ef5, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: wall texture sheet_DefaultMaterial_BaseColor
-    second: {fileID: 2800000, guid: c26800c68d68b5443b29e5363ce00fb7, type: 3}
+    second: {fileID: 2800000, guid: 1cee58ff9c466e1458e71c71a909e525, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: wall texture sheet_DefaultMaterial_Metallic
-    second: {fileID: 2800000, guid: eb0551febc311b6459c6ee0f016e282c, type: 3}
+    second: {fileID: 2800000, guid: 4426a123c96c6ac49b72a07db046ba35, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: wall texture sheet_DefaultMaterial_Normal
-    second: {fileID: 2800000, guid: 1a72e18b546f5f842bc228f5fef8e94b, type: 3}
+    second: {fileID: 2800000, guid: c7b20ea65d7219443872ca799c8c8d5f, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: wall texture sheet_DefaultMaterial_Roughness
-    second: {fileID: 2800000, guid: 4886776909dbb13478522a28fbed1d4a, type: 3}
+    second: {fileID: 2800000, guid: 17158e98539b20348a450207e9addc96, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0

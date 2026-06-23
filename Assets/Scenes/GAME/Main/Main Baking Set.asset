@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4881f9a2c4d568047b316028d20a8dca, type: 3}
   m_Name: Main Baking Set
   m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.ProbeVolumeBakingSet
-  singleSceneMode: 0
+  singleSceneMode: 1
   dialogNoProbeVolumeInSetShown: 1
   settings:
     m_Version: 1
@@ -41,11 +41,11 @@ MonoBehaviour:
     m_Values:
     - position: {x: -1, y: 0, z: -1}
       index: 3
-      probeCount: 8576
+      probeCount: 8640
       minSubdiv: 0
       indexChunkCount: 91
       shChunkCount: 2
-      bricksCount: 134
+      bricksCount: 135
       indirectionEntryInfo:
       - positionInBricks: {x: -27, y: 0, z: -27}
         minSubdiv: 0
@@ -55,11 +55,11 @@ MonoBehaviour:
         hasOnlyBiggerBricks: 0
     - position: {x: 0, y: 0, z: -1}
       index: 4
-      probeCount: 49408
+      probeCount: 50624
       minSubdiv: 0
       indexChunkCount: 91
       shChunkCount: 7
-      bricksCount: 772
+      bricksCount: 791
       indirectionEntryInfo:
       - positionInBricks: {x: 0, y: 0, z: -27}
         minSubdiv: 0
@@ -86,7 +86,7 @@ MonoBehaviour:
     m_Keys:
     - Default
     m_Values:
-    - sceneHash: 1842760013
+    - sceneHash: -1222802578
       cellDataAsset:
         m_AssetGUID: 6cce2594c59d403499018cf50c1a9463
         m_StreamableAssetPath: APVStreamingAssets\f282e045e9ed16c41ae3bf53e7531195\6cce2594c59d403499018cf50c1a9463.bytes
@@ -131,9 +131,9 @@ MonoBehaviour:
       m_Keys: 0300000004000000
       m_Values:
       - offset: 0
-        elementCount: 134
-      - offset: 2144
-        elementCount: 772
+        elementCount: 135
+      - offset: 2160
+        elementCount: 791
     m_Asset: {fileID: 4900000, guid: 39e5ce7b24747bf459ad6ba1ea42fc83, type: 3}
   cellSupportDataAsset:
     m_AssetGUID: 65a1f145deecef247b74d4ac6bdd8301

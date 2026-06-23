@@ -7,4 +7,5 @@ public static class SaveCourier
 
     // --- ADD THIS FLAG ---
     public static bool IsLoadingSave = false;
+    public static string LoadedActiveGhostName = "";
 }

@@ -41,11 +41,11 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Audio")]
     [SerializeField] private AudioClip footstepAudioClip;
-    private AudioSource sfxAudioSource;
+    private AudioSource footstepAudioSource;
 
     [Header("Footstep Settings")]
-    [SerializeField] private float walkStepInterval = 0.4f;
-    [SerializeField] private float sprintStepInterval = 0.25f;
+    [SerializeField] private float walkStepInterval = 0.55f;
+    [SerializeField] private float sprintStepInterval = 0.35f;
     [SerializeField] private float walkPitch = 1.0f;
     [SerializeField] private float sprintPitch = 1.2f;
     private float stepTimer = 0f;
@@ -139,9 +139,20 @@ public class PlayerMovement : MonoBehaviour
         bodyYaw = transform.eulerAngles.y;
         currentStamina = maxStamina;
 
-        sfxAudioSource = GameObject.FindWithTag("SFXAudioSource").GetComponent<AudioSource>();
-        if (sfxAudioSource == null)
-            sfxAudioSource = gameObject.AddComponent<AudioSource>();
+        GameObject sharedSfxObject = GameObject.FindWithTag("SFXAudioSource");
+        AudioSource sharedSfxSource = sharedSfxObject != null
+            ? sharedSfxObject.GetComponent<AudioSource>()
+            : null;
+
+        footstepAudioSource = gameObject.AddComponent<AudioSource>();
+        footstepAudioSource.playOnAwake = false;
+        footstepAudioSource.loop = false;
+        footstepAudioSource.spatialBlend = 0f;
+
+        if (sharedSfxSource != null)
+        {
+            footstepAudioSource.outputAudioMixerGroup = sharedSfxSource.outputAudioMixerGroup;
+        }
 
         if (playerCapsule == null)
         {
@@ -189,6 +200,19 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isGamePaused) return; // Prevent processing input when the game is paused
 
+        // Cutscene-authored external movement may continue, but all player input
+        // (including look and sprint) is suppressed for the cutscene duration.
+        if (GameState.IsCutsceneActive && !useExternalMovement)
+        {
+            moveInput = Vector2.zero;
+            lookInputTarget = Vector2.zero;
+            lookInputCurrent = Vector2.zero;
+            cachedMoveDirection = Vector3.zero;
+            isCurrentlySprinting = false;
+            currentHorizontalVelocity = Vector3.zero;
+            return;
+        }
+
         if (!canMove || PBController.IsCompanionManualModeActive)
         {
             moveInput = Vector2.zero;
@@ -224,6 +248,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (GameState.IsCutsceneActive && !useExternalMovement)
+        {
+            currentHorizontalVelocity = Vector3.zero;
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+            return;
+        }
+
         if (!canMove) return;
 
         if (isGamePaused) return;
@@ -299,6 +330,12 @@ public class PlayerMovement : MonoBehaviour
         }
 
         ApplyMovementPhysics(combinedVelocity);
+
+        actualHorizontalSpeed = new Vector3(
+            currentHorizontalVelocity.x,
+            0f,
+            currentHorizontalVelocity.z
+        ).magnitude;
     }
 
     private void ApplyAcceleration(ref Vector3 currentVel, Vector3 targetVel)
@@ -617,8 +654,9 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleFootsteps()
     {
-        // Only play footsteps if grounded and moving
-        if (actualHorizontalSpeed > 0.1f)
+        // Require active movement input so the last step is cut off immediately
+        // when the player releases the movement key.
+        if (moveInput.sqrMagnitude > 0.01f && actualHorizontalSpeed > 0.1f)
         {
             stepTimer -= Time.deltaTime;
 
@@ -631,11 +669,11 @@ public class PlayerMovement : MonoBehaviour
                 float currentInterval = isSprintingNow ? sprintStepInterval : walkStepInterval;
                 float basePitch = isSprintingNow ? sprintPitch : walkPitch;
 
-                if (footstepAudioClip != null && sfxAudioSource != null)
+                if (footstepAudioClip != null && footstepAudioSource != null)
                 {
                     // Add a tiny bit of randomness (+/- 0.05) so it sounds like real, organic footsteps
-                    sfxAudioSource.pitch = basePitch + Random.Range(-0.05f, 0.05f);
-                    sfxAudioSource.PlayOneShot(footstepAudioClip);
+                    footstepAudioSource.pitch = basePitch + Random.Range(-0.05f, 0.05f);
+                    footstepAudioSource.PlayOneShot(footstepAudioClip);
                 }
 
                 stepTimer = currentInterval;
@@ -643,6 +681,11 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
+            if (footstepAudioSource != null && footstepAudioSource.isPlaying)
+            {
+                footstepAudioSource.Stop();
+            }
+
             // Reset timer so the moment we move, a step triggers instantly
             stepTimer = 0f;
         }

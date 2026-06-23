@@ -122,6 +122,12 @@ public class PBManual : MonoBehaviour
 
         _rb.angularVelocity = Vector3.zero;
 
+        if (GameState.IsCutsceneActive)
+        {
+            _rb.linearVelocity = Vector3.zero;
+            return;
+        }
+
         float moveInput = (Input.GetKey(KeyCode.W) ? 1f : 0f) + (Input.GetKey(KeyCode.S) ? -1f : 0f);
         float strafeInput = Input.GetKey(KeyCode.D) ? 1f : Input.GetKey(KeyCode.A) ? -1f : 0f;
         float verticalInput = Input.GetKey(KeyCode.UpArrow) ? 1f : Input.GetKey(KeyCode.DownArrow) ? -1f : 0f;

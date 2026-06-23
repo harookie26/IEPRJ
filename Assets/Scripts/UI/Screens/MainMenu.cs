@@ -15,8 +15,6 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private GameObject playPanel;
     [SerializeField] private GameObject noSavedText;
 
-    [SerializeField] private SaveManager saveManager;
-
     private ScreenFader _screenFader;
     private SceneLoader _sceneLoader;
 

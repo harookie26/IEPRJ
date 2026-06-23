@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00be6aaf2f972474a9f1ad90a9da8096, type: 3}
+  m_Name: Ending Cinematic Dialogue 2
+  m_EditorClassIdentifier: Assembly-CSharp::Level.UI.DialogueEntry
+  characterName: Miguel
+  text: Who is that guy in the middle?
+  displayDuration: 3
+  fadeIn: 0.25
+  fadeOut: 0.25

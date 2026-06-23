@@ -72,6 +72,8 @@ public class PauseScript : MonoBehaviour
             gameSavedText.SetActive(true);
             Invoke("HideGameSavedText", 2f); //
         }
+
+        CloseSaveGame();
     }
 
     private void HideGameSavedText()

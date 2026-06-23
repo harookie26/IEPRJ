@@ -85,6 +85,14 @@ public class Flashlight : MonoBehaviour
     {
         if (!canToggle) return;
 
+        // Keep the current beam state, but block toggling, battery drain, and
+        // ghost stunning until gameplay control resumes.
+        if (GameState.IsCutsceneActive)
+        {
+            UpdateUI();
+            return;
+        }
+
         HandleInput();
 
         if (isOn && currentBattery > 0)

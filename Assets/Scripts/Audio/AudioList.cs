@@ -47,6 +47,15 @@ public class AudioList : MonoBehaviour
     [Header("SFX Setting Adjustment")]
     [SerializeField] public AudioClip sfxSettingAdjustment;
 
+    [Header("Player Caught SFX")]
+    [SerializeField] private AudioClip playerCaughtSFX;
+
+    [Header("Ambient Music")]
+    [Tooltip("Loops from scene start until the Enemy Intro Trigger is encountered.")]
+    [SerializeField] private AudioClip preEnemyIntroAmbient;
+    [Tooltip("Loops after the Enemy Intro Trigger is encountered.")]
+    [SerializeField] private AudioClip postEnemyIntroAmbient;
+
     [Header("Testing Clips")]
     [SerializeField] public AudioClip testMusic;
     [SerializeField] public AudioClip testSFX;
@@ -56,16 +65,22 @@ public class AudioList : MonoBehaviour
     [SerializeField] public AudioSource restorationMusicAudioSource;
 
     private AudioSource sfxAudioSource;
+    private AudioSource musicAudioSource;
+    private AudioSource surpriseEncounterAudioSource;
+    private bool playerCaughtSFXActive;
 
     private void Awake()
     {
         Current = this;
         ResolveSFXAudioSource();
+        ResolveMusicAudioSource();
+        PlayAmbient(preEnemyIntroAmbient);
     }
 
     private void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
+        EventBroadcaster.Instance.AddObserver(EventNames.EnemyEvents.ENEMY_CATCHED, PlaySurpriseEncounterSFX);
     }
 
     private void Start()
@@ -76,6 +91,7 @@ public class AudioList : MonoBehaviour
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+        EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.EnemyEvents.ENEMY_CATCHED, PlaySurpriseEncounterSFX);
     }
 
     private void OnDestroy()
@@ -110,10 +126,67 @@ public class AudioList : MonoBehaviour
         }
     }
 
+    public void PlayPreEnemyIntroAmbient()
+    {
+        PlayAmbient(preEnemyIntroAmbient);
+    }
+
+    public void PlayPostEnemyIntroAmbient()
+    {
+        PlayAmbient(postEnemyIntroAmbient);
+    }
+
+    private void PlaySurpriseEncounterSFX()
+    {
+        if (playerCaughtSFX == null || playerCaughtSFXActive)
+        {
+            return;
+        }
+
+        playerCaughtSFXActive = true;
+        ResolveSurpriseEncounterAudioSource();
+        surpriseEncounterAudioSource.clip = playerCaughtSFX;
+        surpriseEncounterAudioSource.Play();
+    }
+
+    public void StopSurpriseEncounterSFX()
+    {
+        playerCaughtSFXActive = false;
+
+        if (surpriseEncounterAudioSource == null)
+        {
+            return;
+        }
+
+        surpriseEncounterAudioSource.Stop();
+        surpriseEncounterAudioSource.clip = null;
+    }
+
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         ResolveSFXAudioSource();
+        ResolveMusicAudioSource();
         RegisterButtonClickSFX();
+    }
+
+    private void PlayAmbient(AudioClip clip)
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
+        ResolveMusicAudioSource();
+        if (musicAudioSource == null ||
+            (musicAudioSource.clip == clip && musicAudioSource.isPlaying))
+        {
+            return;
+        }
+
+        musicAudioSource.Stop();
+        musicAudioSource.clip = clip;
+        musicAudioSource.loop = true;
+        musicAudioSource.Play();
     }
 
     private void RegisterButtonClickSFX()
@@ -137,6 +210,39 @@ public class AudioList : MonoBehaviour
         if (audioObject != null)
         {
             sfxAudioSource = audioObject.GetComponent<AudioSource>();
+        }
+    }
+
+    private void ResolveMusicAudioSource()
+    {
+        if (musicAudioSource != null)
+        {
+            return;
+        }
+
+        GameObject audioObject = GameObject.FindWithTag("MusicAudioSource");
+        if (audioObject != null)
+        {
+            musicAudioSource = audioObject.GetComponent<AudioSource>();
+        }
+    }
+
+    private void ResolveSurpriseEncounterAudioSource()
+    {
+        if (surpriseEncounterAudioSource != null)
+        {
+            return;
+        }
+
+        ResolveSFXAudioSource();
+        surpriseEncounterAudioSource = gameObject.AddComponent<AudioSource>();
+        surpriseEncounterAudioSource.playOnAwake = false;
+        surpriseEncounterAudioSource.loop = false;
+        surpriseEncounterAudioSource.spatialBlend = 0f;
+
+        if (sfxAudioSource != null)
+        {
+            surpriseEncounterAudioSource.outputAudioMixerGroup = sfxAudioSource.outputAudioMixerGroup;
         }
     }
 }

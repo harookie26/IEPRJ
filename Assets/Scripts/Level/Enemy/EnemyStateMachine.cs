@@ -1,4 +1,5 @@
 using Game.Level;
+using Game.States;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,8 +7,10 @@ using UnityEngine.AI;
 using static EventNames;
 
 [FoldableInspector(hideFieldHeaders: true)]
-public class EnemyStateMachine : MonoBehaviour
+public class EnemyStateMachine : MonoBehaviour, ISaveable
 {
+    public string SaveKey => gameObject.name;
+
     [Header("References")]
     [Tooltip("The player GameObject this enemy will target.")]
     [SerializeField] private GameObject targetPlayer;
@@ -42,6 +45,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float maxGlitchInterval = 0.55f;
 
     private Coroutine stunGlitchCoroutine;
+    private Coroutine unfreezeCoroutine;
 
     [Header("Stun Configuration")]
     [Tooltip("Stun durations indexed by how many paintings are restored (0, 1, 2, 3+ paintings).")]
@@ -53,12 +57,17 @@ public class EnemyStateMachine : MonoBehaviour
     private float passiveTensionTimer = 0f;
 
     public bool IsInCutscene { get; set; } = false;
+    private Renderer[] cutsceneRenderers;
+    private bool[] cutsceneRendererStates;
+    private Collider[] cutsceneColliders;
+    private bool[] cutsceneColliderStates;
     public float StunDuration => currentStunDuration;
 
     private EnemyState currentState;
 
     private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
-    private bool enemyCaught = false;
+    private static bool captureInProgress;
+    private bool isRespawning;
 
     private bool configWarned = false;
     private int scriptedEncounters = 0;
@@ -109,7 +118,13 @@ public class EnemyStateMachine : MonoBehaviour
     private bool hasInitialized = false;
     private void OnEnable()
     {
+        if (AllInstances.Count == 0)
+        {
+            captureInProgress = false;
+        }
+
         AllInstances.Add(this);
+        GlobalSaveSystem.Register(this);
         EventBroadcaster.Instance.AddObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
         EventBroadcaster.Instance.AddObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
     }
@@ -117,8 +132,22 @@ public class EnemyStateMachine : MonoBehaviour
     private void OnDisable()
     {
         AllInstances.Remove(this);
+        GlobalSaveSystem.Unregister(this);
         EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.HintEvents.ADD_PAINTING_RESTORED, AddRestoredPainting);
+    }
+
+    public object CaptureState()
+    {
+        return GetSaveData();
+    }
+
+    public void RestoreState(object state)
+    {
+        if (state is EnemySaveData ghostData)
+        {
+            LoadSaveData(ghostData);
+        }
     }
 
 
@@ -181,7 +210,7 @@ public class EnemyStateMachine : MonoBehaviour
         }
         else
         {
-            StopCoroutine(nameof(UnfreezeAfter));
+            CancelUnfreezeTimer();
             StopCoroutine(nameof(DelayedRoamActivation));
 
             if (stunGlitchCoroutine != null)
@@ -192,8 +221,56 @@ public class EnemyStateMachine : MonoBehaviour
 
             DisableAgentPhysics(); 
             SetGhostVisuals(false);
+            SetGhostGlitchSpeed(5f);
             Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
         }
+    }
+
+    public void SuspendForCutscene()
+    {
+        if (IsInCutscene || enemy == null) return;
+
+        IsInCutscene = true;
+
+        cutsceneRenderers = enemy.GetComponentsInChildren<Renderer>(true);
+        cutsceneRendererStates = new bool[cutsceneRenderers.Length];
+        for (int i = 0; i < cutsceneRenderers.Length; i++)
+        {
+            cutsceneRendererStates[i] = cutsceneRenderers[i].enabled;
+            cutsceneRenderers[i].enabled = false;
+        }
+
+        cutsceneColliders = enemy.GetComponentsInChildren<Collider>(true);
+        cutsceneColliderStates = new bool[cutsceneColliders.Length];
+        for (int i = 0; i < cutsceneColliders.Length; i++)
+        {
+            cutsceneColliderStates[i] = cutsceneColliders[i].enabled;
+            cutsceneColliders[i].enabled = false;
+        }
+    }
+
+    public void ResumeFromCutscene()
+    {
+        if (!IsInCutscene) return;
+
+        IsInCutscene = false;
+
+        for (int i = 0; cutsceneRenderers != null && i < cutsceneRenderers.Length; i++)
+        {
+            if (cutsceneRenderers[i] != null)
+                cutsceneRenderers[i].enabled = cutsceneRendererStates[i];
+        }
+
+        for (int i = 0; cutsceneColliders != null && i < cutsceneColliders.Length; i++)
+        {
+            if (cutsceneColliders[i] != null)
+                cutsceneColliders[i].enabled = cutsceneColliderStates[i];
+        }
+
+        cutsceneRenderers = null;
+        cutsceneRendererStates = null;
+        cutsceneColliders = null;
+        cutsceneColliderStates = null;
     }
     private IEnumerator DelayedRoamActivation()
     {
@@ -244,7 +321,25 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Update()
     {
-        if (!isEnemyActivated) return;
+        if (!isEnemyActivated || isRespawning) return;
+
+        if (isFrozen)
+        {
+            if (targetPlayer != null)
+            {
+                Vector3 directionToPlayer = targetPlayer.transform.position - enemy.transform.position;
+
+                directionToPlayer.y = 0f;
+
+                if (directionToPlayer.sqrMagnitude > Mathf.Epsilon)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(directionToPlayer);
+
+                    enemy.transform.rotation = Quaternion.Slerp(enemy.transform.rotation, targetRotation, Time.deltaTime * 5f);
+                }
+            }
+            return;
+        }
 
         if (navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.isStopped) return;
 
@@ -277,6 +372,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void ChangeState(EnemyState newState)
     {
+        EnemyState previousState = currentState;
         currentState = newState;
 
         if (navMeshAgent != null && navMeshAgent.enabled)
@@ -296,7 +392,7 @@ public class EnemyStateMachine : MonoBehaviour
         {
             StartChaseAudio();
         }
-        else if (currentState == ChaseState && newState != ChaseState)
+        else if (previousState == ChaseState)
         {
             StopChaseAudio();
         }
@@ -372,24 +468,30 @@ public class EnemyStateMachine : MonoBehaviour
             navMeshAgent.ResetPath();
         }
 
-        StopCoroutine(nameof(UnfreezeAfter));
+        CancelUnfreezeTimer();
 
         isFrozen = true;
 
-        StartCoroutine(UnfreezeAfter(duration));
+        // A duration of zero is an indefinite freeze used by pause/cutscene flows.
+        // Positive durations are refreshed while the flashlight remains on target.
+        if (duration > 0f)
+        {
+            unfreezeCoroutine = StartCoroutine(UnfreezeAfter(duration));
+        }
 
         if (stunGlitchCoroutine == null)
         {
             animator.SetBool("isWalking", false);
             animator.SetBool("isStunned", true); 
-            animator.SetBool("isRunning", false); 
-            
+            animator.SetBool("isRunning", false);
+
             stunGlitchCoroutine = StartCoroutine(StunGlitchLoop());
         }
     }
 
     public void Unfreeze()
     {
+        CancelUnfreezeTimer();
         isFrozen = false;
 
         if (navMeshAgent != null && navMeshAgent.enabled)
@@ -411,6 +513,8 @@ public class EnemyStateMachine : MonoBehaviour
 
         if (!isEnemyActivated) yield break;
 
+        unfreezeCoroutine = null;
+
         if (stunGlitchCoroutine != null)
         {
             StopCoroutine(stunGlitchCoroutine);
@@ -418,6 +522,8 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         SetGhostVisuals(true);
+        SetGhostGlitchSpeed(5f);
+
         isFrozen = false; 
 
         if (navMeshAgent != null && navMeshAgent.enabled)
@@ -428,8 +534,20 @@ public class EnemyStateMachine : MonoBehaviour
         ChangeState(RoamState);
     }
 
+    private void CancelUnfreezeTimer()
+    {
+        if (unfreezeCoroutine == null) return;
+
+        StopCoroutine(unfreezeCoroutine);
+        unfreezeCoroutine = null;
+    }
+
     private IEnumerator StunGlitchLoop()
     {
+        yield return null;
+
+        SetGhostGlitchSpeed(0f);
+
         while (true)
         {
             float offDuration = Random.Range(minGlitchInterval, maxGlitchInterval);
@@ -442,9 +560,31 @@ public class EnemyStateMachine : MonoBehaviour
         }
     }
 
+    private void SetGhostGlitchSpeed(float speedValue)
+    {
+        if (enemy == null) return;
+
+        Renderer[] renderers = enemy.GetComponentsInChildren<Renderer>();
+        foreach (Renderer r in renderers)
+        {
+            if (r == null) continue;
+
+            // Using .materials array covers multi-material rendering steps seamlessly
+            Material[] sharedMaterials = r.materials;
+            foreach (Material mat in sharedMaterials)
+            {
+                if (mat != null && mat.HasProperty("_GlitchSpeed"))
+                {
+                    mat.SetFloat("_GlitchSpeed", speedValue);
+                }
+            }
+        }
+    }
+
     private void SetGhostVisuals(bool visible)
     {
         if (enemy == null) return;
+        if (IsInCutscene && visible) return;
 
         Renderer[] renderers = enemy.GetComponentsInChildren<Renderer>();
         foreach (Renderer r in renderers)
@@ -476,22 +616,69 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void PlayerCaught()
     {
-        if (enemyCaught) return;
-        enemyCaught = true;
+        PrepareForRespawn();
 
-        StopChaseAudio();
+        if (captureInProgress) return;
 
-        // Teleport enemy to a random room that isn't the player's current room,
-        // preventing an immediate re-catch after the player respawns.
-        TeleportToRandomRoom();
-
-        ChangeState(RoamState);
+        captureInProgress = true;
         StartCoroutine(KillSequence());
+    }
+
+    private void PrepareForRespawn()
+    {
+        isRespawning = true;
+        StopChaseAudio();
+        CancelUnfreezeTimer();
+
+        if (stunGlitchCoroutine != null)
+        {
+            StopCoroutine(stunGlitchCoroutine);
+            stunGlitchCoroutine = null;
+        }
+
+        isFrozen = false;
+        SetGhostGlitchSpeed(5f);
+
+        // Set the logical state immediately, but do not enter Roam yet. Entering it
+        // would assign a new path while the checkpoint sequence is moving objects.
+        currentState = RoamState;
+
+        if (navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.isOnNavMesh)
+        {
+            navMeshAgent.isStopped = true;
+            navMeshAgent.velocity = Vector3.zero;
+            navMeshAgent.ResetPath();
+        }
+
+        if (animator != null)
+        {
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isStunned", false);
+            animator.SetBool("isRunning", false);
+        }
+    }
+
+    private void FinishRespawn()
+    {
+        // The checkpoint flow may restore a saved enemy position. Relocate after
+        // that flow so the enemy cannot remain beside the location of the catch.
+        if (isEnemyActivated)
+        {
+            TeleportToRandomRoom();
+        }
+
+        isRespawning = false;
+
+        if (isEnemyActivated && navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.isOnNavMesh)
+        {
+            navMeshAgent.isStopped = false;
+            ChangeState(RoamState);
+        }
     }
 
     private void TeleportToRandomRoom()
     {
-        if (navMeshAgent == null) return;
+        if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
 
         Vector3 destination = GetRandomPointExcludingPlayerRoom();
 
@@ -509,9 +696,24 @@ public class EnemyStateMachine : MonoBehaviour
         yield return new WaitForSeconds(1);
         EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESTART);
 
-        checkpoint.ReturnToCheckpoint();
+        CheckpointManager checkpointManager = checkpoint;
+        if (checkpointManager != null)
+        {
+            checkpointManager.ReturnToCheckpoint();
+            yield return new WaitUntil(() => !checkpointManager.IsRespawnInProgress);
+        }
 
-        enemyCaught = false;
+        // Every enemy observes the catch event and is suspended above. Resume all
+        // of them only after the player has reached the final respawn position.
+        foreach (EnemyStateMachine enemyStateMachine in new List<EnemyStateMachine>(AllInstances))
+        {
+            if (enemyStateMachine != null)
+            {
+                enemyStateMachine.FinishRespawn();
+            }
+        }
+
+        captureInProgress = false;
 
     }
 
@@ -628,6 +830,8 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void StartChaseAudio()
     {
+        if (captureInProgress || targetPlayer == null) return;
+
         targetPlayer.TryGetComponent<AudioSource>(out AudioSource playerAudioSource);
 
         if (playerAudioSource != null && !playerAudioSource.isPlaying)
@@ -639,12 +843,31 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void StopChaseAudio()
     {
-        targetPlayer.TryGetComponent<AudioSource>(out AudioSource playerAudioSource);
+        if (targetPlayer == null) return;
 
-        if (playerAudioSource != null && playerAudioSource.isPlaying)
+        AudioSource[] playerAudioSources = targetPlayer.GetComponents<AudioSource>();
+        foreach (AudioSource playerAudioSource in playerAudioSources)
         {
-            playerAudioSource.Stop();
-            Debug.Log("Player Heartbeat SFX Stopped.");
+            if (playerAudioSource == null || playerAudioSource.clip == null) continue;
+
+            bool isHeartbeat = playerAudioSource.loop
+                || playerAudioSource.clip.name.IndexOf("heartbeat", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (isHeartbeat)
+            {
+                playerAudioSource.Stop();
+            }
+        }
+    }
+
+    public static void StopAllChaseAudio()
+    {
+        foreach (EnemyStateMachine enemyStateMachine in AllInstances)
+        {
+            if (enemyStateMachine != null)
+            {
+                enemyStateMachine.StopChaseAudio();
+            }
         }
     }
 
@@ -675,6 +898,7 @@ public class EnemyStateMachine : MonoBehaviour
             transform.position = data.position;
         }
 
+
         // Restore Stun Tier Limits
         int tierIndex = Mathf.Clamp(corruptedPaintingsChanneled, 0, stunDurationTiers.Length - 1);
         currentStunDuration = stunDurationTiers[tierIndex];
@@ -687,15 +911,23 @@ public class EnemyStateMachine : MonoBehaviour
             AdjustEnemeyAggressiveness(corruptedPaintingsChanneled);
         }
 
-        // Resume state based on activation
+        SetActiveGhost(this.isEnemyActivated);
+
         if (isEnemyActivated)
         {
-            if (navMeshAgent != null) navMeshAgent.isStopped = false;
-            ChangeState(RoamState); // Always default to roam on load for fairness
+            SaveCourier.LoadedActiveGhostName = gameObject.name;
+
+            if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh)
+            {
+                navMeshAgent.isStopped = false;
+            }
+            ChangeState(RoamState);
+
+            Debug.Log($"<color=green>[EnemyStateMachine] {gameObject.name} successfully FORCED AWAKE via Loaded Data!</color>");
         }
         else
         {
-            if (navMeshAgent != null)
+            if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled && navMeshAgent.isOnNavMesh)
             {
                 navMeshAgent.isStopped = true;
                 navMeshAgent.velocity = Vector3.zero;

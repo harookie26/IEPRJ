@@ -31,7 +31,9 @@ public class GameSaveData
 
     public TutorialSaveData tutorial;
 
-    public EnemySaveData enemyState;
+    public List<EnemySaveData> savedEnemies = new List<EnemySaveData>();
+
+    public EnemyManagerSaveData enemyManagerData;
 
     public PaintbrushSaveData paintbrush;
 
@@ -90,9 +92,20 @@ public class TutorialSaveData
 [System.Serializable]
 public class EnemySaveData
 {
+    public string enemyGameObjectName;
     public Vector3 position;
     public bool isEnemyActivated;
     public int corruptedPaintingsChanneled;
+}
+
+[System.Serializable]
+public class EnemyManagerSaveData
+{
+    public bool systemIsActivated;
+    public int currentIntervalIndex;
+    public float checkTimer;
+    public int currentTriggerCount;
+    public string activeGhostName;
 }
 
 [System.Serializable]
@@ -104,8 +117,12 @@ public class PaintbrushSaveData
 [System.Serializable]
 public class PaintingRandomizerSaveData
 {
-    // Because names are unique now, this will never fail!
+    // Legacy field retained so saves created before room-local indices still load.
     public List<string> savedPaintingNames;
+
+    // One index per room. Unlike GameObject names, these remain unambiguous when
+    // multiple painting prefabs use the same imported object name.
+    public List<int> savedPaintingIndices;
 }
 
 [System.Serializable]

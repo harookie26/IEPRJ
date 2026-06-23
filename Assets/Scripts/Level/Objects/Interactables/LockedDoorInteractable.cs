@@ -1,4 +1,5 @@
 using Game.ObjectTypes;
+using System.Collections;
 using UnityEngine;
 
 public class LockedDoorInteractable : MonoBehaviour, IInteractable
@@ -13,12 +14,14 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
     [SerializeField] private Collider blockingCollider;
     [SerializeField] private Vector3 entranceDoor002OpenEulerOffset = new Vector3(0f, 0f, -90f);
     [SerializeField] private Vector3 entranceDoor003OpenEulerOffset = new Vector3(0f, 0f, 90f);
+    [SerializeField, Min(0.01f)] private float doorOpenDuration = 1f;
 
     private PlayerCollectibleManager collectibles;
     private AudioSource sfxAudioSource;
     private AudioList audioList;
     private Quaternion entranceDoor002ClosedRotation;
     private Quaternion entranceDoor003ClosedRotation;
+    private Coroutine doorOpenCoroutine;
 
     public bool hasOpened = false;
 
@@ -59,7 +62,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
     {
         if (hasOpened)
         {
-            ApplyUnlockedState();
+            ApplyUnlockedState(false);
         }
     }
 
@@ -69,16 +72,21 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         {
             hasOpened = true;
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT2_START);
-            sfxAudioSource.PlayOneShot(audioList.lockedDoorSFX);
+            if (sfxAudioSource != null && audioList != null && audioList.unlockDoorSFX != null)
+            {
+                sfxAudioSource.PlayOneShot(audioList.unlockDoorSFX);
+            }
 
-            ApplyUnlockedState();
-            SpatialSFX.Deactivate("door_banging");
+            ApplyUnlockedState(true);
         }
         else
         {
             Debug.Log("Door is locked. You need a key to open it.");
             DialogueTriggerManager.Instance.TriggerLockedDoorDialogue();
-            sfxAudioSource.PlayOneShot(audioList.unlockDoorSFX);
+            if (sfxAudioSource != null && audioList != null && audioList.lockedDoorSFX != null)
+            {
+                sfxAudioSource.PlayOneShot(audioList.lockedDoorSFX);
+            }
 
         }
     }
@@ -99,13 +107,15 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
 
         if (this.hasOpened)
         {
-            ApplyUnlockedState();
+            ApplyUnlockedState(false);
         }
 
     }
 
-    private void ApplyUnlockedState()
+    private void ApplyUnlockedState(bool animate)
     {
+        SpatialSFX.Deactivate("door_banging");
+
         if (!useRotatingDoorUnlock)
         {
             if (doorObject != null)
@@ -121,6 +131,64 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
             doorObject.SetActive(true);
         }
 
+        if (blockingCollider != null)
+        {
+            blockingCollider.enabled = false;
+        }
+
+        if (doorOpenCoroutine != null)
+        {
+            StopCoroutine(doorOpenCoroutine);
+            doorOpenCoroutine = null;
+        }
+
+        if (animate && isActiveAndEnabled)
+        {
+            doorOpenCoroutine = StartCoroutine(AnimateDoorsOpen());
+        }
+        else
+        {
+            SetDoorOpenRotations();
+        }
+    }
+
+    private IEnumerator AnimateDoorsOpen()
+    {
+        Quaternion door002StartRotation = entranceDoor002 != null
+            ? entranceDoor002.localRotation
+            : Quaternion.identity;
+        Quaternion door003StartRotation = entranceDoor003 != null
+            ? entranceDoor003.localRotation
+            : Quaternion.identity;
+        Quaternion door002TargetRotation = entranceDoor002ClosedRotation * Quaternion.Euler(entranceDoor002OpenEulerOffset);
+        Quaternion door003TargetRotation = entranceDoor003ClosedRotation * Quaternion.Euler(entranceDoor003OpenEulerOffset);
+
+        float elapsed = 0f;
+        while (elapsed < doorOpenDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / doorOpenDuration);
+            t = t * t * (3f - 2f * t);
+
+            if (entranceDoor002 != null)
+            {
+                entranceDoor002.localRotation = Quaternion.Lerp(door002StartRotation, door002TargetRotation, t);
+            }
+
+            if (entranceDoor003 != null)
+            {
+                entranceDoor003.localRotation = Quaternion.Lerp(door003StartRotation, door003TargetRotation, t);
+            }
+
+            yield return null;
+        }
+
+        SetDoorOpenRotations();
+        doorOpenCoroutine = null;
+    }
+
+    private void SetDoorOpenRotations()
+    {
         if (entranceDoor002 != null)
         {
             entranceDoor002.localRotation = entranceDoor002ClosedRotation * Quaternion.Euler(entranceDoor002OpenEulerOffset);
@@ -129,11 +197,6 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
         if (entranceDoor003 != null)
         {
             entranceDoor003.localRotation = entranceDoor003ClosedRotation * Quaternion.Euler(entranceDoor003OpenEulerOffset);
-        }
-
-        if (blockingCollider != null)
-        {
-            blockingCollider.enabled = false;
         }
     }
 
