@@ -258,6 +258,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         {
             DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+
+            StartCoroutine(WaitForInitialCutsceneToFinish());
         }
 
         CheckpointManager checkpoint = checkpointManager;
@@ -286,6 +288,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             moveDuration,
             viewDuration,
             dialoguePlayback));
+
     }
 
     public Transform EnsureCutsceneCameraAnchor()
@@ -379,6 +382,21 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             Destroy(transitionMat);
 
             Debug.Log($"[PaintingChannelable] Successfully finished Emission Flash transition on {gameObject.name}");
+        }
+    }
+
+    private System.Collections.IEnumerator WaitForInitialCutsceneToFinish()
+    {
+        // Calculate the total time the first cutscene takes to play.
+        // (Fade In + Move + View + Fade Out)
+        float totalCutsceneTime = (fadeDuration * 2) + moveDuration + viewDuration + 0.5f;
+
+        // Wait for that exact amount of time
+        yield return new WaitForSeconds(totalCutsceneTime);
+
+        if (CorruptedTutorialCutscene.Instance != null)
+        {
+            CorruptedTutorialCutscene.Instance.StartCorruptedPaintingCutscene();
         }
     }
 }
