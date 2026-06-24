@@ -45,6 +45,7 @@ public class PlayerInteractor : MonoBehaviour
 
     // Ensure we reliably subscribe to InputManager even if it isn't initialized when this component is enabled
     private bool inputSubscribed = false;
+    private InputManager subscribedInputManager;
 
     private void Reset()
     {
@@ -76,33 +77,47 @@ public class PlayerInteractor : MonoBehaviour
 
     private void OnEnable()
     {
-        // Try immediate subscribe; if Instance isn't ready yet we'll subscribe in Update
-        if (InputManager.Instance != null)
-        {
-            InputManager.Instance.OnInteractPressed += HandleInteract;
-            inputSubscribed = true;
-        }
+        TrySubscribeInput();
     }
 
     private void OnDisable()
     {
-        if (inputSubscribed && InputManager.Instance != null)
+        if (inputSubscribed && subscribedInputManager != null)
         {
-            InputManager.Instance.OnInteractPressed -= HandleInteract;
+            subscribedInputManager.OnInteractPressed -= HandleInteract;
         }
         inputSubscribed = false;
+        subscribedInputManager = null;
     }
 
     private void Update()
     {
-        // If we haven't subscribed yet, try to subscribe when InputManager becomes available.
-        if (!inputSubscribed && InputManager.Instance != null)
+        // If InputManager appears late or is replaced, keep the interact listener on the active instance.
+        if (!inputSubscribed || subscribedInputManager != InputManager.Instance)
         {
-            InputManager.Instance.OnInteractPressed += HandleInteract;
-            inputSubscribed = true;
+            TrySubscribeInput();
         }
 
         UpdateInteractHud();
+    }
+
+    private void TrySubscribeInput()
+    {
+        if (inputSubscribed && subscribedInputManager != null)
+        {
+            subscribedInputManager.OnInteractPressed -= HandleInteract;
+        }
+
+        inputSubscribed = false;
+        subscribedInputManager = null;
+
+        if (InputManager.Instance == null)
+            return;
+
+        subscribedInputManager = InputManager.Instance;
+        subscribedInputManager.OnInteractPressed -= HandleInteract;
+        subscribedInputManager.OnInteractPressed += HandleInteract;
+        inputSubscribed = true;
     }
 
     private void HandleInteract()

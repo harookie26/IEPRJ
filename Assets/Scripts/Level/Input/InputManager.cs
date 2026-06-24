@@ -164,9 +164,16 @@ public class InputManager : MonoBehaviour
         else
         {
             // Tap vs Hold (channel) detection for E key
-            bool eWasPressed = interactActionStarted;
+            bool eWasPressed = interactActionStarted || inputActions.Player.Interact.WasPressedThisFrame();
             bool eIsPressed = inputActions.Player.Interact.IsPressed();
-            bool eWasReleased = interactActionCanceled;
+            bool eWasReleased = interactActionCanceled || inputActions.Player.Interact.WasReleasedThisFrame();
+
+            if (Keyboard.current != null)
+            {
+                eWasPressed |= Keyboard.current.eKey.wasPressedThisFrame;
+                eIsPressed |= Keyboard.current.eKey.isPressed;
+                eWasReleased |= Keyboard.current.eKey.wasReleasedThisFrame;
+            }
 
             interactActionStarted = false;
             interactActionCanceled = false;
@@ -186,6 +193,11 @@ public class InputManager : MonoBehaviour
                     channeling = true;
                     OnChannelStarted?.Invoke();
                 }
+            }
+
+            if (ePressPending && !eIsPressed && !eWasReleased)
+            {
+                eWasReleased = true;
             }
 
             if (eWasReleased)
