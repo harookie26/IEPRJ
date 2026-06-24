@@ -109,6 +109,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
     private int corruptedPaintingsChanneled = 0;
 
     private static readonly HashSet<EnemyStateMachine> AllInstances = new HashSet<EnemyStateMachine>();
+    private static EnemyStateMachine activeVoiceOwner;
 
     private RoomComponent currentEnemyRoom;
 
@@ -131,6 +132,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
 
     private void OnDisable()
     {
+        StopGhostVoice();
         AllInstances.Remove(this);
         GlobalSaveSystem.Unregister(this);
         EventBroadcaster.Instance.RemoveActionAtObserver(EnemyEvents.ENEMY_CATCHED, PlayerCaught);
@@ -176,6 +178,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         if (!isEnemyActivated)
         {
             DisableAgentPhysics();
+            StopGhostVoice();
             return;
         }
 
@@ -221,6 +224,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
 
             DisableAgentPhysics(); 
             SetGhostVisuals(false);
+            StopGhostVoice();
             SetGhostGlitchSpeed(5f);
             Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
         }
@@ -299,8 +303,53 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         AudioSource ghostVoice = enemy.GetComponent<AudioSource>();
         if (ghostVoice != null)
         {
-            if (visible) ghostVoice.Play();
-            else ghostVoice.Stop();
+            if (visible) PlayGhostVoice();
+            else StopGhostVoice();
+        }
+    }
+
+    private void PlayGhostVoice()
+    {
+        if (enemy == null) return;
+
+        StopOtherGhostVoices();
+
+        AudioSource ghostVoice = enemy.GetComponent<AudioSource>();
+        if (ghostVoice == null) return;
+
+        ghostVoice.mute = false;
+        if (!ghostVoice.isPlaying)
+        {
+            ghostVoice.Play();
+        }
+
+        activeVoiceOwner = this;
+    }
+
+    private void StopGhostVoice()
+    {
+        if (enemy == null) return;
+
+        AudioSource ghostVoice = enemy.GetComponent<AudioSource>();
+        if (ghostVoice != null)
+        {
+            ghostVoice.Stop();
+        }
+
+        if (activeVoiceOwner == this)
+        {
+            activeVoiceOwner = null;
+        }
+    }
+
+    private void StopOtherGhostVoices()
+    {
+        foreach (EnemyStateMachine enemyStateMachine in AllInstances)
+        {
+            if (enemyStateMachine != null && enemyStateMachine != this)
+            {
+                enemyStateMachine.StopGhostVoice();
+            }
         }
     }
 
