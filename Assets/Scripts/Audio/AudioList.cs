@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -68,6 +69,7 @@ public class AudioList : MonoBehaviour
     private AudioSource musicAudioSource;
     private AudioSource surpriseEncounterAudioSource;
     private bool playerCaughtSFXActive;
+    private readonly List<AudioSource> pausedAudioSources = new();
 
     private void Awake()
     {
@@ -81,6 +83,8 @@ public class AudioList : MonoBehaviour
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
         EventBroadcaster.Instance.AddObserver(EventNames.EnemyEvents.ENEMY_CATCHED, PlaySurpriseEncounterSFX);
+        EventBroadcaster.Instance.AddObserver(EventNames.GameStateEvents.ON_GAME_PAUSE, PauseGameAudio);
+        EventBroadcaster.Instance.AddObserver(EventNames.GameStateEvents.ON_GAME_RESUME, ResumeGameAudio);
     }
 
     private void Start()
@@ -92,6 +96,8 @@ public class AudioList : MonoBehaviour
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
         EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.EnemyEvents.ENEMY_CATCHED, PlaySurpriseEncounterSFX);
+        EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.GameStateEvents.ON_GAME_PAUSE, PauseGameAudio);
+        EventBroadcaster.Instance.RemoveActionAtObserver(EventNames.GameStateEvents.ON_GAME_RESUME, ResumeGameAudio);
     }
 
     private void OnDestroy()
@@ -187,6 +193,34 @@ public class AudioList : MonoBehaviour
         musicAudioSource.clip = clip;
         musicAudioSource.loop = true;
         musicAudioSource.Play();
+    }
+
+    private void PauseGameAudio()
+    {
+        pausedAudioSources.Clear();
+
+        AudioSource[] audioSources = FindObjectsByType<AudioSource>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        foreach (AudioSource source in audioSources)
+        {
+            if (source == null || !source.isPlaying)
+                continue;
+
+            source.Pause();
+            pausedAudioSources.Add(source);
+        }
+    }
+
+    private void ResumeGameAudio()
+    {
+        foreach (AudioSource source in pausedAudioSources)
+        {
+            if (source != null)
+            {
+                source.UnPause();
+            }
+        }
+
+        pausedAudioSources.Clear();
     }
 
     private void RegisterButtonClickSFX()
