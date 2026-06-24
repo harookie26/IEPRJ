@@ -16,6 +16,13 @@ public class SaveManager : MonoBehaviour
 
     async void Start()
     {
+        GameState.EndCutscene();
+
+        if (EventBroadcaster.Instance != null)
+        {
+            EventBroadcaster.Instance.PostEvent(EventNames.CutsceneEvents.CUTSCENE_END);
+        }
+
         await InitializePlatformToolkit();
 
         if (!string.IsNullOrEmpty(SaveCourier.SaveSlotToLoad))

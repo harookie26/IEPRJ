@@ -29,12 +29,14 @@ public class DialogueTriggerManager : MonoBehaviour
     [Header("Paintbucket Dialogue")]
     [SerializeField] private DialogueEntry paintbucketDialogue;
 
+    [Header("Paintbucket Dialogue")]
+    [SerializeField] private VoicedDialogueSequence corruptedPaintingCutsceneDialogue;
+
     [Header("Channel Dialogue")]
     [SerializeField] private DialogueEntry channelDialogue;
 
     [Header("Find Corrupted Dialogue")]
-    [SerializeField] private DialogueEntry findCorruptedDialogue1;
-    [SerializeField] private DialogueEntry findCorruptedDialogue2;
+    [SerializeField] private VoicedDialogueSequence findCorruptedDialogue;
 
     [Header("Painting Backstory Dialogue")]
     [SerializeField] private List<DialogueEntry> paintingBackstoryDialogues;
@@ -146,7 +148,7 @@ public class DialogueTriggerManager : MonoBehaviour
         triggeredDialogueIDs.Add(6);
         triggeredDialogueIDs.Add(7);
 
-        DialogueManager.Instance.DisplaySequence(new[] { findCorruptedDialogue1, findCorruptedDialogue2 });
+        DialogueManager.Instance.DisplaySequence(findCorruptedDialogue);
     }
 
     public DialoguePlaybackHandle TriggerPaintingBGDialogue(string dialogueID)
@@ -275,6 +277,22 @@ public class DialogueTriggerManager : MonoBehaviour
         {
             triggeredDialogueIDs.Add(17);
             DialogueManager.Instance.DisplaySequence(flashlightDialogues);
+        }
+
+    }
+
+    public void TriggerCorruptedPaintingCutsceneDialogue()
+    {
+        if (SaveCourier.IsLoadingSave) return;
+
+        if (triggeredDialogueIDs.Contains(18))
+        {
+            return;
+        }
+        else
+        {
+            triggeredDialogueIDs.Add(18);
+            DialogueManager.Instance.DisplaySequence(corruptedPaintingCutsceneDialogue);
         }
 
     }

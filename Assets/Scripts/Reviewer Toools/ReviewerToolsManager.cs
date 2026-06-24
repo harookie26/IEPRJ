@@ -16,6 +16,9 @@ public class ReviewerToolsManager : MonoBehaviour
     private bool isVisible = true;
     private bool isGamePaused = false;
 
+    [Header("Reviewer Tools Activation")]
+    [SerializeField] bool isReviewerToolsEnabled = true;
+
     GameStateManager gameStateManager;
     PerformanceOverlay performanceOverlay;
     BuildVersionToggle buildVersionToggle;
@@ -43,6 +46,18 @@ public class ReviewerToolsManager : MonoBehaviour
             isVisible = false;
             reviewerMenuPanel.SetActive(isVisible);
         }
+
+        if(!isReviewerToolsEnabled)
+        {
+            if (reviewerMenuPanel != null)
+                reviewerMenuPanel.SetActive(false);
+            if (performanceOverlay != null)
+                performanceOverlay.SetVisible(false);
+            if (buildVersionToggle != null)
+                buildVersionToggle.SetVisible(false);
+        }
+
+  
     }
 
 
@@ -117,27 +132,30 @@ public class ReviewerToolsManager : MonoBehaviour
 
     private void HandleKeyToggles()
     {
-        if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.F))
-            if (performanceOverlay != null) performanceOverlay.ToggleFPS();
-
-        if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.B))
-            if (buildVersionToggle != null) buildVersionToggle.ToggleBuildVersion();
-
-
-        if (reviewerMenuPanel != null)
+        if(isReviewerToolsEnabled)
         {
-            if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(MenutoggleKey))
-                ToggleReviewerMenu();
+            if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.F))
+                if (performanceOverlay != null) performanceOverlay.ToggleFPS();
 
-            if (SceneManager.GetActiveScene().name == "Main")
+            if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.B))
+                if (buildVersionToggle != null) buildVersionToggle.ToggleBuildVersion();
+
+
+            if (reviewerMenuPanel != null)
             {
-                if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.R))
-                    OnGameRestart();
+                if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(MenutoggleKey))
+                    ToggleReviewerMenu();
 
-                if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.S))
-                    OnGameSaved();
+                if (SceneManager.GetActiveScene().name == "Main")
+                {
+                    if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.R))
+                        OnGameRestart();
+
+                    if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.S))
+                        OnGameSaved();
+                }
+
             }
-
         }
     }
 

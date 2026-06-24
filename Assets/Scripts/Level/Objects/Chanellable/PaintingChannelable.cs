@@ -57,6 +57,12 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [SerializeField] private float moveDuration = 4f;
     [SerializeField] private float viewDuration = 5f;
 
+    [Header("Optional Progress Cutscene")]
+    [Tooltip("Place an empty GameObject exactly where the camera should sit and look for the progress shot.")]
+    [SerializeField] private Transform progressCameraAnchor;
+    [Tooltip("How long to view the progress before returning to the player.")]
+    [SerializeField] private float progressViewDuration = 3f;
+
     private AudioSource sfxAudioSource;
     private AudioSource bgmAudioSource;
     private AudioSource restorationMusicAudioSource;
@@ -121,6 +127,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         {
             coverObject = transform.GetChild(0).gameObject;
         }
+
+        progressCameraAnchor = GameObject.FindWithTag("MainPaintingCutsceneTransform")?.transform;
     }
 
 
@@ -259,7 +267,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
 
-            StartCoroutine(WaitForInitialCutsceneToFinish());
+            //StartCoroutine(WaitForInitialCutsceneToFinish());
         }
 
         CheckpointManager checkpoint = checkpointManager;
@@ -287,7 +295,9 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             fadeDuration,
             moveDuration,
             viewDuration,
-            dialoguePlayback));
+            dialoguePlayback,
+            progressCameraAnchor,
+            progressViewDuration));
 
     }
 

@@ -225,7 +225,8 @@ public class BaseCollectible : MonoBehaviour, ICollectible
             else
             {
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT_PAINTING_START);
-                DialogueTriggerManager.Instance.TriggerChannelDialogue();
+                CorruptedTutorialCutscene.Instance.StartCorruptedPaintingCutscene();
+                DialogueTriggerManager.Instance.TriggerCorruptedPaintingCutsceneDialogue();
             }
         }
 

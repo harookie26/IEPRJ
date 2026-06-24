@@ -162,7 +162,7 @@ public class HintManager : MonoBehaviour
             triggeredHintIDs.Add(4);
         }
 
-        hintText.text = "Channel the Corrupted Painting in the Main Gallery";
+        hintText.text = "Channel the <b><color=#ff4444>Corrupted Painting</color></b> in the Main Gallery\nHold <b><color=#FFD700>[E]</color></b> to channel";
         if (isNewObjective) PlayObjectiveProgressSfx();
     }
 
@@ -255,7 +255,7 @@ public class HintManager : MonoBehaviour
                 hintText.text = "Collect the Paintbucket";
                 break;
             case 4:
-                hintText.text = "Channel the Corrupted Painting in the Main Gallery";
+                hintText.text = "Channel the <b><color=#ff4444>Corrupted Painting</color></b> in the Main Gallery\nHold <b><color=#FFD700>[E]</color></b> to channel";
                 break;
             case 5:
                 hintText.text = "Find and restore all 4 corrupted paintings and learn its secrets\n" +

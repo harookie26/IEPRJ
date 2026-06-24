@@ -14,7 +14,10 @@ public readonly struct PaintingCutsceneRequest
         float fadeDuration,
         float moveDuration,
         float viewDuration,
-        DialoguePlaybackHandle dialoguePlayback = null)
+        DialoguePlaybackHandle dialoguePlayback = null,
+        // --- NEW PROGRESS PARAMETERS ---
+        Transform progressCameraAnchor = null,
+        float progressViewDuration = 0f)
     {
         Target = target;
         CameraAnchor = cameraAnchor;
@@ -25,6 +28,8 @@ public readonly struct PaintingCutsceneRequest
         MoveDuration = moveDuration;
         ViewDuration = viewDuration;
         DialoguePlayback = dialoguePlayback;
+        ProgressCameraAnchor = progressCameraAnchor;
+        ProgressViewDuration = progressViewDuration;
     }
 
     public Transform Target { get; }
@@ -36,6 +41,9 @@ public readonly struct PaintingCutsceneRequest
     public float MoveDuration { get; }
     public float ViewDuration { get; }
     public DialoguePlaybackHandle DialoguePlayback { get; }
+
+    public Transform ProgressCameraAnchor { get; }
+    public float ProgressViewDuration { get; }
 }
 
 [DisallowMultipleComponent]
@@ -213,10 +221,28 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         yield return Fade(0f, 1f, request.FadeDuration);
 
+        if (request.ProgressCameraAnchor != null && request.ProgressViewDuration > 0f)
+        {
+            // Teleport the camera to the progress anchor while the screen is black
+            cutsceneCamera.transform.position = request.ProgressCameraAnchor.position;
+            cutsceneCamera.transform.rotation = request.ProgressCameraAnchor.rotation;
+
+            // Fade in to reveal the progress
+            yield return Fade(1f, 0f, request.FadeDuration);
+
+            // Wait and look at the progress
+            yield return new WaitForSeconds(request.ProgressViewDuration);
+
+            // Fade back to black
+            yield return Fade(0f, 1f, request.FadeDuration);
+        }
+
+        // Return control to the player
         cutsceneCamera.enabled = false;
         if (gameplayCamera != null)
             gameplayCamera.enabled = true;
 
+        // Fade the gameplay camera back in
         yield return Fade(1f, 0f, request.FadeDuration);
 
         ResumeEnemy();

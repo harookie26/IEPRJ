@@ -90,8 +90,13 @@ public class CorruptedTutorialCutscene : MonoBehaviour
 
     private IEnumerator CutsceneSequence()
     {
+        if (GameState.BeginCutscene())
+        {
+            EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_START);
+        }
+
         // 1. Setup Phase
-        if (mainCamera != null) mainCamera.enabled = false; // Turn OFF player camera
+        if (mainCamera != null) mainCamera.enabled = false; 
         cutsceneCamera.enabled = true;
 
         // Set initial alpha to 1 (fully black) via the Image's color
@@ -102,7 +107,6 @@ public class CorruptedTutorialCutscene : MonoBehaviour
         // 2. Loop through every corrupted painting we found
         for (int i = 0; i < _corruptedPaintings.Length; i++)
         {
-            // Safety check: ensure we mapped an anchor for this painting
             if (i >= cutsceneCameraAnchors.Count)
             {
                 Debug.LogWarning($"Missing camera anchor for painting {i}. Ending sequence.");
@@ -112,35 +116,32 @@ public class CorruptedTutorialCutscene : MonoBehaviour
             Transform currentAnchor = cutsceneCameraAnchors[i];
             PaintingChannelable currentPainting = _corruptedPaintings[i];
 
-            // Teleport camera to the anchor and apply the height offset
             Vector3 targetPosition = currentAnchor.position + (Vector3.up * heightOffset);
             cutsceneCamera.transform.position = targetPosition;
 
-            // FIX: Look directly at the exact geometric center of the painting's mesh
             Renderer paintingRenderer = currentPainting.GetComponentInChildren<Renderer>();
 
             if (paintingRenderer != null)
             {
-                // Look at the calculated true center of the 3D model
                 cutsceneCamera.transform.LookAt(paintingRenderer.bounds.center);
             }
             else
             {
-                // Fallback just in case the object has no mesh/renderer
                 cutsceneCamera.transform.LookAt(currentPainting.transform.position);
             }
 
-            // Fade In (Black -> Clear)
-            yield return StartCoroutine(Fade(1f, 0f, fadeDuration));
+            if (i == 0)
+            {
+                yield return StartCoroutine(Fade(1f, 0f, fadeDuration + 2f));
+            }
+            else
+            {
+                yield return StartCoroutine(Fade(1f, 0f, fadeDuration));
+            }
 
-            // Optional Polish: Slowly move the camera forward using moveDuration & paintingDistance
-            // yield return StartCoroutine(SlowDollyZoom(targetPosition, currentPainting.transform.position));
-
-            // Wait and look at the painting
             yield return new WaitForSeconds(viewDuration);
 
-            // Fade Out (Clear -> Black) to prepare for the next teleport
-            // (We skip this on the last loop so we can transition smoothly back to the player)
+
             if (i < _corruptedPaintings.Length - 1)
             {
                 yield return StartCoroutine(Fade(0f, 1f, fadeDuration));
@@ -148,15 +149,22 @@ public class CorruptedTutorialCutscene : MonoBehaviour
         }
 
         // 3. Cleanup & Return Control
-        yield return StartCoroutine(Fade(0f, 1f, fadeDuration)); // Final fade to black
+        yield return StartCoroutine(Fade(0f, 1f, fadeDuration));
 
-        cutsceneCamera.enabled = false;                                // Turn OFF cutscene camera
-        if (mainCamera != null) mainCamera.enabled = true; // Turn ON player camera
+        cutsceneCamera.enabled = false;
+        if (mainCamera != null) mainCamera.enabled = true;
 
-        // Fade back to clear so the player can see their main camera again
         yield return StartCoroutine(Fade(1f, 0f, fadeDuration));
 
         Debug.Log("Cutscene complete. Player control restored.");
+
+
+        if (GameState.EndCutscene())
+        {
+            EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_END);
+        }
+
+        DialogueTriggerManager.Instance.TriggerChannelDialogue();
     }
 
     // Helper Coroutine to handle the UI fading math
