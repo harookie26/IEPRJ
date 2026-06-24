@@ -206,6 +206,12 @@ public class BaseCollectible : MonoBehaviour, ICollectible
     {
         if (GetID == "Key")
         {
+            DrawerInteractable drawer = FindFirstObjectByType<DrawerInteractable>();
+            if (drawer != null && !drawer.hasOpened)
+            {
+                return;
+            }
+
             DialogueTriggerManager.Instance.TriggerKeyFoundDialogue();
         }
 

@@ -14,6 +14,11 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
 
     [SerializeField] private GameObject keyCollectible;
 
+    [Header("Interaction Gate")]
+    [SerializeField] private Transform interactionAnchor;
+    [SerializeField, Min(0.1f)] private float maxInteractDistance = 2f;
+    [SerializeField, Range(-1f, 1f)] private float frontDotThreshold = 0.2f;
+
     private AudioSource sfxAudioSource;
     private AudioList audioList;
 
@@ -44,6 +49,8 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
             closedPosition = drawerObject.transform.position;
             openPosition = closedPosition + openOffset;
         }
+
+        SetKeyColliderEnabled(hasOpened);
     }
 
     void Start()
@@ -75,17 +82,40 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
     {
         yield return null;
 
-        if (keyCollectible == null) yield break;
+        SetKeyColliderEnabled(true);
+    }
 
-        Collider keyCollider = keyCollectible.GetComponent<Collider>();
+    private void SetKeyColliderEnabled(bool enabled)
+    {
+        if (keyCollectible == null) return;
+
+        Collider keyCollider = keyCollectible.GetComponentInChildren<Collider>(true);
         if (keyCollider != null)
         {
-            keyCollider.enabled = true;
+            keyCollider.enabled = enabled;
         }
         else
         {
             Debug.LogWarning("DrawerInteractable: key collectible has no Collider.", keyCollectible);
         }
+    }
+
+    public bool CanInteractFrom(Transform interactorOrigin)
+    {
+        if (interactorOrigin == null || drawerObject == null || hasOpened || isSliding)
+            return false;
+
+        Transform anchor = interactionAnchor != null ? interactionAnchor : drawerObject.transform;
+        Vector3 toInteractor = interactorOrigin.position - anchor.position;
+
+        if (toInteractor.sqrMagnitude > maxInteractDistance * maxInteractDistance)
+            return false;
+
+        Vector3 frontDirection = openOffset.sqrMagnitude > 0.0001f
+            ? openOffset.normalized
+            : -anchor.forward;
+
+        return Vector3.Dot(frontDirection, toInteractor.normalized) >= frontDotThreshold;
     }
 
     // This handles sliding the drawer physically over time instead of using an Animation Clip
@@ -122,6 +152,7 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
 
         // Since this is loading a save file, skip the smooth slide and instantly snap it open
         drawerObject.transform.position = openPosition;
+        SetKeyColliderEnabled(true);
 
         // DESTROY ALL COLLIDERS ON THE DRAWER
         foreach (Collider col in GetComponents<Collider>())
@@ -146,6 +177,10 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
         if (this.hasOpened)
         {
             ApplyUnlockedState();
+        }
+        else
+        {
+            SetKeyColliderEnabled(false);
         }
     }
 }

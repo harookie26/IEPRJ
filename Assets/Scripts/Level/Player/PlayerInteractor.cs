@@ -319,6 +319,9 @@ public class PlayerInteractor : MonoBehaviour
             var interactComp = h.collider.GetComponentInParent<IInteractable>();
             if (interactComp != null)
             {
+                if (!CanInteractWith(interactComp))
+                    continue;
+
                 if (h.distance < bestInteractDist)
                 {
                     bestInteractDist = h.distance;
@@ -422,6 +425,9 @@ public class PlayerInteractor : MonoBehaviour
                 var interactComp = col.GetComponentInParent<IInteractable>();
                 if (interactComp != null)
                 {
+                    if (!CanInteractWith(interactComp))
+                        continue;
+
                     if (score < bestIAimDist)
                     {
                         bestIAimDist = score;
@@ -482,6 +488,16 @@ public class PlayerInteractor : MonoBehaviour
         }
 
         return false;
+    }
+
+    private bool CanInteractWith(IInteractable interactable)
+    {
+        if (interactable is DrawerInteractable drawer)
+        {
+            return drawer.CanInteractFrom(rayOrigin);
+        }
+
+        return true;
     }
 
     private void OnApplicationFocus(bool hasFocus)
