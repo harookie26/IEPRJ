@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using static EventNames.GameStateEvents;
 
@@ -11,6 +12,7 @@ public class PauseScript : MonoBehaviour
     [SerializeField] private GameObject saveGamePanel;
     [SerializeField] private GameObject confirmSavePanel;
     [SerializeField] private GameObject gameSavedText;
+    [SerializeField] private GameObject gameHUD;
 
     public string currentSaveSlot = "save1";
 
@@ -100,6 +102,7 @@ public class PauseScript : MonoBehaviour
     private void OpenPause()
     {
         _pauseOpen = true;
+        gameHUD.SetActive(false);
         if (pausePanel != null) pausePanel.SetActive(true);
         if (mainPausePanel != null) mainPausePanel.SetActive(true);
         _settingsOpen = false;
@@ -112,6 +115,7 @@ public class PauseScript : MonoBehaviour
     private void ClosePause()
     {
         _pauseOpen = false;
+        gameHUD.SetActive(true);
         if (pausePanel != null) pausePanel.SetActive(false);
         if (mainPausePanel != null) mainPausePanel.SetActive(false);
         EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
