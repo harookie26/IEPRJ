@@ -213,7 +213,6 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         }
         else
         {
-            //CancelUnfreezeTimer();
             StopCoroutine(nameof(DelayedRoamActivation));
 
             if (stunGlitchCoroutine != null)
@@ -224,6 +223,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
 
             DisableAgentPhysics(); 
             SetGhostVisuals(false);
+            SetGhostColliders(false);
             StopGhostVoice();
             SetGhostGlitchSpeed(5f);
             Debug.Log($"[{gameObject.name}] Put to sleep and hidden by Manager.");
@@ -520,6 +520,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         isFrozen = true;
         
         SetGhostVisuals(false);
+
     }
 
     public void Unfreeze()
@@ -534,9 +535,20 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         }
 
         SetGhostVisuals(true);
+
         PlayGhostVoice();
 
         ChangeState(RoamState);
+    }
+
+    private void SetGhostColliders(bool enabled)
+    {
+        if (enemy == null) return;
+        Collider[] colliders = enemy.GetComponentsInChildren<Collider>();
+        foreach (Collider c in colliders)
+        {
+            if (c != null) c.enabled = enabled;
+        }
     }
 
     private IEnumerator UnfreezeAfter(float seconds)
