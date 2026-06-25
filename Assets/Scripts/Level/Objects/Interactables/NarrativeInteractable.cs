@@ -1,15 +1,29 @@
+using Game.ObjectTypes;
 using Level.UI;
 using System;
-using UnityEngine;
-using System.Collections.Generic;
-using Game.ObjectTypes;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 [FoldableInspector]
 public class NarrativeInteractable : MonoBehaviour, IInteractable
 {
+    [SerializeField] private string interactableId;
+
+    [Header("Interaction Audio Settings")]
+    [Tooltip("SFX played when this object is interacted with. Pickable objects play these only when picked up.")]
+    [SerializeField] private List<AudioClip> interactionSFX = new();
+
+    [Tooltip("Prevent the interaction SFX from playing again after they have played once.")]
+    [SerializeField] private bool playSFXOnce = false;
+
+    [Header("Dialogue Settings")]
     [Tooltip("The list of dialogue entries that will be displayed when the player interacts with this object.")]
     [SerializeField] private List<DialogueEntry> dialogueList;
+
+    [Header("Pickup Settings")]
+    [Tooltip("Allow this object to be picked up for inspection. Disable for a plain interaction without a popup.")]
+    [SerializeField] private bool canBePickedUp = false;
 
     [Tooltip("The panel that will display UI Object when the player interacts with this object. e.g. newspaper, photos")]
     [SerializeField] private GameObject popUpDisplayPanel;
@@ -17,7 +31,7 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
     [SerializeField] private bool singleInteractionOnly = false;
 
     [SerializeField] private float dialogueInteractionCooldown = 0.5f; // Minimum time between interactions to prevent spamming
-    
+
     [Header("Highlight / Glow Settings")]
     [SerializeField, Tooltip("Should this interactable pulse its highlight/glow effect?")]
     private bool enableHighlight = true;
@@ -43,11 +57,15 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
     // Internal tracking state
     private float timeAccumulator;
     private bool hasBeenInteractedWith = false;
+    private bool hasPlayedInteractionSFX = false;
     private bool isInCooldown = false;
     private SpriteRenderer spriteRenderer;
     private List<Material> runtimeMaterials = new List<Material>();
     private List<Color> originalColors = new List<Color>();
 
+    private AudioList audioList;
+    private AudioSource audioSource;
+    private AudioSource pickableInteractionSFXSource;
 
     private void Awake()
     {
@@ -58,10 +76,17 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
         {
             SetupHighlightRenderer();
         }
+
+        audioList = FindFirstObjectByType<AudioList>();
+        audioSource = GetComponent<AudioSource>();
+
+        if (canBePickedUp)
+            SetupPickableInteractionSFXSource();
     }
 
     private void OnDestroy()
     {
+        StopPickableInteractionSFX();
         dialogueList = null;
         ClosePopUpDisplay();
 
@@ -152,52 +177,122 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        if (!hasBeenInteractedWith && !isInCooldown)
+        bool pickedUpThisInteraction = false;
+
+        if (canBePickedUp)
         {
-            if (dialogueList != null && dialogueList.Count > 0)
+            if (popUpDisplayPanel == null)
             {
-                var pendingEntries = new List<DialogueEntry>();
-
-                foreach (var entry in dialogueList)
-                {
-                    if (!DialogueManager.Instance.CheckifEntryAlreadyInQueue(entry.characterName, entry.text))
-                    {
-                        pendingEntries.Add(entry);
-                    }
-                }
-
-                if (pendingEntries.Count > 0)
-                    DialogueManager.Instance.DisplaySequence(pendingEntries);
+                Debug.LogWarning(
+                    "This NarrativeInteractable can be picked up, but no pop-up display panel is assigned.",
+                    this);
             }
-            else
-            {
-                Debug.Log("No dialogue entries assigned to this NarrativeInteractable.");
-            }
-
-
-            if(singleInteractionOnly) hasBeenInteractedWith = true; //set to true to prevent future interactions if this is meant to be a one-time interaction
-
-            isInCooldown = true;
-            StartCoroutine(InteractionCooldown()); //start cooldown timer to prevent spamming interactions and overwhelming the dialogue system with duplicate entries if the player clicks multiple times in quick succession
-
-        }
-
-        if (popUpDisplayPanel != null)
-        {
-            if (popUpDisplayPanel.activeSelf)
+            else if (popUpDisplayPanel.activeSelf)
             {
                 ClosePopUpDisplay();
             }
             else
             {
                 OpenPopUpDisplay();
+                pickedUpThisInteraction = true;
             }
+        }
+
+        if (!canBePickedUp || pickedUpThisInteraction)
+            TryPlayInteractionContent();
+
+        if (pickedUpThisInteraction && interactableId == "Newspaper")
+            if (audioList != null && audioSource != null)
+                audioSource.PlayOneShot(audioList.paperPickupSFX);
+    }
+
+    private void TryPlayInteractionContent()
+    {
+        if (hasBeenInteractedWith || isInCooldown)
+            return;
+
+        if (!playSFXOnce || !hasPlayedInteractionSFX)
+            PlayInteractionSFX();
+
+        if (dialogueList != null && dialogueList.Count > 0)
+        {
+            var pendingEntries = new List<DialogueEntry>();
+
+            foreach (var entry in dialogueList)
+            {
+                if (!DialogueManager.Instance.CheckifEntryAlreadyInQueue(entry.characterName, entry.text))
+                    pendingEntries.Add(entry);
+            }
+
+            if (pendingEntries.Count > 0)
+                DialogueManager.Instance.DisplaySequence(pendingEntries);
         }
         else
         {
-            Debug.Log("No pop-up display panel assigned to this NarrativeInteractable.");
+            Debug.Log("No dialogue entries assigned to this NarrativeInteractable.");
         }
 
+        if (singleInteractionOnly)
+            hasBeenInteractedWith = true;
+
+        isInCooldown = true;
+        StartCoroutine(InteractionCooldown());
+    }
+
+    private void PlayInteractionSFX()
+    {
+        if (interactionSFX == null || interactionSFX.Count == 0)
+            return;
+
+        bool playedAnyClip = false;
+        foreach (AudioClip clip in interactionSFX)
+        {
+            if (clip == null)
+                continue;
+
+            if (canBePickedUp && pickableInteractionSFXSource != null)
+            {
+                pickableInteractionSFXSource.PlayOneShot(clip);
+                playedAnyClip = true;
+            }
+            else if (AudioList.Current != null)
+            {
+                AudioList.Current.PlaySFX(clip);
+                playedAnyClip = true;
+            }
+            else if (audioSource != null)
+            {
+                audioSource.PlayOneShot(clip);
+                playedAnyClip = true;
+            }
+        }
+
+        hasPlayedInteractionSFX |= playedAnyClip;
+    }
+
+    private void SetupPickableInteractionSFXSource()
+    {
+        pickableInteractionSFXSource = gameObject.AddComponent<AudioSource>();
+        pickableInteractionSFXSource.playOnAwake = false;
+        pickableInteractionSFXSource.loop = false;
+        pickableInteractionSFXSource.spatialBlend = 0f;
+
+        GameObject globalSFXObject = GameObject.FindWithTag("SFXAudioSource");
+        AudioSource globalSFXSource = globalSFXObject != null
+            ? globalSFXObject.GetComponent<AudioSource>()
+            : null;
+
+        if (globalSFXSource != null)
+        {
+            pickableInteractionSFXSource.outputAudioMixerGroup = globalSFXSource.outputAudioMixerGroup;
+            pickableInteractionSFXSource.volume = globalSFXSource.volume;
+        }
+    }
+
+    private void StopPickableInteractionSFX()
+    {
+        if (pickableInteractionSFXSource != null)
+            pickableInteractionSFXSource.Stop();
     }
 
     private IEnumerator InteractionCooldown()
@@ -211,6 +306,7 @@ public class NarrativeInteractable : MonoBehaviour, IInteractable
         if (popUpDisplayPanel != null && popUpDisplayPanel.activeSelf)
         {
             popUpDisplayPanel.SetActive(false);
+            StopPickableInteractionSFX();
         }
     }
 

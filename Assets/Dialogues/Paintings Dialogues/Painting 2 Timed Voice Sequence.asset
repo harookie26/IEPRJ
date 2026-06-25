@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e64a84a6c1b496e9d878d241c45b38f, type: 3}
+  m_Name: Painting 2 Timed Voice Sequence
+  m_EditorClassIdentifier: Assembly-CSharp::Level.UI.VoicedDialogueSequence
+  voiceClip: {fileID: 8300000, guid: 597e735916add8d4aa3f3d1c93cb0343, type: 3}
+  lines:
+  - characterName: Georgie
+    text: This painting is called The Watcher.
+    startTime: 1
+    endTime: 4
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: You're working late again.
+    startTime: 4
+    endTime: 7
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Elena
+    text: I have an exhibition next week.
+    startTime: 7
+    endTime: 9
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: You've been saying that for months.
+    startTime: 9
+    endTime: 11
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Elena
+    text: What is that supposed to mean?
+    startTime: 11
+    endTime: 13
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: Nothing.
+    startTime: 14
+    endTime: 16
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: You've been different.
+    startTime: 16.5
+    endTime: 19
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Elena
+    text: Miguel...
+    startTime: 19
+    endTime: 21
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: I'm just worried.
+    startTime: 21
+    endTime: 24
+    fadeIn: 0.25
+    fadeOut: 0.25

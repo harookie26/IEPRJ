@@ -213,10 +213,17 @@ public class PaintbrushChanneller : MonoBehaviour
         while (true)
         {
             frameCount++;
-            if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
+            if (EventSystem.current != null
+                && EventSystem.current.currentSelectedGameObject != null
+                && (Cursor.visible || Cursor.lockState != CursorLockMode.Locked))
             {
                 yield return null;
                 continue;
+            }
+
+            if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
             }
 
             // Find all colliders within the sphere

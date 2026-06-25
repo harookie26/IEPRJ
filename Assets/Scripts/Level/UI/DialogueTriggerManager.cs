@@ -29,15 +29,19 @@ public class DialogueTriggerManager : MonoBehaviour
     [Header("Paintbucket Dialogue")]
     [SerializeField] private DialogueEntry paintbucketDialogue;
 
+    [Header("Paintbucket Dialogue")]
+    [SerializeField] private VoicedDialogueSequence corruptedPaintingCutsceneDialogue;
+
     [Header("Channel Dialogue")]
     [SerializeField] private DialogueEntry channelDialogue;
 
     [Header("Find Corrupted Dialogue")]
-    [SerializeField] private DialogueEntry findCorruptedDialogue1;
-    [SerializeField] private DialogueEntry findCorruptedDialogue2;
+    [SerializeField] private VoicedDialogueSequence findCorruptedDialogue;
 
     [Header("Painting Backstory Dialogue")]
     [SerializeField] private List<DialogueEntry> paintingBackstoryDialogues;
+    [SerializeField, Tooltip("Optional timed voice sequences for paint1, paint2, paint3, and paint4. If an entry is empty, the regular dialogue entries are used.")]
+    private List<VoicedDialogueSequence> paintingBackstorySequences;
 
     [Header("Final Painting Fixed Dialogue")]
     [SerializeField] private DialogueEntry finalPaintingFixedDialogue;
@@ -144,40 +148,67 @@ public class DialogueTriggerManager : MonoBehaviour
         triggeredDialogueIDs.Add(6);
         triggeredDialogueIDs.Add(7);
 
-        DialogueManager.Instance.DisplaySequence(new[] { findCorruptedDialogue1, findCorruptedDialogue2 });
+        DialogueManager.Instance.DisplaySequence(findCorruptedDialogue);
     }
 
-    public void TriggerPaintingBGDialogue(string dialogueID)
+    public DialoguePlaybackHandle TriggerPaintingBGDialogue(string dialogueID)
     {
-        if (SaveCourier.IsLoadingSave) return;
+        if (SaveCourier.IsLoadingSave) return null;
 
         switch (dialogueID)
         {
             case "paint1":
-                if (triggeredDialogueIDs.Contains(8)) return;
+                if (triggeredDialogueIDs.Contains(8)) return null;
                 triggeredDialogueIDs.Add(8);
-                DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[0] });
-                break;
+                return DisplayPaintingBackstory(0, 0);
             case "paint2":
-                if (triggeredDialogueIDs.Contains(9)) return;
+                if (triggeredDialogueIDs.Contains(9)) return null;
                 triggeredDialogueIDs.Add(9);
-                DialogueManager.Instance.DisplaySequence(new[]
-                {
-                    paintingBackstoryDialogues[1],
-                    paintingBackstoryDialogues[2]
-                });
-                break;
+                return DisplayPaintingBackstory(1, 1, 2);
             case "paint3":
-                if (triggeredDialogueIDs.Contains(10)) return;
+                if (triggeredDialogueIDs.Contains(10)) return null;
                 triggeredDialogueIDs.Add(10);
-                DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[3] });
-                break;
+                return DisplayPaintingBackstory(2, 3);
             case "paint4":
-                if (triggeredDialogueIDs.Contains(11)) return;
+                if (triggeredDialogueIDs.Contains(11)) return null;
                 triggeredDialogueIDs.Add(11);
-                DialogueManager.Instance.DisplaySequence(new[] { paintingBackstoryDialogues[4] });
-                break;
+                return DisplayPaintingBackstory(3, 4);
         }
+
+        return null;
+    }
+
+    private DialoguePlaybackHandle DisplayPaintingBackstory(int sequenceIndex, params int[] fallbackEntryIndices)
+    {
+        VoicedDialogueSequence sequence = null;
+        if (paintingBackstorySequences != null
+            && sequenceIndex >= 0
+            && sequenceIndex < paintingBackstorySequences.Count)
+        {
+            sequence = paintingBackstorySequences[sequenceIndex];
+        }
+
+        if (sequence != null)
+            return DialogueManager.Instance.DisplaySequence(sequence);
+
+        List<DialogueEntry> fallbackEntries = new List<DialogueEntry>();
+        foreach (int fallbackEntryIndex in fallbackEntryIndices)
+        {
+            if (paintingBackstoryDialogues == null
+                || fallbackEntryIndex < 0
+                || fallbackEntryIndex >= paintingBackstoryDialogues.Count)
+            {
+                Debug.LogWarning(
+                    $"[Dialogue] Missing painting backstory dialogue entry at index {fallbackEntryIndex}. " +
+                    $"Assign either paintingBackstorySequences[{sequenceIndex}] or enough paintingBackstoryDialogues entries.",
+                    this);
+                continue;
+            }
+
+            fallbackEntries.Add(paintingBackstoryDialogues[fallbackEntryIndex]);
+        }
+
+        return DialogueManager.Instance.DisplaySequence(fallbackEntries);
     }
 
     public void TriggerFinalPaintingFixedDialogue()
@@ -246,6 +277,22 @@ public class DialogueTriggerManager : MonoBehaviour
         {
             triggeredDialogueIDs.Add(17);
             DialogueManager.Instance.DisplaySequence(flashlightDialogues);
+        }
+
+    }
+
+    public void TriggerCorruptedPaintingCutsceneDialogue()
+    {
+        if (SaveCourier.IsLoadingSave) return;
+
+        if (triggeredDialogueIDs.Contains(18))
+        {
+            return;
+        }
+        else
+        {
+            triggeredDialogueIDs.Add(18);
+            DialogueManager.Instance.DisplaySequence(corruptedPaintingCutsceneDialogue);
         }
 
     }

@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Game.ObjectTypes;
+using System.Collections.Generic;
 using UnityEngine;
 
 [FoldableInspector]
@@ -206,6 +206,12 @@ public class BaseCollectible : MonoBehaviour, ICollectible
     {
         if (GetID == "Key")
         {
+            DrawerInteractable drawer = FindFirstObjectByType<DrawerInteractable>();
+            if (drawer != null && !drawer.hasOpened)
+            {
+                return;
+            }
+
             DialogueTriggerManager.Instance.TriggerKeyFoundDialogue();
         }
 
@@ -219,13 +225,15 @@ public class BaseCollectible : MonoBehaviour, ICollectible
             else
             {
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT_PAINTING_START);
-                DialogueTriggerManager.Instance.TriggerChannelDialogue();
+                CorruptedTutorialCutscene.Instance.StartCorruptedPaintingCutscene();
+                DialogueTriggerManager.Instance.TriggerCorruptedPaintingCutsceneDialogue();
             }
         }
 
         if (GetID == "Flashlight")
         {
-            if (LockedDoorInteractable.Instance.hasOpened == true) {
+            if (LockedDoorInteractable.Instance.hasOpened == true)
+            {
                 EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT3_START);
                 DialogueTriggerManager.Instance.TriggerPaintbucketDialogue();
             }
@@ -233,7 +241,6 @@ public class BaseCollectible : MonoBehaviour, ICollectible
             DialogueTriggerManager.Instance.TriggerFlashlightDialogue();
             TutorialManager.Instance.TriggerFlashlightTutorial();
         }
-
 
         var manager = FindFirstObjectByType<PlayerCollectibleManager>();
         if (manager != null)

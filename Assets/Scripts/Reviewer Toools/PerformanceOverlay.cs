@@ -73,6 +73,12 @@ public class PerformanceOverlay : MonoBehaviour
         ApplyVisibility();
     }
 
+    public void SetVisible(bool visible)
+    {
+        isVisible = visible;
+        ApplyVisibility();
+    }
+
     private void ApplyVisibility()
     {
         if (fpsText != null)

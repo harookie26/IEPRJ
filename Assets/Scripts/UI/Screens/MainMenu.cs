@@ -15,8 +15,6 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private GameObject playPanel;
     [SerializeField] private GameObject noSavedText;
 
-    [SerializeField] private SaveManager saveManager;
-
     private ScreenFader _screenFader;
     private SceneLoader _sceneLoader;
 
@@ -27,6 +25,7 @@ public class MainMenu : MonoBehaviour
     private void Start()
     {
         if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (noSavedText != null) noSavedText.SetActive(false);
 
         _screenFader = FindFirstObjectByType<ScreenFader>();
         _screenFader.StartCoroutine(_screenFader.FadeInSequence(1.0f));
@@ -86,6 +85,8 @@ public class MainMenu : MonoBehaviour
     // Called when the player clicks "Load Game"
     public async void LoadGame(string slotName)
     {
+        if (noSavedText != null) noSavedText.SetActive(false);
+
         bool saveExists = await CheckIfSaveExistsAsync(slotName);
 
         if (saveExists)
@@ -96,7 +97,7 @@ public class MainMenu : MonoBehaviour
         else
         {
             Debug.LogError($"Save slot '{slotName}' does not exist. Cannot load game.");
-            noSavedText.SetActive(true);
+            if (noSavedText != null) noSavedText.SetActive(true);
             Invoke("HideNoSavedText", 2f);
             return;
         }

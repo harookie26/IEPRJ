@@ -38,9 +38,14 @@ public class PaintbrushInteractor : MonoBehaviour
     {
         if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
         {
-            var selected = EventSystem.current.currentSelectedGameObject;
-            ExecuteEvents.Execute(selected, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler);
-            return;
+            if (Cursor.visible || Cursor.lockState != CursorLockMode.Locked)
+            {
+                var selected = EventSystem.current.currentSelectedGameObject;
+                ExecuteEvents.Execute(selected, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler);
+                return;
+            }
+
+            EventSystem.current.SetSelectedGameObject(null);
         }
 
         if (rayOrigin == null)

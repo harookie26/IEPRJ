@@ -1,4 +1,5 @@
 using Game.ObjectTypes;
+using Level.UI;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -32,9 +33,35 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     [Tooltip("Optional child object that acts as a cover and should be disabled upon completion.")]
     [SerializeField] private GameObject coverObject;
 
+    [Header("True Painting Material")]
+    [Tooltip("Optional child object that acts as a cover and should be disabled upon completion.")]
+    [SerializeField] private Material truePaintingMaterial;
+
+    [Tooltip("How long the crossfade between corrupted and true material should take.")]
+    [SerializeField] private float materialFadeDuration = 3.0f;
+
     [Header("Painting ID")]
     [Tooltip("Unique string ID for this painting. Assign in inspector (e.g. 'paint1').")]
     [SerializeField] private string paintingId = "";
+
+    [Header("Dynamic Cutscene Settings")]
+    [Tooltip("Place this transform strictly in front of the visible canvas. If omitted, a child named CutsceneCameraAnchor is used.")]
+    [SerializeField] private Transform cutsceneCameraAnchor;
+    [Tooltip("Distance from the painting to start the camera.")]
+    [SerializeField] private float startDistance = .5f;
+    [Tooltip("Distance from the painting to end the camera zoom.")]
+    [SerializeField] private float endDistance = 2.0f;
+    [Tooltip("Adjust this if the camera is too high or too low (e.g., 1.5 for eye level).")]
+    [SerializeField] private float heightOffset = 0f;
+    [SerializeField] private float fadeDuration = 1f;
+    [SerializeField] private float moveDuration = 4f;
+    [SerializeField] private float viewDuration = 5f;
+
+    [Header("Optional Progress Cutscene")]
+    [Tooltip("Place an empty GameObject exactly where the camera should sit and look for the progress shot.")]
+    [SerializeField] private Transform progressCameraAnchor;
+    [Tooltip("How long to view the progress before returning to the player.")]
+    [SerializeField] private float progressViewDuration = 3f;
 
     private AudioSource sfxAudioSource;
     private AudioSource bgmAudioSource;
@@ -55,6 +82,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
 
     void Awake()
     {
+        EnsureCutsceneCameraAnchor();
+
         audioList = FindAnyObjectByType<AudioList>();
         //Find the SFX audio source object in the scene by its tag
         GameObject audioObject1 = GameObject.FindWithTag("SFXAudioSource");
@@ -98,6 +127,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         {
             coverObject = transform.GetChild(0).gameObject;
         }
+
+        progressCameraAnchor = GameObject.FindWithTag("MainPaintingCutsceneTransform")?.transform;
     }
 
 
@@ -160,7 +191,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     }
 
     private void Update()
-    {       
+    {
         if (isChanneling && !isCompleted)
         {
             channelTimer += Time.deltaTime;
@@ -211,27 +242,171 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             Debug.LogWarning("[PaintingChannelable] No CorruptedRoomsManager instance found to restore room.");
         }
 
-        /*if (pauseOnConsecutiveCompletions && consecutiveCompletions >= Mathf.Max(1, consecutiveCompletionsToPause))
+        if (truePaintingMaterial != null)
         {
-            Debug.Log($"[PaintingChannelable] Consecutive completions threshold reached ({consecutiveCompletions}). Pausing game (Time.timeScale = 0).");
-            Time.timeScale = 0f;
-        }*/
+            Renderer paintingRenderer = GetComponent<Renderer>();
 
-        // Additional completion effects can be added here.
+            if (paintingRenderer != null)
+            {
+                StartCoroutine(FadeMaterialRoutine(paintingRenderer));
+            }
+        }
+
         if (sfxAudioSource != null && audioList != null && audioList.paintingRestorationCompleteSFX != null)
             sfxAudioSource.PlayOneShot(audioList.paintingRestorationCompleteSFX);
 
-        if(paintingId != "000") // Only post the event if a valid painting ID is assigned.
+        DialoguePlaybackHandle dialoguePlayback = null;
+
+        if (paintingId != "000")
         {
-            DialogueTriggerManager.Instance.TriggerPaintingBGDialogue(paintingId);
+            dialoguePlayback = DialogueTriggerManager.Instance.TriggerPaintingBGDialogue(paintingId);
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.ADD_PAINTING_RESTORED);
         }
-        else if(paintingId == "000")
+        else if (paintingId == "000")
         {
             DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
+
+            //StartCoroutine(WaitForInitialCutsceneToFinish());
         }
 
-        checkpointManager.SaveCheckpoint();
+        CheckpointManager checkpoint = checkpointManager;
+        if (checkpoint != null)
+            checkpoint.SaveCheckpoint();
+        else
+            Debug.LogWarning("[PaintingChannelable] No CheckpointManager found. Continuing without saving a checkpoint.");
+
+        PaintingCutsceneDirector director = PaintingCutsceneDirector.Instance;
+        if (director == null)
+            director = FindFirstObjectByType<PaintingCutsceneDirector>();
+
+        if (director == null)
+        {
+            Debug.LogWarning("[PaintingChannelable] No PaintingCutsceneDirector found. Skipping cutscene.");
+            return;
+        }
+
+        director.TryPlay(new PaintingCutsceneRequest(
+            transform,
+            EnsureCutsceneCameraAnchor(),
+            startDistance,
+            endDistance,
+            heightOffset,
+            fadeDuration,
+            moveDuration,
+            viewDuration,
+            dialoguePlayback,
+            progressCameraAnchor,
+            progressViewDuration));
+
+    }
+
+    public Transform EnsureCutsceneCameraAnchor()
+    {
+        if (cutsceneCameraAnchor != null)
+            return cutsceneCameraAnchor;
+
+        cutsceneCameraAnchor = transform.Find("CutsceneCameraAnchor");
+
+        if (cutsceneCameraAnchor == null)
+        {
+            GameObject anchorObject = new GameObject("CutsceneCameraAnchor");
+            cutsceneCameraAnchor = anchorObject.transform;
+            cutsceneCameraAnchor.SetParent(transform, false);
+
+            // The painting FBXs in this project are imported with their visible
+            // canvas facing local -Y. Project that axis horizontally because the
+            // models themselves are mounted with a 90-degree rotation in-scene.
+            Vector3 frontDirection = Vector3.ProjectOnPlane(-transform.up, Vector3.up);
+            if (frontDirection.sqrMagnitude < 0.0001f)
+                frontDirection = Vector3.ProjectOnPlane(-transform.forward, Vector3.up);
+            if (frontDirection.sqrMagnitude < 0.0001f)
+                frontDirection = Vector3.forward;
+
+            frontDirection.Normalize();
+            float anchorDistance = Mathf.Max(startDistance, endDistance, 0.5f);
+            cutsceneCameraAnchor.position = transform.position + frontDirection * anchorDistance;
+            cutsceneCameraAnchor.rotation = Quaternion.LookRotation(-frontDirection, Vector3.up);
+        }
+
+        return cutsceneCameraAnchor;
+    }
+
+    private System.Collections.IEnumerator FadeMaterialRoutine(Renderer paintingRenderer)
+    {
+        Material[] mats = paintingRenderer.materials;
+
+        yield return new WaitForSeconds(2.0f);
+
+        if (mats.Length > 1)
+        {
+            Material corruptedMat = mats[1];
+
+            Material transitionMat = new Material(corruptedMat);
+
+            transitionMat.EnableKeyword("_EMISSION");
+
+            mats[1] = transitionMat;
+            paintingRenderer.materials = mats;
+
+            float halfDuration = materialFadeDuration / 2f;
+            float elapsedTime = 0f;
+
+            Color glowColor = Color.white * 3f;
+
+            while (elapsedTime < halfDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / halfDuration);
+                float eased = Mathf.SmoothStep(0f, 1f, t);
+
+                if (transitionMat.HasProperty("_EmissionColor"))
+                    transitionMat.SetColor("_EmissionColor", Color.Lerp(Color.black, glowColor, eased));
+
+                yield return null;
+            }
+
+            if (transitionMat.HasProperty("_EmissionColor"))
+                transitionMat.SetColor("_EmissionColor", glowColor);
+
+            if (transitionMat.HasProperty("_BaseMap")) transitionMat.SetTexture("_BaseMap", truePaintingMaterial.GetTexture("_BaseMap"));
+            if (transitionMat.HasProperty("_MainTex")) transitionMat.mainTexture = truePaintingMaterial.mainTexture;
+
+            elapsedTime = 0f;
+
+            while (elapsedTime < halfDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / halfDuration);
+                float eased = Mathf.SmoothStep(0f, 1f, t);
+
+                if (transitionMat.HasProperty("_EmissionColor"))
+                    transitionMat.SetColor("_EmissionColor", Color.Lerp(glowColor, Color.black, eased));
+
+                yield return null;
+            }
+
+            mats[1] = truePaintingMaterial;
+            paintingRenderer.materials = mats;
+
+            Destroy(transitionMat);
+
+            Debug.Log($"[PaintingChannelable] Successfully finished Emission Flash transition on {gameObject.name}");
+        }
+    }
+
+    private System.Collections.IEnumerator WaitForInitialCutsceneToFinish()
+    {
+        // Calculate the total time the first cutscene takes to play.
+        // (Fade In + Move + View + Fade Out)
+        float totalCutsceneTime = (fadeDuration * 2) + moveDuration + viewDuration + 0.5f;
+
+        // Wait for that exact amount of time
+        yield return new WaitForSeconds(totalCutsceneTime);
+
+        if (CorruptedTutorialCutscene.Instance != null)
+        {
+            CorruptedTutorialCutscene.Instance.StartCorruptedPaintingCutscene();
+        }
     }
 }

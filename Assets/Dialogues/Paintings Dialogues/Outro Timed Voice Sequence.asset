@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e64a84a6c1b496e9d878d241c45b38f, type: 3}
+  m_Name: Outro Timed Voice Sequence
+  m_EditorClassIdentifier: Assembly-CSharp::Level.UI.VoicedDialogueSequence
+  voiceClip: {fileID: 8300000, guid: 9ccfa7556972a4a44b19003b7e837375, type: 3}
+  lines:
+  - characterName: Georgie
+    text: "Look at it, Miguel. Look at what you\u2019ve been hiding."
+    startTime: 0
+    endTime: 5.4
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: Who is that guy in the middle?
+    startTime: 5.5
+    endTime: 7.5
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Elena
+    text: Noooo!! Stop please! Not Georgie!
+    startTime: 7.5
+    endTime: 10.5
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: Everything I built was for you! I gave you this museum. I gave you everything!
+    startTime: 11
+    endTime: 16.5
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Elena
+    text: "Miguel, listen to me\u2014"
+    startTime: 16.5
+    endTime: 18
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: They praise you.
+    startTime: 18.3
+    endTime: 19.8
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: They worship you.
+    startTime: 19.8
+    endTime: 21.5
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: And I'm nothing.
+    startTime: 24
+    endTime: 27
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: You took everything from me.
+    startTime: 29.6
+    endTime: 33.8
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Elena
+    text: Miguel, stop!
+    startTime: 34
+    endTime: 35.5
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Georgie
+    text: My name was Georgie.
+    startTime: 42
+    endTime: 44.2
+    fadeIn: 0.25
+    fadeOut: 0.25
+  - characterName: Miguel
+    text: I  was your son.
+    startTime: 45.5
+    endTime: 47
+    fadeIn: 0.25
+    fadeOut: 0.25

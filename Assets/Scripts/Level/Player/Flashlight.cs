@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using static EventNames.GameStateEvents;
 
 public class Flashlight : MonoBehaviour
@@ -14,6 +15,7 @@ public class Flashlight : MonoBehaviour
     [SerializeField] private GameObject flashlightObject;
     [SerializeField] private GameObject flashlightBeam;
     [SerializeField] private TextMeshProUGUI batteryText;
+    [SerializeField] private Image batteryFill;
     [SerializeField] private Transform camTransform;
 
     [Header("Battery Settings")]
@@ -42,6 +44,7 @@ public class Flashlight : MonoBehaviour
 
     private Light flashlightLight;
 
+    private EnemyStateMachine activeFrozenGhost = null;
     public void SetIsOn(bool value) => isOn = value;
 
     void Start()
@@ -83,6 +86,14 @@ public class Flashlight : MonoBehaviour
     {
         if (!canToggle) return;
 
+        // Keep the current beam state, but block toggling, battery drain, and
+        // ghost stunning until gameplay control resumes.
+        if (GameState.IsCutsceneActive)
+        {
+            UpdateUI();
+            return;
+        }
+
         HandleInput();
 
         if (isOn && currentBattery > 0)
@@ -90,10 +101,14 @@ public class Flashlight : MonoBehaviour
             DrainBattery();
             CheckForGhost();
         }
-        else if (currentBattery <= 0 && isOn)
+        else
         {
-            isOn = false;
-            UpdateBeamState();
+            if (currentBattery <= 0 && isOn)
+            {
+                isOn = false;
+                UpdateBeamState();
+            }
+            ReleaseFrozenGhost();
         }
 
         UpdateUI();
@@ -127,11 +142,30 @@ public class Flashlight : MonoBehaviour
 
     private void CheckForGhost()
     {
-        if (TryGetGhostInLight(out EnemyStateMachine ghost))
+        if (TryGetGhostInLight(out EnemyStateMachine detectedGhost))
         {
-            // Call the Freeze function with your custom duration
-            ghost.Freeze(ghost.StunDuration);
-            Debug.Log("Ghost is caught in light - Stun timer paused.");
+            if (activeFrozenGhost != null && activeFrozenGhost != detectedGhost)
+            {
+                activeFrozenGhost.Unfreeze();
+            }
+
+            activeFrozenGhost = detectedGhost;
+            activeFrozenGhost.Freeze(); 
+            Debug.Log($"Ghost [{activeFrozenGhost.gameObject.name}] caught in light - Frozen.");
+        }
+        else
+        {
+            ReleaseFrozenGhost();
+        }
+    }
+
+    private void ReleaseFrozenGhost()
+    {
+        if (activeFrozenGhost != null)
+        {
+            Debug.Log($"Flashlight contact lost with [{activeFrozenGhost.gameObject.name}] - Unfreezing.");
+            activeFrozenGhost.Unfreeze();
+            activeFrozenGhost = null;
         }
     }
 
@@ -253,7 +287,12 @@ public class Flashlight : MonoBehaviour
     {
         if (batteryText != null)
         {
-            batteryText.text = $"Battery: {Mathf.CeilToInt(currentBattery)}%";
+            batteryText.text = $"{Mathf.CeilToInt(currentBattery)}%";
+        }
+
+        if (batteryFill != null)
+        {
+            batteryFill.fillAmount = currentBattery / maxBattery;
         }
     }
 

@@ -7,6 +7,8 @@ using UnityEngine.AI;
 public class CheckpointManager : MonoBehaviour
 {
     private int _currentCheckpointIndex;
+    private bool _respawnInProgress;
+    public bool IsRespawnInProgress => _respawnInProgress;
 
     [SerializeField] private bool forceRespawnAtLobby = true;
     [SerializeField] private Transform playerSpawnPoint;
@@ -50,12 +52,33 @@ public class CheckpointManager : MonoBehaviour
 
     public void SaveCheckpoint()
     {
-        _currentCheckpointIndex = _gameState.currentLevelProgress;
+        GameStateManager gameState = _gameState;
+        if (gameState != null)
+            _currentCheckpointIndex = gameState.currentLevelProgress;
+        else
+            Debug.LogWarning("[CheckpointManager] GameStateManager not found. Keeping the current checkpoint index.");
 
-        _playerSavedPosition = _player.transform.position;
-        _playerSavedRotation = _player.transform.eulerAngles;
+        GameObject player = _player;
+        if (player == null)
+        {
+            Debug.LogWarning("[CheckpointManager] Player not found. Checkpoint was not updated.");
+            return;
+        }
 
-        _enemySavedPosition = _enemy.transform.position;
+        _playerSavedPosition = player.transform.position;
+        _playerSavedRotation = player.transform.eulerAngles;
+
+        if (_enemy == null)
+            _enemy = GameObject.FindWithTag("Enemy");
+
+        if (_enemy != null)
+        {
+            _enemySavedPosition = _enemy.transform.position;
+        }
+        else
+        {
+            Debug.LogWarning("[CheckpointManager] Enemy not found. Saving player checkpoint without updating enemy position.");
+        }
 
         //if (_enemyStateMachine != null)
         //{
@@ -95,6 +118,14 @@ public class CheckpointManager : MonoBehaviour
 
     public void ReturnToCheckpoint() // respawn logic
     {
+        if (_respawnInProgress)
+        {
+            return;
+        }
+
+        _respawnInProgress = true;
+        EnemyStateMachine.StopAllChaseAudio();
+
         if (forceRespawnAtLobby)
         {
             StartCoroutine(ReturnToInitialSpawn());
@@ -181,6 +212,9 @@ public class CheckpointManager : MonoBehaviour
         // 8. Fade back in and restore control
         yield return StartCoroutine(_screenFader.FadeInSequence(0.5f));
         _playerMovement.SetCanMove(true);
+        EnemyStateMachine.StopAllChaseAudio();
+        AudioList.Current?.StopSurpriseEncounterSFX();
+        _respawnInProgress = false;
 
         Debug.Log($"[CheckpointManager] Instant respawn completed. PlayerPos: {player.transform.position}");
     }
@@ -218,12 +252,18 @@ public class CheckpointManager : MonoBehaviour
         {
             // Hide all HUDs if no _enemy or when aborting
             if (_uiManager != null) _uiManager.HideAll();
+            EnemyStateMachine.StopAllChaseAudio();
+            AudioList.Current?.StopSurpriseEncounterSFX();
+            _respawnInProgress = false;
             yield break;
         }
 
         if (_enemyStateMachine == null)
         {
             if (_uiManager != null) _uiManager.HideAll();
+            EnemyStateMachine.StopAllChaseAudio();
+            AudioList.Current?.StopSurpriseEncounterSFX();
+            _respawnInProgress = false;
             yield break;
         }
 
@@ -282,6 +322,9 @@ public class CheckpointManager : MonoBehaviour
 
         yield return StartCoroutine(_screenFader.FadeInSequence(0.5f));
         _playerMovement.SetCanMove(true);
+        EnemyStateMachine.StopAllChaseAudio();
+        AudioList.Current?.StopSurpriseEncounterSFX();
+        _respawnInProgress = false;
 
         Debug.Log($"[CheckpointManager] Returned to checkpoint at index {_currentCheckpointIndex}. PlayerPos: {_playerSavedPosition}, EnemyPos: {_enemySavedPosition}, EnemyState: {_enemySavedStateName}");
     }

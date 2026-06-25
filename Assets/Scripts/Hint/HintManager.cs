@@ -13,6 +13,8 @@ public class HintManager : MonoBehaviour
     public int corruptedPaintingsChanneled = 0;
 
     private List<int> triggeredHintIDs;
+    private AudioList audioList;
+    private AudioSource sfxAudioSource;
 
     private void Awake()
     {
@@ -26,6 +28,14 @@ public class HintManager : MonoBehaviour
         else if (Instance != this)
         {
             Destroy(gameObject);
+            return;
+        }
+
+        audioList = FindAnyObjectByType<AudioList>();
+        GameObject audioObject = GameObject.FindWithTag("SFXAudioSource");
+        if (audioObject != null)
+        {
+            sfxAudioSource = audioObject.GetComponent<AudioSource>();
         }
     }
 
@@ -87,6 +97,7 @@ public class HintManager : MonoBehaviour
         OpenHint();
         corruptedPaintingsChanneled++;
         SetHint4();
+        PlayObjectiveProgressSfx();
 
         if (corruptedPaintingsChanneled >= 4)
         {
@@ -103,38 +114,63 @@ public class HintManager : MonoBehaviour
     private void SetHint2()
     {
         OpenHint();
-        triggeredHintIDs.Add(2);
+        bool isNewObjective = !triggeredHintIDs.Contains(2);
+        if (isNewObjective)
+        {
+            triggeredHintIDs.Add(2);
+        }
+
         hintText.text = "Go to the Main Gallery";
+        if (isNewObjective) PlayObjectiveProgressSfx();
     }
 
     public void SetHintFindFlashlight()
     {
         OpenHint();
-        triggeredHintIDs.Add(7);
-        if(!PlayerCollectibleManager.Instance.HasCollected("Flashlight"))
+        if (!PlayerCollectibleManager.Instance.HasCollected("Flashlight"))
         {
+            bool isNewObjective = !triggeredHintIDs.Contains(7);
+            if (isNewObjective)
+            {
+                triggeredHintIDs.Add(7);
+            }
+
             hintText.text = "Find a flashlight somewhere in the other rooms";
+            if (isNewObjective) PlayObjectiveProgressSfx();
         }
     }
 
     public void SetHint3()
     {
         OpenHint();
-        triggeredHintIDs.Add(3);
+        bool isNewObjective = !triggeredHintIDs.Contains(3);
+        if (isNewObjective)
+        {
+            triggeredHintIDs.Add(3);
+        }
+
         hintText.text = "Collect the Paintbucket";
+        if (isNewObjective) PlayObjectiveProgressSfx();
     }
 
     public void SetHintCorruptedPaintingTutorial()
     {
         OpenHint();
-        triggeredHintIDs.Add(4);
-        hintText.text = "Channel the Corrupted Painting in the Main Gallery";
+        bool isNewObjective = !triggeredHintIDs.Contains(4);
+        if (isNewObjective)
+        {
+            triggeredHintIDs.Add(4);
+        }
+
+        hintText.text = "Channel the <b><color=#ff4444>Corrupted Painting</color></b> in the Main Gallery\nHold <b><color=#FFD700>[E]</color></b> to channel";
+        if (isNewObjective) PlayObjectiveProgressSfx();
     }
 
     private void SetHint4()
     {
         OpenHint();
-        if (!triggeredHintIDs.Contains(5))
+        bool isNewObjective = !triggeredHintIDs.Contains(5);
+        if (isNewObjective)
         {
             triggeredHintIDs.Add(5);
         }
@@ -145,15 +181,49 @@ public class HintManager : MonoBehaviour
             corruptedPaintingsChanneled + "/4 paintings restored";
         }
 
+        if (isNewObjective && corruptedPaintingsChanneled == 0)
+        {
+            PlayObjectiveProgressSfx();
+        }
     }
 
     private void SetHint5()
     {
         OpenHint();
-        triggeredHintIDs.Add(6);
+        if (!triggeredHintIDs.Contains(6))
+        {
+            triggeredHintIDs.Add(6);
+        }
 
         DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
         hintText.text = "Go back to the main gallery";
+    }
+
+    private void PlayObjectiveProgressSfx()
+    {
+        if (StairsInputManager.IsTransferInProgress)
+        {
+            return;
+        }
+
+        if (audioList == null)
+        {
+            audioList = FindAnyObjectByType<AudioList>();
+        }
+
+        if (sfxAudioSource == null)
+        {
+            GameObject audioObject = GameObject.FindWithTag("SFXAudioSource");
+            if (audioObject != null)
+            {
+                sfxAudioSource = audioObject.GetComponent<AudioSource>();
+            }
+        }
+
+        if (sfxAudioSource != null && audioList != null && audioList.objectivesSFX != null)
+        {
+            sfxAudioSource.PlayOneShot(audioList.objectivesSFX);
+        }
     }
 
     public void OpenHint()
@@ -185,7 +255,7 @@ public class HintManager : MonoBehaviour
                 hintText.text = "Collect the Paintbucket";
                 break;
             case 4:
-                hintText.text = "Channel the Corrupted Painting in the Main Gallery";
+                hintText.text = "Channel the <b><color=#ff4444>Corrupted Painting</color></b> in the Main Gallery\nHold <b><color=#FFD700>[E]</color></b> to channel";
                 break;
             case 5:
                 hintText.text = "Find and restore all 4 corrupted paintings and learn its secrets\n" +

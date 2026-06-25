@@ -1,0 +1,250 @@
+fileFormatVersion: 2
+guid: 75fbb5ece876ccc4a931d9178067c251
+ModelImporter:
+  serializedVersion: 24200
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Elev_light_buttons_screen.004
+    second: {fileID: 2100000, guid: 36ad3fea6d4530e4181a6804a1310099, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: elev_buttons outside.001
+    second: {fileID: 2100000, guid: 24ceabe191713dd4fa990a99a735c114, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: elev_doors.004
+    second: {fileID: 2100000, guid: 43f83c997f9fc7046b8df4d496bd6b1c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: elevator_cabin.004
+    second: {fileID: 2100000, guid: d9422704a86c8ec4884c05d3b8479319, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: handrail_mirrors.005
+    second: {fileID: 2100000, guid: 044e3e3ae60da4e41964978d56096768, type: 2}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_Elev_light_buttons_screen_BaseColor
+    second: {fileID: 2800000, guid: adde91d5c979744408d19b438f75b0c3, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_Elev_light_buttons_screen_Emissive
+    second: {fileID: 2800000, guid: 7172ab72721f9ef4891b4114e96400d0, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_Elev_light_buttons_screen_Metallic
+    second: {fileID: 2800000, guid: 3d74f41f9b144e643af6697f32ed4729, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_Elev_light_buttons_screen_Normal
+    second: {fileID: 2800000, guid: 097c748bc9b7070418461108dc2fee83, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_Elev_light_buttons_screen_Roughness
+    second: {fileID: 2800000, guid: 90e70512665d090408001e78c1c50e08, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_buttons_out_elev_buttons outside_BaseColor
+    second: {fileID: 2800000, guid: e3472a8fb69aeae439c7a73bc469f8aa, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_buttons_out_elev_buttons outside_Metallic
+    second: {fileID: 2800000, guid: e7785da60decdfa4b9b75d6b3e8815bb, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_buttons_out_elev_buttons outside_Normal
+    second: {fileID: 2800000, guid: 96b1cc31def571f42b6cfe9de61048e7, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_buttons_out_elev_buttons outside_Roughness
+    second: {fileID: 2800000, guid: 17cdd1e7e6c36374684c208aa84f01f3, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_doors_DefaultMaterial_BaseColor
+    second: {fileID: 2800000, guid: 411cd9d1d0e5a1443afe761ebd99495f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_doors_DefaultMaterial_Metallic
+    second: {fileID: 2800000, guid: 86c0c993755ff914f8d3f3d20cb440fa, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_doors_DefaultMaterial_Normal
+    second: {fileID: 2800000, guid: 398de369c453d574cb46dbf3b933d1ab, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_doors_DefaultMaterial_Roughness
+    second: {fileID: 2800000, guid: 70f3e333a5466784196b27913cf061c7, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_elevator_cabin_BaseColor
+    second: {fileID: 2800000, guid: 5174f1301a274fe459384b670bc9aa2a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_elevator_cabin_Emissive
+    second: {fileID: 2800000, guid: a17d15a94b768924a8a162d5ec1a69b9, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_elevator_cabin_Metallic
+    second: {fileID: 2800000, guid: 38ede04a1ba0ab54380a0c8a167aad44, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_elevator_cabin_Normal
+    second: {fileID: 2800000, guid: 56d9d43e7695a9f46ae73b6e82e8a396, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_elevator_cabin_Roughness
+    second: {fileID: 2800000, guid: 25941d17df3975f48b3c4c255c85a8ab, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_handrail_mirrors_BaseColor
+    second: {fileID: 2800000, guid: f0c810efa9656fd419807d43308ef02f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_handrail_mirrors_Emissive
+    second: {fileID: 2800000, guid: ca297439420efe241853972af4d4b95c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_handrail_mirrors_Metallic
+    second: {fileID: 2800000, guid: e3c79abc7e6fac34ab41edbb2b366cf1, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_handrail_mirrors_Normal
+    second: {fileID: 2800000, guid: caa5b2a1667ec754c981a788ee129c02, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: elevator_handrail_mirrors_Roughness
+    second: {fileID: 2800000, guid: 7c2e0fec5e1fc444e9e6027b18a8929c, type: 3}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

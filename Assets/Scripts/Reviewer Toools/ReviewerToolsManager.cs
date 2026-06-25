@@ -16,6 +16,9 @@ public class ReviewerToolsManager : MonoBehaviour
     private bool isVisible = true;
     private bool isGamePaused = false;
 
+    [Header("Reviewer Tools Activation")]
+    [SerializeField] bool isReviewerToolsEnabled = true;
+
     GameStateManager gameStateManager;
     PerformanceOverlay performanceOverlay;
     BuildVersionToggle buildVersionToggle;
@@ -24,6 +27,7 @@ public class ReviewerToolsManager : MonoBehaviour
     PlayerMovement playerMovement;
 
     SaveManager saveManager;
+    CheckpointManager checkpointManager;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -32,6 +36,7 @@ public class ReviewerToolsManager : MonoBehaviour
         performanceOverlay = FindObjectOfType<PerformanceOverlay>();
         buildVersionToggle = FindObjectOfType<BuildVersionToggle>();
         saveManager = FindObjectOfType<SaveManager>();
+        checkpointManager = FindObjectOfType<CheckpointManager>();
 
         playerCamera = FindObjectOfType<PlayerCamera>();
         playerMovement = FindObjectOfType<PlayerMovement>();
@@ -41,6 +46,18 @@ public class ReviewerToolsManager : MonoBehaviour
             isVisible = false;
             reviewerMenuPanel.SetActive(isVisible);
         }
+
+        if(!isReviewerToolsEnabled)
+        {
+            if (reviewerMenuPanel != null)
+                reviewerMenuPanel.SetActive(false);
+            if (performanceOverlay != null)
+                performanceOverlay.SetVisible(false);
+            if (buildVersionToggle != null)
+                buildVersionToggle.SetVisible(false);
+        }
+
+  
     }
 
 
@@ -73,8 +90,25 @@ public class ReviewerToolsManager : MonoBehaviour
     public void OnGameRestart()
     {
         Time.timeScale = 1f;
-        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME); // optional safety
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
+
+        isVisible = false;
+        if (reviewerMenuPanel != null)
+            reviewerMenuPanel.SetActive(false);
+
+        gameStateManager?.UpdateCursorVisibility(false);
+
+        if (checkpointManager == null)
+            checkpointManager = FindObjectOfType<CheckpointManager>();
+
+        if (checkpointManager != null)
+        {
+            checkpointManager.StartReturnToCheckpoint();
+        }
+        else
+        {
+            Debug.LogError("[ReviewerTools] Cannot respawn: CheckpointManager was not found.");
+        }
     }
 
     public void OnGameSaved()
@@ -98,27 +132,30 @@ public class ReviewerToolsManager : MonoBehaviour
 
     private void HandleKeyToggles()
     {
-        if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.F))
-            if (performanceOverlay != null) performanceOverlay.ToggleFPS();
-
-        if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.B))
-            if (buildVersionToggle != null) buildVersionToggle.ToggleBuildVersion();
-
-
-        if (reviewerMenuPanel != null)
+        if(isReviewerToolsEnabled)
         {
-            if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(MenutoggleKey))
-                ToggleReviewerMenu();
+            if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.F))
+                if (performanceOverlay != null) performanceOverlay.ToggleFPS();
 
-            if (SceneManager.GetActiveScene().name == "Main")
+            if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.B))
+                if (buildVersionToggle != null) buildVersionToggle.ToggleBuildVersion();
+
+
+            if (reviewerMenuPanel != null)
             {
-                if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.R))
-                    OnGameRestart();
+                if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(MenutoggleKey))
+                    ToggleReviewerMenu();
 
-                if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.S))
-                    OnGameSaved();
+                if (SceneManager.GetActiveScene().name == "Main")
+                {
+                    if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.R))
+                        OnGameRestart();
+
+                    if ((Input.GetKey(toggleKeyControl1) || Input.GetKey(toggleKeyControl2)) && Input.GetKeyDown(KeyCode.S))
+                        OnGameSaved();
+                }
+
             }
-
         }
     }
 

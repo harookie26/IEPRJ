@@ -16,8 +16,7 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
     [SerializeField] private bool isflashlightHintTrigger = false;
 
     [SerializeField] private GameObject model;
-    [SerializeField] private AudioClip sfx;
-    [SerializeField] private EnemyStateMachine enemyStateMachine;
+    [SerializeField] private List<AudioClip> sfx = new();
 
     [Header("Animation Setup")]
     [SerializeField] bool hasAnimation = false;
@@ -65,9 +64,10 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
             hasTriggered = true;
             if (isflashlightHintTrigger)
             {
+                AudioList.Current?.PlayPostEnemyIntroAmbient();
                 DialogueTriggerManager.Instance.TriggerEnemyIntroDialogue();
             }
-            sfxAudioSource.PlayOneShot(sfx);
+            PlaySFX();
 
             EnemyManager manager = FindFirstObjectByType<EnemyManager>();
             if (manager != null)
@@ -86,6 +86,31 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
             else
             {
                 if (model != null) model.SetActive(false);
+            }
+        }
+    }
+
+    private void PlaySFX()
+    {
+        if (sfx == null)
+        {
+            return;
+        }
+
+        foreach (AudioClip clip in sfx)
+        {
+            if (clip == null)
+            {
+                continue;
+            }
+
+            if (AudioList.Current != null)
+            {
+                AudioList.Current.PlaySFX(clip);
+            }
+            else if (sfxAudioSource != null)
+            {
+                sfxAudioSource.PlayOneShot(clip);
             }
         }
     }
@@ -150,6 +175,8 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
         var data = (EnemyIntroSaveData)state;
         this.hasTriggered = data.hasTriggered;
 
+        SyncEnemyIntroAmbient();
+
         if (this.hasTriggered && model != null)
         {
             model.SetActive(false);
@@ -170,9 +197,28 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
 
         this.hasTriggered = data.hasTriggered;
 
+        SyncEnemyIntroAmbient();
+
         if (this.hasTriggered && model != null)
         {
             model.SetActive(false);
+        }
+    }
+
+    private void SyncEnemyIntroAmbient()
+    {
+        if (!isflashlightHintTrigger || AudioList.Current == null)
+        {
+            return;
+        }
+
+        if (hasTriggered)
+        {
+            AudioList.Current.PlayPostEnemyIntroAmbient();
+        }
+        else
+        {
+            AudioList.Current.PlayPreEnemyIntroAmbient();
         }
     }
 }

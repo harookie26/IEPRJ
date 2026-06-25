@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using static EventNames.GameStateEvents;
 
@@ -6,10 +7,12 @@ using static EventNames.GameStateEvents;
 public class PauseScript : MonoBehaviour
 {
     [SerializeField] private GameObject pausePanel;
+    [SerializeField] private GameObject mainPausePanel;
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private GameObject saveGamePanel;
     [SerializeField] private GameObject confirmSavePanel;
     [SerializeField] private GameObject gameSavedText;
+    [SerializeField] private GameObject gameHUD;
 
     public string currentSaveSlot = "save1";
 
@@ -71,6 +74,8 @@ public class PauseScript : MonoBehaviour
             gameSavedText.SetActive(true);
             Invoke("HideGameSavedText", 2f); //
         }
+
+        CloseSaveGame();
     }
 
     private void HideGameSavedText()
@@ -97,7 +102,9 @@ public class PauseScript : MonoBehaviour
     private void OpenPause()
     {
         _pauseOpen = true;
+        gameHUD.SetActive(false);
         if (pausePanel != null) pausePanel.SetActive(true);
+        if (mainPausePanel != null) mainPausePanel.SetActive(true);
         _settingsOpen = false;
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
@@ -108,8 +115,9 @@ public class PauseScript : MonoBehaviour
     private void ClosePause()
     {
         _pauseOpen = false;
+        gameHUD.SetActive(true);
         if (pausePanel != null) pausePanel.SetActive(false);
-
+        if (mainPausePanel != null) mainPausePanel.SetActive(false);
         EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
         _gameState.UpdateCursorVisibility(_pauseOpen);
     }
@@ -144,6 +152,7 @@ public class PauseScript : MonoBehaviour
         if (settingsPanel != null) settingsPanel.SetActive(false);
         _pauseOpen = true;
         if (pausePanel != null) pausePanel.SetActive(true);
+        if (mainPausePanel != null) mainPausePanel.SetActive(true);
     }
 
     public void ToggleSaveGame()
@@ -162,6 +171,7 @@ public class PauseScript : MonoBehaviour
     {
         _saveGameOpen = true;
         if (saveGamePanel != null) saveGamePanel.SetActive(true);
+        if (mainPausePanel != null) mainPausePanel.SetActive(false);
         EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
         _gameState.UpdateCursorVisibility(_saveGameOpen);
     }
@@ -171,6 +181,7 @@ public class PauseScript : MonoBehaviour
         _saveGameOpen = false;
         confirmSavePanel.SetActive(false);
         if (saveGamePanel != null) saveGamePanel.SetActive(false);
+        if (mainPausePanel != null) mainPausePanel.SetActive(true);
     }
 
 }

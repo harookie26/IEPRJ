@@ -8,6 +8,7 @@ public class PlayerSaveHandler : MonoBehaviour
     public PlayerStateMachine stateMachine;
     public Flashlight flashlight;
     public LockedDoorInteractable lockedDoor;
+    public DrawerInteractable drawer;
     public PlayerCollectibleManager collectibleManager;
     public DialogueTriggerManager dialogueTriggerManager;
     public InteractionTrigger enemyIntroTrigger;
@@ -23,6 +24,7 @@ public class PlayerSaveHandler : MonoBehaviour
         if (movement == null) movement = GetComponent<PlayerMovement>();
         if (stateMachine == null) stateMachine = GetComponent<PlayerStateMachine>();
         if (flashlight == null) flashlight = GetComponentInChildren<Flashlight>();
+        if (drawer == null) drawer = GetComponent<DrawerInteractable>();
         if (lockedDoor == null) lockedDoor = GetComponent<LockedDoorInteractable>();
         if (collectibleManager == null) collectibleManager = GetComponent<PlayerCollectibleManager>();
         if (dialogueTriggerManager == null) dialogueTriggerManager = GetComponent<DialogueTriggerManager>();
@@ -52,6 +54,7 @@ public class PlayerSaveHandler : MonoBehaviour
             playerState = stateMachine.CurrentState,
             flashlight = flashlight.GetSaveData(),
             lockeddoorState = lockedDoor.GetSaveData(),
+            drawerState = drawer.GetSaveData(),
             dialogue = dialogueTriggerManager.GetSaveData(),
             enemyIntro = enemyIntroTrigger.GetSaveData(),
             hint = hintManager.GetSaveData(),
@@ -84,10 +87,11 @@ public class PlayerSaveHandler : MonoBehaviour
         stateMachine.LoadSaveData(data.playerState);
         flashlight.LoadSaveData(data.flashlight);
         lockedDoor.LoadSaveData(data.lockeddoorState);
+        drawer.LoadSaveData(data.drawerState);
         enemyIntroTrigger.LoadSaveData(data.enemyIntro);
         hintManager.LoadSaveData(data.hint);
         tutorialManager.LoadSaveData(data.tutorial);
-        enemyStateMachine.LoadSaveData(data.enemyState);
+        //enemyStateMachine.LoadSaveData(data.enemyState);
         paintbrushChanneller.LoadSaveData(data.paintbrush);
         corruptedPaintingsRandomizer.LoadSaveData(data.randomizedPaintings);
         Debug.Log("[Master Save] ALL player data loaded successfully!");

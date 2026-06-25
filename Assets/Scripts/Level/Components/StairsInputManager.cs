@@ -4,10 +4,14 @@ using static EventNames;
 
 public class StairsInputManager : MonoBehaviour
 {
+    public static bool IsTransferInProgress { get; private set; }
+
     private bool _isCutsceneActive = false;
     private GameObject _player;
     private PlayerMovement _playerMovement;
     private UIManager _uiManager;
+    private AudioList _audioList;
+    private AudioSource _audioSource;
 
     [Header("Stair Cooldown")]
     [Tooltip("Seconds after initiating a stair transfer before another can be started.")]
@@ -24,20 +28,26 @@ public class StairsInputManager : MonoBehaviour
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
         EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
 
-        _player = GameObject.FindGameObjectWithTag("Player");
-        _playerMovement = FindFirstObjectByType<PlayerMovement>();
+        ResolvePlayerReferences();
         _uiManager = FindFirstObjectByType<UIManager>();
+        _audioList = FindAnyObjectByType<AudioList>();
+        _audioSource = GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
     }
 
     private void OnDisable()
     {
+        IsTransferInProgress = false;
         EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
         EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
     }
 
     private void Update()
     {
-        if (_isCutsceneActive || _player == null)
+        if (_isCutsceneActive)
+            return;
+
+        ResolvePlayerReferences();
+        if (_player == null)
             return;
 
         if (_isTransferring)
@@ -58,7 +68,7 @@ public class StairsInputManager : MonoBehaviour
             return;
         }
 
-        if (doorToUse.isInaccesibleOnGameStart)
+        if (doorToUse.isInaccesibleOnGameStart || doorToUse.fullyinaccesible)
         {
             _uiManager?.ClearForcedHUD();
             DialogueTriggerManager.Instance.TriggerInaccessibleAreaDialogue();
@@ -86,31 +96,42 @@ public class StairsInputManager : MonoBehaviour
         }
 
         _isTransferring = true;
+        IsTransferInProgress = true;
 
         if (screenFader == null)
         {
             Debug.LogWarning("[StairsInputManager] ScreenFader not found. Moving immediately without fade.");
             doorToUse.MoveToLinkedDoor();
             _isTransferring = false;
+            IsTransferInProgress = false;
             yield break;
         }
 
+        ResolvePlayerReferences();
         if (_playerMovement == null)
         {
             Debug.LogError("[StairsInputManager] PlayerMovement is null! Cannot proceed with transfer.");
             _isTransferring = false;
+            IsTransferInProgress = false;
             yield break;
         }
 
-        if (enemy == null)
+        //if (enemy == null)
+        //{
+        //    Debug.LogError("[StairsInputManager] EnemyStateMachine is null! Cannot proceed with transfer.");
+        //    _isTransferring = false;
+        //    IsTransferInProgress = false;
+        //    yield break;
+        //}
+
+        if (_audioList != null && _audioList.elevatorSFX != null && _audioSource != null)
         {
-            Debug.LogError("[StairsInputManager] EnemyStateMachine is null! Cannot proceed with transfer.");
-            _isTransferring = false;
-            yield break;
+            _audioSource.PlayOneShot(_audioList.elevatorSFX);
         }
 
         _playerMovement.SetCanMove(false);
-        if (enemy.isEnemyActivated)
+
+        if (enemy != null && enemy.isEnemyActivated)
         {
             enemy.Freeze();
         }
@@ -124,9 +145,18 @@ public class StairsInputManager : MonoBehaviour
             yield return new WaitForSecondsRealtime(postFadeDelaySeconds);
         }
 
+        // Keep the elevator clip contained to the pre-teleport transition.
+        _audioSource?.Stop();
+
         if (doorToUse != null)
         {
             doorToUse.MoveToLinkedDoor();
+
+            // PlayerMovement uses Rigidbody interpolation. Keep the screen black
+            // until physics has accepted both parts of the teleported pose so the
+            // destination rotation is never rendered at the previous position.
+            yield return new WaitForFixedUpdate();
+            Physics.SyncTransforms();
         }
         else
         {
@@ -135,11 +165,34 @@ public class StairsInputManager : MonoBehaviour
 
         yield return StartCoroutine(screenFader.FadeInSequence(0.25f));
 
-        if (enemy.isEnemyActivated)
+        if (enemy != null && enemy.isEnemyActivated)
         {
             enemy.Unfreeze();
         }
         _playerMovement.SetCanMove(true);
         _isTransferring = false;
+        IsTransferInProgress = false;
+    }
+
+    private void ResolvePlayerReferences()
+    {
+        if (_player == null)
+        {
+            _player = GameObject.FindGameObjectWithTag("Player");
+        }
+
+        if (_playerMovement == null && _player != null)
+        {
+            _playerMovement = _player.GetComponent<PlayerMovement>();
+            _playerMovement ??= _player.GetComponentInChildren<PlayerMovement>(true);
+            _playerMovement ??= _player.GetComponentInParent<PlayerMovement>(true);
+        }
+
+        _playerMovement ??= FindFirstObjectByType<PlayerMovement>(FindObjectsInactive.Include);
+
+        if (_player == null && _playerMovement != null)
+        {
+            _player = _playerMovement.gameObject;
+        }
     }
 }

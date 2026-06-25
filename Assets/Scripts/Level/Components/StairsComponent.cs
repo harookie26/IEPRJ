@@ -24,12 +24,20 @@ public class StairsComponent : MonoBehaviour, IStair
     [Header("Vertical Teleport Settings")]
     [SerializeField] private VerticalDoorDirection verticalDirection = VerticalDoorDirection.None;
 
+    [Header("Teleport Exit Settings")]
+    [SerializeField, Min(0f)] private float minimumExitDistance = 1.25f;
+    [SerializeField, Min(0f)] private float exitClearance = 0.35f;
+    [SerializeField, Min(0f)] private float safePositionSearchDistance = 2f;
+    [SerializeField, Min(1)] private int safePositionSearchSteps = 8;
+
     [Header("Animation Setup")]
     [SerializeField] private GameObject model;
     [SerializeField] bool hasAnimation = false;
     [SerializeField] bool disableAfterAnimation = false;
     [SerializeField] private Animator modelAnimator;
     [SerializeField] private string animationStateName = "TriggerAnimation";
+    [SerializeField, Min(0.01f)] private float replacementDoorOpenDuration = 1.25f;
+    [SerializeField, Min(0.001f)] private float replacementDoorOpenDistance = 0.018f;
 
     private Transform leftDoor;
     private Transform rightDoor;
@@ -40,12 +48,14 @@ public class StairsComponent : MonoBehaviour, IStair
     private Quaternion rightDoorInitialRotation;
     private Vector3 rightDoorInitialScale;
     private bool hasInitialDoorPose;
+    private bool useReplacementDoorAnimation;
 
     public VerticalDoorDirection VerticalDirection => verticalDirection;
 
     private bool _playerInZone = false;
 
     public bool isInaccesibleOnGameStart = false;
+    public bool fullyinaccesible = false;
 
     public static StairsComponent CurrentDoor;
     public int Id => GetInstanceID();
@@ -64,7 +74,6 @@ public class StairsComponent : MonoBehaviour, IStair
         if (partnerDoor == null)
         {
             Debug.LogError($"[Door:{name}] Missing partner door reference.");
-            return;
         }
 
         if (hasAnimation && modelAnimator == null && model != null)
@@ -78,10 +87,9 @@ public class StairsComponent : MonoBehaviour, IStair
             CacheInitialDoorPose();
         }
 
-        _player = GameObject.FindGameObjectWithTag("Player");
+        ResolvePlayerReferences();
         uiManager = FindFirstObjectByType<UIManager>();
         _doorInputManager = FindFirstObjectByType<StairsInputManager>();
-        _playerMovement = FindFirstObjectByType<PlayerMovement>();
 
         triggerZone = GetComponent<Collider>() ?? triggerZone;
 
@@ -154,7 +162,7 @@ public class StairsComponent : MonoBehaviour, IStair
             return false;
         }
 
-        if (_playerMovement == null)
+        if (!ResolvePlayerReferences())
         {
             Debug.LogError($"[Stairs:{name}] PlayerMovement reference is NULL!");
             return false;
@@ -165,6 +173,8 @@ public class StairsComponent : MonoBehaviour, IStair
 
     public void MoveToLinkedDoor()
     {
+        ResolvePlayerReferences();
+
         if (partnerDoor == null)
         {
             Debug.LogError($"[Stairs:{name}] Partner door not assigned. Teleport failed.");
@@ -178,31 +188,100 @@ public class StairsComponent : MonoBehaviour, IStair
         }
 
         Vector3 playerPosBefore = _player.transform.position;
-        Vector3 targetPos = partnerDoor.transform.position;
+        Vector3 outward = partnerDoor.GetOutwardDirection();
+        Vector3 targetPos = partnerDoor.GetExitPosition(outward);
+        Quaternion targetRotation = Quaternion.LookRotation(outward, Vector3.up);
 
-        Rigidbody playerRb = _player.GetComponent<Rigidbody>();
-        if (playerRb != null)
+        if (_playerMovement != null &&
+            _playerMovement.TryFindSafeTeleportPosition(
+                targetPos,
+                outward,
+                safePositionSearchDistance,
+                safePositionSearchSteps,
+                out Vector3 safeTargetPos))
         {
-            playerRb.MovePosition(targetPos);
+            targetPos = safeTargetPos;
         }
-        else
-        {
-            _player.transform.position = targetPos;
-        }
-
-        Vector3 playerPosAfter = _player.transform.position;
-        Debug.Log($"  - Player position after move: {playerPosAfter}");
-        Debug.Log($"  - Position changed: {playerPosBefore != playerPosAfter}");
-        Debug.Log($"[Stairs:{name}] Teleported player from {playerPosBefore} to {playerPosAfter}");
 
         if (_playerMovement != null)
         {
-            _playerMovement.ResetVelocity();
+            _playerMovement.TeleportToPose(targetPos, targetRotation);
         }
         else
         {
-            Debug.LogWarning($"[Stairs:{name}] PlayerMovement not found. Could not reset velocity.");
+            _player.transform.SetPositionAndRotation(targetPos, targetRotation);
         }
+
+        Vector3 playerPosAfter = _player.transform.position;
+        Debug.Log(
+            $"[Stairs:{name}] Teleported player from {playerPosBefore} to {playerPosAfter}, " +
+            $"facing outward {outward}.");
+    }
+
+    private bool ResolvePlayerReferences()
+    {
+        if (_player == null)
+        {
+            _player = GameObject.FindGameObjectWithTag("Player");
+        }
+
+        if (_playerMovement == null && _player != null)
+        {
+            _playerMovement = _player.GetComponent<PlayerMovement>();
+            _playerMovement ??= _player.GetComponentInChildren<PlayerMovement>(true);
+            _playerMovement ??= _player.GetComponentInParent<PlayerMovement>(true);
+        }
+
+        _playerMovement ??= FindFirstObjectByType<PlayerMovement>(FindObjectsInactive.Include);
+
+        if (_player == null && _playerMovement != null)
+        {
+            _player = _playerMovement.gameObject;
+        }
+
+        return _player != null && _playerMovement != null;
+    }
+
+    private Vector3 GetOutwardDirection()
+    {
+        Vector3 outward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+        if (outward.sqrMagnitude <= 0.0001f)
+        {
+            outward = Vector3.forward;
+        }
+
+        return outward.normalized;
+    }
+
+    private Vector3 GetExitPosition(Vector3 outward)
+    {
+        Collider destinationTrigger = triggerZone != null ? triggerZone : GetComponent<Collider>();
+        Vector3 exitOrigin = transform.position;
+        float triggerExtent = 0f;
+
+        if (destinationTrigger != null)
+        {
+            Bounds bounds = destinationTrigger.bounds;
+            exitOrigin.x = bounds.center.x;
+            exitOrigin.z = bounds.center.z;
+            triggerExtent =
+                Mathf.Abs(outward.x) * bounds.extents.x +
+                Mathf.Abs(outward.z) * bounds.extents.z;
+        }
+
+        float playerRadius = 0.5f;
+        CapsuleCollider capsule = _player != null ? _player.GetComponent<CapsuleCollider>() : null;
+        if (capsule != null)
+        {
+            Vector3 scale = capsule.transform.lossyScale;
+            playerRadius = capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+        }
+
+        float exitDistance = Mathf.Max(
+            minimumExitDistance,
+            triggerExtent + playerRadius + exitClearance);
+
+        return exitOrigin + outward * exitDistance;
     }
 
     public Vector3 GetEntryPointFor(IRoom fromRoom)
@@ -224,6 +303,12 @@ public class StairsComponent : MonoBehaviour, IStair
     {
         if (!hasAnimation)
         {
+            yield break;
+        }
+
+        if (useReplacementDoorAnimation)
+        {
+            yield return AnimateReplacementDoorsOpen();
             yield break;
         }
 
@@ -257,6 +342,33 @@ public class StairsComponent : MonoBehaviour, IStair
             //else
             //    model.SetActive(true);
         }
+    }
+
+    private IEnumerator AnimateReplacementDoorsOpen()
+    {
+        float duration = Mathf.Max(0.01f, replacementDoorOpenDuration);
+        float openDistance = Mathf.Max(0.001f, replacementDoorOpenDistance);
+        Vector3 leftOpenPosition = leftDoorInitialPosition + Vector3.left * openDistance;
+        Vector3 rightOpenPosition = rightDoorInitialPosition + Vector3.right * openDistance;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+            leftDoor.localPosition = Vector3.LerpUnclamped(
+                leftDoorInitialPosition,
+                leftOpenPosition,
+                progress);
+            rightDoor.localPosition = Vector3.LerpUnclamped(
+                rightDoorInitialPosition,
+                rightOpenPosition,
+                progress);
+            yield return null;
+        }
+
+        leftDoor.localPosition = leftOpenPosition;
+        rightDoor.localPosition = rightOpenPosition;
     }
 
     public void ResetAnimationPose()
@@ -346,8 +458,15 @@ public class StairsComponent : MonoBehaviour, IStair
         }
 
         Transform animationRoot = FindAnimationRoot(modelAnimator.transform);
-        leftDoor = animationRoot.Find("left_door.003");
-        rightDoor = animationRoot.Find("right_door.003");
+        leftDoor = FindDescendant(animationRoot, "elevator_doors_left");
+        rightDoor = FindDescendant(animationRoot, "elevator_doors_right");
+        useReplacementDoorAnimation = leftDoor != null && rightDoor != null;
+
+        if (!useReplacementDoorAnimation)
+        {
+            leftDoor = FindDescendant(animationRoot, "left_door.003");
+            rightDoor = FindDescendant(animationRoot, "right_door.003");
+        }
 
         if (leftDoor == null || rightDoor == null)
         {
@@ -362,6 +481,19 @@ public class StairsComponent : MonoBehaviour, IStair
         rightDoorInitialRotation = rightDoor.localRotation;
         rightDoorInitialScale = rightDoor.localScale;
         hasInitialDoorPose = true;
+    }
+
+    private static Transform FindDescendant(Transform root, string objectName)
+    {
+        foreach (Transform candidate in root.GetComponentsInChildren<Transform>(true))
+        {
+            if (candidate.name == objectName)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private static void RestoreLocalTransform(

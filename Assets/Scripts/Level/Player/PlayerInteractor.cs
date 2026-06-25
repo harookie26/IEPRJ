@@ -1,7 +1,6 @@
-﻿using System.Collections;
+﻿using Game.ObjectTypes;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Game.ObjectTypes;
 
 [DisallowMultipleComponent]
 [FoldableInspector]
@@ -41,11 +40,12 @@ public class PlayerInteractor : MonoBehaviour
     private AudioList audioList;
 
     // Reuse a static buffer to avoid GC from SphereCastAll/OverlapSphere allocations.
-    private static readonly RaycastHit[] s_HitBuffer = new RaycastHit[16];
-    private static readonly Collider[] s_ColliderBuffer = new Collider[16];
+    private static readonly RaycastHit[] s_HitBuffer = new RaycastHit[64];
+    private static readonly Collider[] s_ColliderBuffer = new Collider[64];
 
     // Ensure we reliably subscribe to InputManager even if it isn't initialized when this component is enabled
     private bool inputSubscribed = false;
+    private InputManager subscribedInputManager;
 
     private void Reset()
     {
@@ -77,33 +77,47 @@ public class PlayerInteractor : MonoBehaviour
 
     private void OnEnable()
     {
-        // Try immediate subscribe; if Instance isn't ready yet we'll subscribe in Update
-        if (InputManager.Instance != null)
-        {
-            InputManager.Instance.OnInteractPressed += HandleInteract;
-            inputSubscribed = true;
-        }
+        TrySubscribeInput();
     }
 
     private void OnDisable()
     {
-        if (inputSubscribed && InputManager.Instance != null)
+        if (inputSubscribed && subscribedInputManager != null)
         {
-            InputManager.Instance.OnInteractPressed -= HandleInteract;
+            subscribedInputManager.OnInteractPressed -= HandleInteract;
         }
         inputSubscribed = false;
+        subscribedInputManager = null;
     }
 
     private void Update()
     {
-        // If we haven't subscribed yet, try to subscribe when InputManager becomes available.
-        if (!inputSubscribed && InputManager.Instance != null)
+        // If InputManager appears late or is replaced, keep the interact listener on the active instance.
+        if (!inputSubscribed || subscribedInputManager != InputManager.Instance)
         {
-            InputManager.Instance.OnInteractPressed += HandleInteract;
-            inputSubscribed = true;
+            TrySubscribeInput();
         }
 
         UpdateInteractHud();
+    }
+
+    private void TrySubscribeInput()
+    {
+        if (inputSubscribed && subscribedInputManager != null)
+        {
+            subscribedInputManager.OnInteractPressed -= HandleInteract;
+        }
+
+        inputSubscribed = false;
+        subscribedInputManager = null;
+
+        if (InputManager.Instance == null)
+            return;
+
+        subscribedInputManager = InputManager.Instance;
+        subscribedInputManager.OnInteractPressed -= HandleInteract;
+        subscribedInputManager.OnInteractPressed += HandleInteract;
+        inputSubscribed = true;
     }
 
     private void HandleInteract()
@@ -111,9 +125,16 @@ public class PlayerInteractor : MonoBehaviour
         Debug.Log("[PlayerInteractor] HandleInteract called");
         if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
         {
-            var selected = EventSystem.current.currentSelectedGameObject;
-            ExecuteEvents.Execute(selected, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler);
-            return;
+            // A UI selection can survive an elevator/fade transition. It should
+            // consume submit input only while the player is actually in UI mode.
+            if (Cursor.visible || Cursor.lockState != CursorLockMode.Locked)
+            {
+                var selected = EventSystem.current.currentSelectedGameObject;
+                ExecuteEvents.Execute(selected, new BaseEventData(EventSystem.current), ExecuteEvents.submitHandler);
+                return;
+            }
+
+            EventSystem.current.SetSelectedGameObject(null);
         }
 
         if (rayOrigin == null)
@@ -148,7 +169,12 @@ public class PlayerInteractor : MonoBehaviour
                 if (collectible != null)
                 {
                     collectible.Collect();
-                    sfxAudioSource?.PlayOneShot(audioList.playerCollectibleSFX);
+                    if (collectible.GetID == "Map")
+                        sfxAudioSource?.PlayOneShot(audioList.paperPickupSFX);
+                    else if (collectible.GetID == "Key")
+                        sfxAudioSource?.PlayOneShot(audioList.keyPickupSFX);
+                    else
+                        sfxAudioSource?.PlayOneShot(audioList.playerCollectibleSFX);
                     return;
                 }
             }
@@ -293,6 +319,9 @@ public class PlayerInteractor : MonoBehaviour
             var interactComp = h.collider.GetComponentInParent<IInteractable>();
             if (interactComp != null)
             {
+                if (!CanInteractWith(interactComp))
+                    continue;
+
                 if (h.distance < bestInteractDist)
                 {
                     bestInteractDist = h.distance;
@@ -349,60 +378,86 @@ public class PlayerInteractor : MonoBehaviour
             return true;
         }
 
-        // Step2: forgiving overlap check at an aim point along the view ray.
-        // Use a sample distance that's not further than maxDistance; prefer a short distance for aiming feel.
-        float sampleDistance = Mathf.Min(maxDistance, 2f);
-        Vector3 aimPoint = origin + dir * sampleDistance;
+        // Step2: forgiving overlap checks along the view ray. Multiple samples
+        // keep interaction reliable when the camera is very close to a trigger.
+        float closestSampleDistance = Mathf.Min(maxDistance, Mathf.Max(aimSphereRadius * 2f, 0.25f));
+        float midSampleDistance = Mathf.Min(maxDistance, 1f);
+        float defaultSampleDistance = Mathf.Min(maxDistance, 2f);
+        float farSampleDistance = maxDistance;
 
-        int colCount = Physics.OverlapSphereNonAlloc(aimPoint, aimSphereRadius, s_ColliderBuffer, combinedMask, QueryTriggerInteraction.Collide);
         float bestIAimDist = float.MaxValue;
         float bestCAimDist = float.MaxValue;
         float bestChannelAimDist = float.MaxValue;
         Collider bestIAimCol = null;
         Collider bestCAimCol = null;
+        Collider bestChannelAimCol = null;
         Vector3 bestIAimPoint = Vector3.zero;
         Vector3 bestCAimPoint = Vector3.zero;
+        Vector3 bestChannelAimPoint = Vector3.zero;
 
-        for (int i = 0; i < colCount; i++)
+        EvaluateOverlapSample(origin + dir * closestSampleDistance, closestSampleDistance);
+
+        if (!Mathf.Approximately(midSampleDistance, closestSampleDistance))
+            EvaluateOverlapSample(origin + dir * midSampleDistance, midSampleDistance);
+
+        if (!Mathf.Approximately(defaultSampleDistance, closestSampleDistance) &&
+            !Mathf.Approximately(defaultSampleDistance, midSampleDistance))
+            EvaluateOverlapSample(origin + dir * defaultSampleDistance, defaultSampleDistance);
+
+        if (!Mathf.Approximately(farSampleDistance, closestSampleDistance) &&
+            !Mathf.Approximately(farSampleDistance, midSampleDistance) &&
+            !Mathf.Approximately(farSampleDistance, defaultSampleDistance))
+            EvaluateOverlapSample(origin + dir * farSampleDistance, farSampleDistance);
+
+        void EvaluateOverlapSample(Vector3 aimPoint, float sampleDistance)
         {
-            var col = s_ColliderBuffer[i];
-            if (col == null) continue;
+            int colCount = Physics.OverlapSphereNonAlloc(aimPoint, aimSphereRadius, s_ColliderBuffer, combinedMask, QueryTriggerInteraction.Collide);
 
-            Vector3 closest = col.ClosestPoint(aimPoint);
-            float distToAim = Vector3.Distance(aimPoint, closest);
-
-            var interactComp = col.GetComponentInParent<IInteractable>();
-            if (interactComp != null)
+            for (int i = 0; i < colCount; i++)
             {
-                if (distToAim < bestIAimDist)
+                var col = s_ColliderBuffer[i];
+                if (col == null) continue;
+
+                Vector3 closest = col.ClosestPoint(aimPoint);
+                float distToAim = Vector3.Distance(aimPoint, closest);
+                float score = sampleDistance + distToAim;
+
+                var interactComp = col.GetComponentInParent<IInteractable>();
+                if (interactComp != null)
                 {
-                    bestIAimDist = distToAim;
-                    bestIAimCol = col;
-                    bestIAimPoint = closest;
+                    if (!CanInteractWith(interactComp))
+                        continue;
+
+                    if (score < bestIAimDist)
+                    {
+                        bestIAimDist = score;
+                        bestIAimCol = col;
+                        bestIAimPoint = closest;
+                    }
+                    continue;
                 }
-                continue;
-            }
 
-            var collectComp = col.GetComponentInParent<ICollectible>();
-            if (collectComp != null)
-            {
-                if (distToAim < bestCAimDist)
+                var collectComp = col.GetComponentInParent<ICollectible>();
+                if (collectComp != null)
                 {
-                    bestCAimDist = distToAim;
-                    bestCAimCol = col;
-                    bestCAimPoint = closest;
+                    if (score < bestCAimDist)
+                    {
+                        bestCAimDist = score;
+                        bestCAimCol = col;
+                        bestCAimPoint = closest;
+                    }
+                    continue;
                 }
-                continue;
-            }
 
-            var channelComp = col.GetComponentInParent<IChannelable>();
-            if (channelComp != null)
-            {
-                if (distToAim < bestChannelAimDist)
+                var channelComp = col.GetComponentInParent<IChannelable>();
+                if (channelComp != null)
                 {
-                    bestChannelAimDist = distToAim;
-                    bestChannelCol = col;
-                    bestChannelPoint = closest;
+                    if (score < bestChannelAimDist)
+                    {
+                        bestChannelAimDist = score;
+                        bestChannelAimCol = col;
+                        bestChannelAimPoint = closest;
+                    }
                 }
             }
         }
@@ -424,15 +479,25 @@ public class PlayerInteractor : MonoBehaviour
             return true;
         }
 
-        if (bestChannelCol != null)
+        if (bestChannelAimCol != null)
         {
-            hitCollider = bestChannelCol;
-            hitPoint = bestChannelPoint;
+            hitCollider = bestChannelAimCol;
+            hitPoint = bestChannelAimPoint;
             isInteract = false;
             return true;
         }
 
         return false;
+    }
+
+    private bool CanInteractWith(IInteractable interactable)
+    {
+        if (interactable is DrawerInteractable drawer)
+        {
+            return drawer.CanInteractFrom(rayOrigin);
+        }
+
+        return true;
     }
 
     private void OnApplicationFocus(bool hasFocus)
