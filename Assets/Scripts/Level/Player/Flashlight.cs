@@ -44,6 +44,7 @@ public class Flashlight : MonoBehaviour
 
     private Light flashlightLight;
 
+    private EnemyStateMachine activeFrozenGhost = null;
     public void SetIsOn(bool value) => isOn = value;
 
     void Start()
@@ -100,10 +101,14 @@ public class Flashlight : MonoBehaviour
             DrainBattery();
             CheckForGhost();
         }
-        else if (currentBattery <= 0 && isOn)
+        else
         {
-            isOn = false;
-            UpdateBeamState();
+            if (currentBattery <= 0 && isOn)
+            {
+                isOn = false;
+                UpdateBeamState();
+            }
+            ReleaseFrozenGhost();
         }
 
         UpdateUI();
@@ -137,11 +142,30 @@ public class Flashlight : MonoBehaviour
 
     private void CheckForGhost()
     {
-        if (TryGetGhostInLight(out EnemyStateMachine ghost))
+        if (TryGetGhostInLight(out EnemyStateMachine detectedGhost))
         {
-            // Call the Freeze function with your custom duration
-            ghost.Freeze(ghost.StunDuration);
-            Debug.Log("Ghost is caught in light - Stun timer paused.");
+            if (activeFrozenGhost != null && activeFrozenGhost != detectedGhost)
+            {
+                activeFrozenGhost.Unfreeze();
+            }
+
+            activeFrozenGhost = detectedGhost;
+            activeFrozenGhost.Freeze(); 
+            Debug.Log($"Ghost [{activeFrozenGhost.gameObject.name}] caught in light - Frozen.");
+        }
+        else
+        {
+            ReleaseFrozenGhost();
+        }
+    }
+
+    private void ReleaseFrozenGhost()
+    {
+        if (activeFrozenGhost != null)
+        {
+            Debug.Log($"Flashlight contact lost with [{activeFrozenGhost.gameObject.name}] - Unfreezing.");
+            activeFrozenGhost.Unfreeze();
+            activeFrozenGhost = null;
         }
     }
 

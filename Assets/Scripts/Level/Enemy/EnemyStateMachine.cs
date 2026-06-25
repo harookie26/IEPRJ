@@ -213,7 +213,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         }
         else
         {
-            CancelUnfreezeTimer();
+            //CancelUnfreezeTimer();
             StopCoroutine(nameof(DelayedRoamActivation));
 
             if (stunGlitchCoroutine != null)
@@ -509,7 +509,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         if (!isEnemyActivated) return;
 
         StopChaseAudio();
-
+        StopGhostVoice();
         if (navMeshAgent != null && navMeshAgent.enabled)
         {
             navMeshAgent.isStopped = true;
@@ -517,36 +517,24 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
             navMeshAgent.ResetPath();
         }
 
-        CancelUnfreezeTimer();
-
         isFrozen = true;
-
-        // A duration of zero is an indefinite freeze used by pause/cutscene flows.
-        // Positive durations are refreshed while the flashlight remains on target.
-        if (duration > 0f)
-        {
-            unfreezeCoroutine = StartCoroutine(UnfreezeAfter(duration));
-        }
-
-        if (stunGlitchCoroutine == null)
-        {
-            animator.SetBool("isWalking", false);
-            animator.SetBool("isStunned", true); 
-            animator.SetBool("isRunning", false);
-
-            stunGlitchCoroutine = StartCoroutine(StunGlitchLoop());
-        }
+        
+        SetGhostVisuals(false);
     }
 
     public void Unfreeze()
     {
-        CancelUnfreezeTimer();
+        if (!isEnemyActivated || !isFrozen) return;
+
         isFrozen = false;
 
         if (navMeshAgent != null && navMeshAgent.enabled)
         {
             navMeshAgent.isStopped = false;
         }
+
+        SetGhostVisuals(true);
+        PlayGhostVoice();
 
         ChangeState(RoamState);
     }
