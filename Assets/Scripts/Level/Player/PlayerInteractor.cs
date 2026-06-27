@@ -337,7 +337,7 @@ public class PlayerInteractor : MonoBehaviour
             var interactComp = h.collider.GetComponentInParent<IInteractable>();
             if (interactComp != null)
             {
-                if (!CanInteractWith(interactComp))
+                if (!CanInteractWith(interactComp, h.collider))
                     continue;
 
                 if (h.distance < bestInteractDist)
@@ -465,7 +465,7 @@ public class PlayerInteractor : MonoBehaviour
                 var interactComp = col.GetComponentInParent<IInteractable>();
                 if (interactComp != null)
                 {
-                    if (!CanInteractWith(interactComp))
+                    if (!CanInteractWith(interactComp, col))
                         continue;
 
                     if (score < bestIAimDist)
@@ -550,11 +550,16 @@ public class PlayerInteractor : MonoBehaviour
         return false;
     }
 
-    private bool CanInteractWith(IInteractable interactable)
+    private bool CanInteractWith(IInteractable interactable, Collider candidateCollider)
     {
         if (interactable is DrawerInteractable drawer)
         {
             return drawer.CanInteractFrom(rayOrigin);
+        }
+
+        if (interactable is LockedDoorInteractable lockedDoor)
+        {
+            return lockedDoor.CanInteractFrom(rayOrigin, candidateCollider, maxDistance);
         }
 
         return true;
