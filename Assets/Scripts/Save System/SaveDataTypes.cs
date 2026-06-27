@@ -42,6 +42,8 @@ public class GameSaveData
     public List<SpatialSFXSaveData> spatialSFXStates;
 
     public List<SpatialTriggerSaveData> spatialTriggerStates;
+
+    public List<BatterySaveData> batteryStates;
 }
 
 [System.Serializable]
@@ -137,4 +139,11 @@ public class SpatialTriggerSaveData
 {
     public string id;
     public bool isActive;
+}
+
+[System.Serializable]
+public class BatterySaveData
+{
+    public string id;
+    public bool isUsed;
 }

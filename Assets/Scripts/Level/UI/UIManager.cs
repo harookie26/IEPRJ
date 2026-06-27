@@ -10,6 +10,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject stairUpHUD;
     [SerializeField] private GameObject stairDownHUD;
     [SerializeField] private GameObject channelHUD;
+    [SerializeField] private Sprite rechargePromptSprite;
+    [SerializeField] private TMP_Text channelPromptText;
     [SerializeField] private GameObject respawnHUD;
     [SerializeField] private GameObject collectibleHUD;
 
@@ -27,11 +29,13 @@ public class UIManager : MonoBehaviour
         public const string StairUp = "stair_up";
         public const string StairDown = "stair_down";
         public const string Channel = "channel";
+        public const string Recharge = "recharge";
         public const string Respawn = "respawn";
         public const string Collectible = "collectible";
     }
 
     private Dictionary<string, GameObject> hudMap;
+    private GameObject rechargeHUD;
 
     private PlayerStateMachine playerStateMachine;
 
@@ -43,6 +47,7 @@ public class UIManager : MonoBehaviour
 
     private void Awake()
     {
+        CreateRechargeHUD();
         InitializeHudMap();
 
         // Ensure the fade panel is rendered behind other UI siblings on the same Canvas
@@ -110,6 +115,7 @@ public class UIManager : MonoBehaviour
             { Keys.StairUp, stairUpHUD },
             { Keys.StairDown, stairDownHUD },
             { Keys.Channel, channelHUD },
+            { Keys.Recharge, rechargeHUD },
             { Keys.Respawn, respawnHUD },
             { Keys.Collectible, collectibleHUD }
         };
@@ -128,7 +134,8 @@ public class UIManager : MonoBehaviour
 
         // These HUDs show immediately regardless of idle state
         if (string.Equals(key, Keys.Interact, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(key, Keys.Channel, StringComparison.OrdinalIgnoreCase))
+            string.Equals(key, Keys.Channel, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(key, Keys.Recharge, StringComparison.OrdinalIgnoreCase))
         {
             ShowHUDImmediate(key);
             pendingHudKey = null;
@@ -193,6 +200,8 @@ public class UIManager : MonoBehaviour
     {
         if (hudMap == null) InitializeHudMap();
 
+        if (string.Equals(key, Keys.Channel, StringComparison.OrdinalIgnoreCase))
+            SetChannelPrompt("hold [E] to channel");
         if (hudMap.TryGetValue(key, out var hud) && hud != null)
         {
             HideAllHUDs();
@@ -203,6 +212,49 @@ public class UIManager : MonoBehaviour
         {
             Debug.LogWarning($"UIManager.ShowHUDImmediate: HUD not found or not assigned for key '{key}'");
         }
+    }
+
+    private void CreateRechargeHUD()
+    {
+        if (channelHUD == null || rechargePromptSprite == null)
+            return;
+
+        rechargeHUD = Instantiate(channelHUD, channelHUD.transform.parent);
+        rechargeHUD.name = "Recharge";
+        rechargeHUD.transform.SetSiblingIndex(channelHUD.transform.GetSiblingIndex() + 1);
+
+        UnityEngine.UI.Image[] images = rechargeHUD.GetComponentsInChildren<UnityEngine.UI.Image>(true);
+        foreach (UnityEngine.UI.Image image in images)
+        {
+            if (image.sprite == null)
+                continue;
+
+            image.sprite = rechargePromptSprite;
+            image.preserveAspect = true;
+            break;
+        }
+
+        rechargeHUD.SetActive(false);
+    }
+
+    private void SetChannelPrompt(string prompt)
+    {
+        if (channelPromptText == null && channelHUD != null)
+        {
+            TMP_Text[] promptCandidates = channelHUD.GetComponentsInChildren<TMP_Text>(true);
+            foreach (TMP_Text candidate in promptCandidates)
+            {
+                if (candidate.text.IndexOf("channel", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    candidate.text.IndexOf("recharge", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    channelPromptText = candidate;
+                    break;
+                }
+            }
+        }
+
+        if (channelPromptText != null)
+            channelPromptText.text = prompt;
     }
 
     public void RegisterHUD(string key, GameObject hud)

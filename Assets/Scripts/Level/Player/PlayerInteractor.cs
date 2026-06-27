@@ -29,6 +29,10 @@ public class PlayerInteractor : MonoBehaviour
     [Tooltip("Must reference the PaintbrushChanneller so we can mirror its proximity check.")]
     public PaintbrushChanneller paintbrushChanneller;
 
+    [Header("Battery HUD")]
+    [Tooltip("Layers that contain flashlight battery objects.")]
+    public LayerMask batteryMask = ~0;
+
     private PlayerCollectibleManager collectibles;
 
     private string currentHudKey;
@@ -227,12 +231,23 @@ public class PlayerInteractor : MonoBehaviour
                 if (FindCollectibleOnCollider(hitCol) != null)
                     desiredKey = UIManager.Keys.Interact;
 
-                if (FindChannelableOnCollider(hitCol) != null)
+                bool isUsableBattery = collectibles != null
+                    && collectibles.HasCollected("Flashlight")
+                    && FindBatteryOnCollider(hitCol) is BatteryComponent battery
+                    && battery.CanUse;
+
+                if (isUsableBattery)
+                {
+                    desiredKey = UIManager.Keys.Recharge;
+                }
+                else if (FindChannelableOnCollider(hitCol) != null)
+                {
                     desiredKey = UIManager.Keys.Channel;
+                }
             }
         }
 
-        if (desiredKey == null && paintbrushChanneller != null && collectibles.HasCollected("Paintbucket"))
+        if (desiredKey == null && paintbrushChanneller != null && collectibles != null && collectibles.HasCollected("Paintbucket"))
         {
             Transform proximityOrigin = paintbrushChanneller.proximityOrigin != null
                 ? paintbrushChanneller.proximityOrigin
@@ -296,19 +311,22 @@ public class PlayerInteractor : MonoBehaviour
         Vector3 dir = rayOrigin.forward;
         Ray ray = new Ray(origin, dir);
 
-        int combinedMask = interactMask | collectMask;
+        int combinedMask = interactMask | collectMask | batteryMask;
 
         // Step1: precise center raycast
         int rayCount = Physics.RaycastNonAlloc(ray, s_HitBuffer, maxDistance, combinedMask, QueryTriggerInteraction.Collide);
         float bestInteractDist = float.MaxValue;
         float bestCollectDist = float.MaxValue;
         float bestChannelDist = float.MaxValue;
+        float bestBatteryDist = float.MaxValue;
         Collider bestInteractCol = null;
         Collider bestCollectCol = null;
         Collider bestChannelCol = null;
+        Collider bestBatteryCol = null;
         Vector3 bestInteractPoint = Vector3.zero;
         Vector3 bestCollectPoint = Vector3.zero;
         Vector3 bestChannelPoint = Vector3.zero;
+        Vector3 bestBatteryPoint = Vector3.zero;
 
         for (int i = 0; i < rayCount; i++)
         {
@@ -352,6 +370,17 @@ public class PlayerInteractor : MonoBehaviour
                     bestChannelPoint = h.point;
                 }
             }
+
+            var batteryComp = h.collider.GetComponentInParent<BatteryComponent>();
+            if (batteryComp != null && batteryComp.CanUse)
+            {
+                if (h.distance < bestBatteryDist)
+                {
+                    bestBatteryDist = h.distance;
+                    bestBatteryCol = h.collider;
+                    bestBatteryPoint = h.point;
+                }
+            }
         }
 
         if (bestInteractCol != null)
@@ -366,6 +395,14 @@ public class PlayerInteractor : MonoBehaviour
         {
             hitCollider = bestCollectCol;
             hitPoint = bestCollectPoint;
+            isInteract = false;
+            return true;
+        }
+
+        if (bestBatteryCol != null)
+        {
+            hitCollider = bestBatteryCol;
+            hitPoint = bestBatteryPoint;
             isInteract = false;
             return true;
         }
@@ -388,12 +425,15 @@ public class PlayerInteractor : MonoBehaviour
         float bestIAimDist = float.MaxValue;
         float bestCAimDist = float.MaxValue;
         float bestChannelAimDist = float.MaxValue;
+        float bestBatteryAimDist = float.MaxValue;
         Collider bestIAimCol = null;
         Collider bestCAimCol = null;
         Collider bestChannelAimCol = null;
+        Collider bestBatteryAimCol = null;
         Vector3 bestIAimPoint = Vector3.zero;
         Vector3 bestCAimPoint = Vector3.zero;
         Vector3 bestChannelAimPoint = Vector3.zero;
+        Vector3 bestBatteryAimPoint = Vector3.zero;
 
         EvaluateOverlapSample(origin + dir * closestSampleDistance, closestSampleDistance);
 
@@ -458,6 +498,18 @@ public class PlayerInteractor : MonoBehaviour
                         bestChannelAimCol = col;
                         bestChannelAimPoint = closest;
                     }
+                    continue;
+                }
+
+                var batteryComp = col.GetComponentInParent<BatteryComponent>();
+                if (batteryComp != null && batteryComp.CanUse)
+                {
+                    if (score < bestBatteryAimDist)
+                    {
+                        bestBatteryAimDist = score;
+                        bestBatteryAimCol = col;
+                        bestBatteryAimPoint = closest;
+                    }
                 }
             }
         }
@@ -475,6 +527,14 @@ public class PlayerInteractor : MonoBehaviour
         {
             hitCollider = bestCAimCol;
             hitPoint = bestCAimPoint;
+            isInteract = false;
+            return true;
+        }
+
+        if (bestBatteryAimCol != null)
+        {
+            hitCollider = bestBatteryAimCol;
+            hitPoint = bestBatteryAimPoint;
             isInteract = false;
             return true;
         }
@@ -519,7 +579,7 @@ public class PlayerInteractor : MonoBehaviour
         Gizmos.color = Color.cyan;
         Gizmos.DrawRay(origin, dir * maxDistance);
 
-        int combinedMask = interactMask | collectMask;
+        int combinedMask = interactMask | collectMask | batteryMask;
 
         // Visualize the aim sample point/sphere used by OverlapSphere fallback.
         float sampleDistance = Mathf.Min(maxDistance, 2f);
@@ -571,6 +631,14 @@ public class PlayerInteractor : MonoBehaviour
         var comp = col.GetComponentInParent<IChannelable>();
         if (comp != null) return comp;
         return col.GetComponentInChildren<IChannelable>();
+    }
+
+    private static BatteryComponent FindBatteryOnCollider(Collider col)
+    {
+        if (col == null) return null;
+        var comp = col.GetComponentInParent<BatteryComponent>();
+        if (comp != null) return comp;
+        return col.GetComponentInChildren<BatteryComponent>();
     }
 
     // Helper that tries to find an ICollectible on the collider's object, its parents, or its children
