@@ -4126,6 +4126,10 @@ PrefabInstance:
       propertyPath: flashlightObject
       value: 
       objectReference: {fileID: 267306630}
+    - target: {fileID: 7970573428189889834, guid: 3473dbb51032dd7468e751c066574e11, type: 3}
+      propertyPath: initialPickupBatteryPercent
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 8336601362723033825, guid: 3473dbb51032dd7468e751c066574e11, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -8142,7 +8146,7 @@ RectTransform:
   - {fileID: 266705244}
   - {fileID: 681255500}
   - {fileID: 181686325}
-  m_Father: {fileID: 1811231453}
+  m_Father: {fileID: 3271892531436676876}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -11142,6 +11146,7 @@ MonoBehaviour:
   lookBackDelay: 0.25
   lookBackDuration: 1.25
   revealHoldDuration: 0.75
+  standUpDuration: 1.1
   recoveryFadeDuration: 0.22
   dragDistance: 3
   floorCameraHeight: 0.22
@@ -11149,10 +11154,14 @@ MonoBehaviour:
   landingLookOffset: 72
   ghostSpawnForwardDistance: 1.15
   ghostWalkSpeed: 0.3
+  ghostWalkAnimationSpeed: 0.45
   ghostStopDistance: 1
   ghostGroundSink: 0.35
   ghostRevealLightIntensity: 0
   ghostRevealLightRange: 0.1
+  georgieFlashlightPrompt: Use the flashlight!
+  flashlightTutorialDelay: 0.8
+  flashlightTutorialPanelIndex: 1
   dragSfx: {fileID: 0}
   impactSfx: {fileID: 0}
   revealSfx: {fileID: 0}
@@ -21281,6 +21290,11 @@ MonoBehaviour:
   requiredReplacementDuration: 2
   refillPercent: 100
   consumeOnUse: 1
+  enableHighlight: 1
+  highlightFrequency: 1.5
+  minHighlightIntensity: 0.2
+  maxHighlightIntensity: 2
+  highlightPropertyName: _EmissionColor
 --- !u!135 &1255301936
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -29008,7 +29022,8 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: aafa34c0175ac6b428cd52fdd772690a, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 593727883758541133, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
     m_RemovedGameObjects:
     - {fileID: 5435431972809554122, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
     - {fileID: 2925360162857636777, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
@@ -32431,7 +32446,6 @@ RectTransform:
   - {fileID: 421067495}
   - {fileID: 1252459451}
   - {fileID: 1592600675}
-  - {fileID: 474284022}
   - {fileID: 881460994}
   - {fileID: 868042448}
   - {fileID: 1651827576}
@@ -40463,6 +40477,7 @@ RectTransform:
   - {fileID: 1328377528}
   - {fileID: 242978828}
   - {fileID: 1811231453}
+  - {fileID: 474284022}
   - {fileID: 355643936}
   - {fileID: 84080830}
   - {fileID: 1970611134}
