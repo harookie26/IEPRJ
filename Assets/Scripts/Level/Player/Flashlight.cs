@@ -38,6 +38,7 @@ public class Flashlight : MonoBehaviour
     private bool hasCollectedFlashlight = false;
 
     private bool canToggle = true;
+    private bool allowToggleDuringCutscene = false;
 
     private bool isOn = false;
 
@@ -47,7 +48,18 @@ public class Flashlight : MonoBehaviour
     private Light flashlightLight;
 
     private EnemyStateMachine activeFrozenGhost = null;
-    public void SetIsOn(bool value) => isOn = value;
+    public bool IsOn => isOn;
+
+    public void SetIsOn(bool value)
+    {
+        isOn = value && currentBattery > 0f;
+        UpdateBeamState();
+    }
+
+    public void SetCutsceneToggleAllowed(bool value)
+    {
+        allowToggleDuringCutscene = value;
+    }
 
     void Start()
     {
@@ -90,13 +102,21 @@ public class Flashlight : MonoBehaviour
 
         // Keep the current beam state, but block toggling, battery drain, and
         // ghost stunning until gameplay control resumes.
-        if (GameState.IsCutsceneActive)
+        if (GameState.IsCutsceneActive && !allowToggleDuringCutscene)
         {
             UpdateUI();
             return;
         }
 
         HandleInput();
+
+        // The elevator encounter permits the toggle itself, but deliberately
+        // pauses normal battery drain and gameplay ghost detection.
+        if (GameState.IsCutsceneActive)
+        {
+            UpdateUI();
+            return;
+        }
 
         if (isOn && currentBattery > 0)
         {

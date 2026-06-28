@@ -1,4 +1,5 @@
 using System.Collections;
+using Level.UI;
 using UnityEngine;
 using static EventNames;
 
@@ -19,6 +20,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     [SerializeField, Min(0f)] private float lookBackDelay = 0.25f;
     [SerializeField, Min(0.1f)] private float lookBackDuration = 1.25f;
     [SerializeField, Min(0f)] private float revealHoldDuration = 0.75f;
+    [SerializeField, Min(0.1f)] private float standUpDuration = 1.1f;
     [SerializeField, Min(0.01f)] private float recoveryFadeDuration = 0.22f;
 
     [Header("Lounge Elevator Attack Motion")]
@@ -28,10 +30,16 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     [SerializeField, Range(20f, 140f)] private float landingLookOffset = 72f;
     [SerializeField, Min(0.25f)] private float ghostSpawnForwardDistance = 1.15f;
     [SerializeField, Min(0.1f)] private float ghostWalkSpeed = 0.7f;
+    [SerializeField, Range(0.1f, 1f)] private float ghostWalkAnimationSpeed = 0.45f;
     [SerializeField, Min(0.5f)] private float ghostStopDistance = 1.2f;
     [SerializeField, Min(0f)] private float ghostGroundSink = 0.35f;
     [SerializeField, Min(0f)] private float ghostRevealLightIntensity = 15f;
     [SerializeField, Min(0.1f)] private float ghostRevealLightRange = 4f;
+
+    [Header("Lounge Elevator Attack Flashlight Response")]
+    [SerializeField] private string georgieFlashlightPrompt = "Use the flashlight!";
+    [SerializeField, Min(0f)] private float flashlightTutorialDelay = 0.8f;
+    [SerializeField, Min(0)] private int flashlightTutorialPanelIndex = 1;
 
     [Header("Lounge Elevator Attack Audio (Optional)")]
     [SerializeField] private AudioClip dragSfx;
@@ -45,6 +53,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     private UIManager _uiManager;
     private AudioList _audioList;
     private AudioSource _audioSource;
+    private Flashlight _flashlight;
 
     public bool HasPlayed => _loungeAttackPlayed;
 
@@ -61,6 +70,9 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         _uiManager ??= FindFirstObjectByType<UIManager>();
         _audioList ??= FindAnyObjectByType<AudioList>();
         _audioSource ??= GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+        _flashlight ??= _player != null
+            ? _player.GetComponentInChildren<Flashlight>(true)
+            : FindFirstObjectByType<Flashlight>(FindObjectsInactive.Include);
     }
 
     public bool CanPlay(StairsComponent door)
@@ -90,7 +102,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         _loungeAttackPlayed = true;
         _uiManager?.ClearForcedHUD();
 
-        ResolvePlayerReferences();
+        ResolveDependencies();
         Camera gameplayCamera = Camera.main;
         PlayerCamera cameraMotion = gameplayCamera != null
             ? gameplayCamera.GetComponent<PlayerCamera>()
@@ -113,6 +125,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         bool savedCameraMotionEnabled = cameraMotion != null && cameraMotion.enabled;
 
         Vector3 playerStartPosition = _player.transform.position;
+        Quaternion playerStartRotation = _player.transform.rotation;
         Vector3 cameraStartPosition = gameplayCamera.transform.position;
         Quaternion cameraStartRotation = gameplayCamera.transform.rotation;
         Vector3 viewForward = Vector3.ProjectOnPlane(
@@ -312,8 +325,25 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
                 CameraMotionPhase.Settle));
         }
 
+        bool retryEncounter = false;
         if (ghost != null)
         {
+            // Require a fresh press during the threat instead of accepting a
+            // flashlight that happened to be on before the elevator opened.
+            _flashlight?.SetIsOn(false);
+            _flashlight?.SetCutsceneToggleAllowed(true);
+
+            DialogueManager.Instance?.DisplayLatest(
+                "Georgie",
+                georgieFlashlightPrompt,
+                0.08f,
+                2.2f,
+                0.18f);
+
+            Coroutine tutorialPrompt = StartCoroutine(
+                ShowFlashlightTutorialAfterDelay(flashlightTutorialDelay));
+
+            bool flashlightRepelledGhost = false;
             Vector3 ghostFocusOffset = ghostFocus - ghost.transform.position;
             yield return StartCoroutine(AnimateGhostApproach(
                 ghost,
@@ -321,23 +351,76 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
                 gameplayCamera.transform,
                 floorPosition,
                 ghostFocusOffset,
-                safePlayerEnd));
+                safePlayerEnd,
+                _flashlight,
+                succeeded => flashlightRepelledGhost = succeeded));
+
+            if (tutorialPrompt != null)
+                StopCoroutine(tutorialPrompt);
+
+            _flashlight?.SetCutsceneToggleAllowed(false);
+            TutorialManager.Instance?.HideAllTutorials();
+            retryEncounter = !flashlightRepelledGhost;
         }
 
-        if (revealHoldDuration > 0f)
-            yield return new WaitForSeconds(revealHoldDuration);
+        if (retryEncounter)
+        {
+            if (ScreenFader != null)
+                yield return StartCoroutine(ScreenFader.FadeOutSequence(recoveryFadeDuration));
 
-        if (ScreenFader != null)
-            yield return StartCoroutine(ScreenFader.FadeOutSequence(recoveryFadeDuration));
+            if (ghost != null)
+                Destroy(ghost);
 
-        if (ghost != null)
-            Destroy(ghost);
+            door.ResetAnimationPose();
+            _playerMovement.TeleportToPose(playerStartPosition, playerStartRotation);
+            _playerMovement.SetViewRotation(
+                cameraStartRotation.eulerAngles.y,
+                Mathf.DeltaAngle(0f, savedCameraLocalRotation.eulerAngles.x));
+            _loungeAttackPlayed = false;
+        }
+        else
+        {
+            if (revealHoldDuration > 0f)
+                yield return new WaitForSeconds(revealHoldDuration);
 
-        Quaternion playerEndRotation = Quaternion.LookRotation(
-            elevatorDirection,
-            Vector3.up);
-        _playerMovement.TeleportToPose(safePlayerEnd, playerEndRotation);
-        _playerMovement.SetViewRotation(playerEndRotation.eulerAngles.y, 0f);
+            if (ghost != null)
+                Destroy(ghost);
+
+            Quaternion playerEndRotation = Quaternion.LookRotation(
+                elevatorDirection,
+                Vector3.up);
+
+            Vector3 cameraOffsetInPlayerSpace = Quaternion.Inverse(playerStartRotation)
+                * (cameraStartPosition - playerStartPosition);
+            Vector3 standingCameraPosition = safePlayerEnd
+                + playerEndRotation * cameraOffsetInPlayerSpace;
+            Quaternion standingCameraRotation = Quaternion.LookRotation(
+                elevatorDirection,
+                Vector3.up);
+
+            if (reducedMotion)
+            {
+                door.ResetAnimationPose();
+                gameplayCamera.transform.SetPositionAndRotation(
+                    standingCameraPosition,
+                    standingCameraRotation);
+            }
+            else
+            {
+                StartCoroutine(door.PlayResetAnimation(standUpDuration));
+                yield return StartCoroutine(AnimateCameraPose(
+                    gameplayCamera.transform,
+                    gameplayCamera.transform.position,
+                    gameplayCamera.transform.rotation,
+                    standingCameraPosition,
+                    standingCameraRotation,
+                    standUpDuration,
+                    CameraMotionPhase.Stand));
+            }
+
+            _playerMovement.TeleportToPose(safePlayerEnd, playerEndRotation);
+            _playerMovement.SetViewRotation(playerEndRotation.eulerAngles.y, 0f);
+        }
 
         gameplayCamera.transform.localPosition = savedCameraLocalPosition;
         gameplayCamera.transform.localRotation = savedCameraLocalRotation;
@@ -357,16 +440,25 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         if (GameState.EndCutscene())
             EventBroadcaster.Instance?.PostEvent(CutsceneEvents.CUTSCENE_END);
 
-        if (ScreenFader != null)
+        if (retryEncounter && ScreenFader != null)
             yield return StartCoroutine(ScreenFader.FadeInSequence(recoveryFadeDuration));
 
+    }
+
+    private IEnumerator ShowFlashlightTutorialAfterDelay(float delay)
+    {
+        if (delay > 0f)
+            yield return new WaitForSecondsRealtime(delay);
+
+        TutorialManager.Instance?.TriggerTutorial(flashlightTutorialPanelIndex);
     }
 
     private enum CameraMotionPhase
     {
         Yank,
         Fall,
-        Settle
+        Settle,
+        Stand
     }
 
     private static float CalculateSafeDragDistance(
@@ -474,6 +566,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
             float eased = phase switch
             {
                 CameraMotionPhase.Fall => t * t,
+                CameraMotionPhase.Stand => Mathf.SmoothStep(0f, 1f, t),
                 _ => 1f - Mathf.Pow(1f - t, 4f)
             };
 
@@ -524,14 +617,19 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         Transform cameraTransform,
         Vector3 cameraPosition,
         Vector3 focusOffset,
-        Vector3 playerPosition)
+        Vector3 playerPosition,
+        Flashlight flashlight,
+        System.Action<bool> onComplete)
     {
         Vector3 startPosition = ghost.transform.position;
         Vector3 fromPlayer = Vector3.ProjectOnPlane(
             startPosition - playerPosition,
             Vector3.up);
         if (fromPlayer.sqrMagnitude < 0.001f)
+        {
+            onComplete?.Invoke(false);
             yield break;
+        }
 
         Vector3 endPosition = playerPosition
             + fromPlayer.normalized * ghostStopDistance;
@@ -541,11 +639,25 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         float duration = distance / Mathf.Max(0.1f, ghostWalkSpeed);
 
         if (ghostAnimator != null)
+        {
+            const float authoredWalkSpeed = 0.7f;
+            ghostAnimator.speed = Mathf.Clamp(
+                ghostWalkAnimationSpeed * (ghostWalkSpeed / authoredWalkSpeed),
+                0.1f,
+                1f);
             ghostAnimator.SetBool("isWalking", true);
+        }
 
         float elapsed = 0f;
         while (elapsed < duration)
         {
+            if (flashlight != null && flashlight.IsOn)
+            {
+                ghost.SetActive(false);
+                onComplete?.Invoke(true);
+                yield break;
+            }
+
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
             float eased = Mathf.SmoothStep(0f, 1f, t);
@@ -581,7 +693,12 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
 
         ghost.transform.position = endPosition;
         if (ghostAnimator != null)
+        {
             ghostAnimator.SetBool("isWalking", false);
+            ghostAnimator.speed = 1f;
+        }
+
+        onComplete?.Invoke(false);
     }
 
     private static void DisableGhostGameplay(GameObject ghost)

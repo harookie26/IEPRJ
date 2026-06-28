@@ -33,7 +33,8 @@ public class StairsInputManager : MonoBehaviour
         _uiManager = FindFirstObjectByType<UIManager>();
         _audioList = FindAnyObjectByType<AudioList>();
         _audioSource = GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
-        _elevatorAttack = GetComponent<ElevatorAttackCutscene>()
+        _elevatorAttack = FindFirstObjectByType<ElevatorAttackCutscene>(FindObjectsInactive.Include)
+            ?? GetComponent<ElevatorAttackCutscene>()
             ?? gameObject.AddComponent<ElevatorAttackCutscene>();
     }
 
@@ -68,13 +69,6 @@ public class StairsInputManager : MonoBehaviour
         if (doorToUse == null)
         {
             Debug.Log("[StairsInputManager] ❌ Interact pressed but CurrentDoor is NULL");
-            return;
-        }
-
-        // This elevator is a narrative trap, not a reusable scene transfer.
-        if (_elevatorAttack.HasPlayed && _elevatorAttack.Matches(doorToUse))
-        {
-            _uiManager?.ClearForcedHUD();
             return;
         }
 

@@ -396,6 +396,39 @@ public class StairsComponent : MonoBehaviour, IStair
             rightDoorInitialScale);
     }
 
+    public IEnumerator PlayResetAnimation(float duration)
+    {
+        if (!hasInitialDoorPose)
+            yield break;
+
+        if (modelAnimator != null)
+            modelAnimator.enabled = false;
+
+        duration = Mathf.Max(0.01f, duration);
+        Vector3 leftStartPosition = leftDoor.localPosition;
+        Quaternion leftStartRotation = leftDoor.localRotation;
+        Vector3 rightStartPosition = rightDoor.localPosition;
+        Quaternion rightStartRotation = rightDoor.localRotation;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+
+            leftDoor.SetLocalPositionAndRotation(
+                Vector3.LerpUnclamped(leftStartPosition, leftDoorInitialPosition, progress),
+                Quaternion.SlerpUnclamped(leftStartRotation, leftDoorInitialRotation, progress));
+            rightDoor.SetLocalPositionAndRotation(
+                Vector3.LerpUnclamped(rightStartPosition, rightDoorInitialPosition, progress),
+                Quaternion.SlerpUnclamped(rightStartRotation, rightDoorInitialRotation, progress));
+
+            yield return null;
+        }
+
+        ResetAnimationPose();
+    }
+
     private Animator ResolveAnimationRootAnimator()
     {
         if (modelAnimator == null)
