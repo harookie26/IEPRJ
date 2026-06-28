@@ -642,6 +642,15 @@ public class PlayerMovement : MonoBehaviour
         ResolveCurrentRoomAtPosition();
     }
 
+    public void SetViewRotation(float yaw, float pitch)
+    {
+        bodyYaw = yaw;
+        cameraPitch = Mathf.Clamp(pitch, -89f, 89f);
+        transform.rotation = Quaternion.Euler(0f, bodyYaw, 0f);
+        lookInputTarget = Vector2.zero;
+        lookInputCurrent = Vector2.zero;
+    }
+
     private void TriggerGhostNoise()
     {
         EnemyStateMachine ghost = Object.FindFirstObjectByType<EnemyStateMachine>();

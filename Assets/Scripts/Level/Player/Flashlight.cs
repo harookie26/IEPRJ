@@ -20,6 +20,7 @@ public class Flashlight : MonoBehaviour
 
     [Header("Battery Settings")]
     [SerializeField] private float maxBattery = 100f;
+    [SerializeField, Range(0f, 100f)] private float initialPickupBatteryPercent = 2f;
     [SerializeField] private float drainRate = 2f; // Percent per second
     private float currentBattery;
 
@@ -37,15 +38,28 @@ public class Flashlight : MonoBehaviour
     private bool hasCollectedFlashlight = false;
 
     private bool canToggle = true;
+    private bool allowToggleDuringCutscene = false;
 
     private bool isOn = false;
 
     private bool hasLoadedData = false;
+    private bool hasInitializedPickupBattery = false;
 
     private Light flashlightLight;
 
     private EnemyStateMachine activeFrozenGhost = null;
-    public void SetIsOn(bool value) => isOn = value;
+    public bool IsOn => isOn;
+
+    public void SetIsOn(bool value)
+    {
+        isOn = value && currentBattery > 0f;
+        UpdateBeamState();
+    }
+
+    public void SetCutsceneToggleAllowed(bool value)
+    {
+        allowToggleDuringCutscene = value;
+    }
 
     void Start()
     {
@@ -88,13 +102,21 @@ public class Flashlight : MonoBehaviour
 
         // Keep the current beam state, but block toggling, battery drain, and
         // ghost stunning until gameplay control resumes.
-        if (GameState.IsCutsceneActive)
+        if (GameState.IsCutsceneActive && !allowToggleDuringCutscene)
         {
             UpdateUI();
             return;
         }
 
         HandleInput();
+
+        // The elevator encounter permits the toggle itself, but deliberately
+        // pauses normal battery drain and gameplay ghost detection.
+        if (GameState.IsCutsceneActive)
+        {
+            UpdateUI();
+            return;
+        }
 
         if (isOn && currentBattery > 0)
         {
@@ -116,11 +138,24 @@ public class Flashlight : MonoBehaviour
 
     private void HandleInput()
     {
+        if (collectibles == null)
+            return;
+
         if (collectibles.HasCollected("Flashlight") && !hasCollectedFlashlight)
         {
             hasCollectedFlashlight = true;
-            batteryText.gameObject.SetActive(true);
-            flashlightObject.SetActive(true);
+
+            if (!hasLoadedData && !hasInitializedPickupBattery)
+            {
+                SetBatteryPercent(initialPickupBatteryPercent);
+                hasInitializedPickupBattery = true;
+            }
+
+            if (batteryText != null)
+                batteryText.gameObject.SetActive(true);
+
+            if (flashlightObject != null)
+                flashlightObject.SetActive(true);
         }
 
         if (Input.GetMouseButtonDown(0) && currentBattery > 0 && collectibles.HasCollected("Flashlight"))
@@ -138,6 +173,25 @@ public class Flashlight : MonoBehaviour
     {
         currentBattery -= drainRate * Time.deltaTime;
         currentBattery = Mathf.Clamp(currentBattery, 0, maxBattery);
+    }
+
+    public void RefillBattery(float percent = 100f)
+    {
+        SetBatteryPercent(percent);
+    }
+
+    public void SetBatteryPercent(float percent)
+    {
+        currentBattery = Mathf.Clamp(percent, 0f, maxBattery);
+
+        if (currentBattery <= 0f && isOn)
+        {
+            isOn = false;
+            UpdateBeamState();
+            ReleaseFrozenGhost();
+        }
+
+        UpdateUI();
     }
 
     private void CheckForGhost()
@@ -316,6 +370,7 @@ public class Flashlight : MonoBehaviour
 
         // Mark that we have successfully loaded data
         this.hasLoadedData = true;
+        this.hasInitializedPickupBattery = true;
 
         UpdateBeamState();
         UpdateUI();

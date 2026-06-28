@@ -67,7 +67,7 @@ public class TutorialManager : MonoBehaviour
         {
             if (panel != null && panel.isActiveAndEnabled)
             {
-
+                panel.ForceHide();
             }
         }
     }

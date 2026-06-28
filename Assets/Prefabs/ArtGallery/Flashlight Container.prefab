@@ -1886,6 +1886,7 @@ GameObject:
   - component: {fileID: 7167957487284516763}
   - component: {fileID: 8188770426995911287}
   - component: {fileID: 7970573428189889834}
+  - component: {fileID: 5213920505418412371}
   - component: {fileID: 4665934571458962360}
   m_Layer: 3
   m_Name: Flashlight Container
@@ -1960,6 +1961,7 @@ MonoBehaviour:
   batteryFill: {fileID: 0}
   camTransform: {fileID: 0}
   maxBattery: 100
+  initialPickupBatteryPercent: 2
   drainRate: 1.2
   stunRange: 14
   enemyLayer:
@@ -1969,6 +1971,26 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967291
   flashlightAudioClip: {fileID: 8300000, guid: 5fdbd7aa84471a842b59434ae5538acd, type: 3}
+--- !u!114 &5213920505418412371
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7135487168383054254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f428038696a8fd4e95695a8ff5fb2e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlashlightBatteryReplacer
+  rayOrigin: {fileID: 0}
+  flashlight: {fileID: 7970573428189889834}
+  collectibles: {fileID: 0}
+  batteryMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxDistance: 3
+  aimSphereRadius: 0.12
 --- !u!82 &4665934571458962360
 AudioSource:
   m_ObjectHideFlags: 0

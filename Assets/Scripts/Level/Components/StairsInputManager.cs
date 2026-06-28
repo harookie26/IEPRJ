@@ -12,6 +12,7 @@ public class StairsInputManager : MonoBehaviour
     private UIManager _uiManager;
     private AudioList _audioList;
     private AudioSource _audioSource;
+    private ElevatorAttackCutscene _elevatorAttack;
 
     [Header("Stair Cooldown")]
     [Tooltip("Seconds after initiating a stair transfer before another can be started.")]
@@ -32,6 +33,9 @@ public class StairsInputManager : MonoBehaviour
         _uiManager = FindFirstObjectByType<UIManager>();
         _audioList = FindAnyObjectByType<AudioList>();
         _audioSource = GetComponent<AudioSource>() ?? gameObject.AddComponent<AudioSource>();
+        _elevatorAttack = FindFirstObjectByType<ElevatorAttackCutscene>(FindObjectsInactive.Include)
+            ?? GetComponent<ElevatorAttackCutscene>()
+            ?? gameObject.AddComponent<ElevatorAttackCutscene>();
     }
 
     private void OnDisable()
@@ -78,7 +82,11 @@ public class StairsInputManager : MonoBehaviour
         if (doorToUse.IsReadyToUse())
         {
             _lastDoorUseTime = Time.unscaledTime;
-            StartCoroutine(TransferPlayer(doorToUse, 0.05f));
+
+            if (_elevatorAttack.CanPlay(doorToUse))
+                StartCoroutine(PlayElevatorAttack(doorToUse));
+            else
+                StartCoroutine(TransferPlayer(doorToUse, 0.05f));
         }
         else
         {
@@ -170,6 +178,18 @@ public class StairsInputManager : MonoBehaviour
             enemy.Unfreeze();
         }
         _playerMovement.SetCanMove(true);
+        _isTransferring = false;
+        IsTransferInProgress = false;
+    }
+
+    private IEnumerator PlayElevatorAttack(StairsComponent door)
+    {
+        _isTransferring = true;
+        IsTransferInProgress = true;
+        _uiManager?.ClearForcedHUD();
+
+        yield return StartCoroutine(_elevatorAttack.Play(door));
+
         _isTransferring = false;
         IsTransferInProgress = false;
     }

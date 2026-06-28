@@ -15,6 +15,7 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
     [SerializeField] private Vector3 entranceDoor002OpenEulerOffset = new Vector3(0f, 0f, -90f);
     [SerializeField] private Vector3 entranceDoor003OpenEulerOffset = new Vector3(0f, 0f, 90f);
     [SerializeField, Min(0.01f)] private float doorOpenDuration = 1f;
+    [SerializeField, Min(0.1f)] private float interactionDistance = 3f;
 
     private PlayerCollectibleManager collectibles;
     private AudioSource sfxAudioSource;
@@ -68,6 +69,9 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
 
     public void Interact()
     {
+        if (hasOpened)
+            return;
+
         if (collectibles != null && collectibles.HasCollected("Key"))
         {
             hasOpened = true;
@@ -89,6 +93,26 @@ public class LockedDoorInteractable : MonoBehaviour, IInteractable
             }
 
         }
+    }
+
+    public bool CanInteractFrom(Transform origin, Collider candidateCollider, float playerInteractionDistance)
+    {
+        if (hasOpened || origin == null || candidateCollider == null)
+            return false;
+
+        if (blockingCollider == null)
+            ResolveDoorReferences();
+
+        bool isBlockingCollider = blockingCollider != null && candidateCollider == blockingCollider;
+        bool isDoorCollider = doorObject != null &&
+            (candidateCollider.transform == doorObject.transform || candidateCollider.transform.IsChildOf(doorObject.transform));
+
+        if (!isBlockingCollider && !isDoorCollider)
+            return false;
+
+        float allowedDistance = Mathf.Min(interactionDistance, playerInteractionDistance);
+        Vector3 closestPoint = candidateCollider.ClosestPoint(origin.position);
+        return Vector3.Distance(origin.position, closestPoint) <= allowedDistance;
     }
 
     public LockedDoorSaveData GetSaveData()
