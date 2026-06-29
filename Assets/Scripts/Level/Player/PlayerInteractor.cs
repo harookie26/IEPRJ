@@ -240,7 +240,7 @@ public class PlayerInteractor : MonoBehaviour
                 {
                     desiredKey = UIManager.Keys.Recharge;
                 }
-                else if (FindChannelableOnCollider(hitCol) != null)
+                else if (CanShowChannelPrompt(FindChannelableOnCollider(hitCol)))
                 {
                     desiredKey = UIManager.Keys.Channel;
                 }
@@ -262,7 +262,7 @@ public class PlayerInteractor : MonoBehaviour
             foreach (var col in hits)
             {
                 var channelable = col.GetComponentInParent<IChannelable>();
-                if (channelable != null)
+                if (CanShowChannelPrompt(channelable))
                 {
                     desiredKey = UIManager.Keys.Channel;
                     break;
@@ -361,7 +361,7 @@ public class PlayerInteractor : MonoBehaviour
             }
 
             var channelComp = h.collider.GetComponentInParent<IChannelable>();
-            if (channelComp != null)
+            if (CanShowChannelPrompt(channelComp))
             {
                 if (h.distance < bestChannelDist)
                 {
@@ -490,7 +490,7 @@ public class PlayerInteractor : MonoBehaviour
                 }
 
                 var channelComp = col.GetComponentInParent<IChannelable>();
-                if (channelComp != null)
+                if (CanShowChannelPrompt(channelComp))
                 {
                     if (score < bestChannelAimDist)
                     {
@@ -636,6 +636,21 @@ public class PlayerInteractor : MonoBehaviour
         var comp = col.GetComponentInParent<IChannelable>();
         if (comp != null) return comp;
         return col.GetComponentInChildren<IChannelable>();
+    }
+
+    private bool CanShowChannelPrompt(IChannelable channelable)
+    {
+        if (channelable == null)
+            return false;
+
+        if (channelable is not INotifiesChannelCompletion painting)
+            return true;
+
+        if (painting.IsCompleted)
+            return false;
+
+        return paintbrushChanneller == null
+            || !paintbrushChanneller.HasCompletedPainting(painting.PaintingId);
     }
 
     private static BatteryComponent FindBatteryOnCollider(Collider col)

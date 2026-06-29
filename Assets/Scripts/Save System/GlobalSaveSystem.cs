@@ -52,6 +52,12 @@ public static class GlobalSaveSystem
                 );
             }
 
+            if (s is ElevatorAttackCutscene elevatorAttack)
+            {
+                data.elevatorAttack =
+                    (ElevatorAttackSaveData)elevatorAttack.CaptureState();
+            }
+
             if (s is EnemyManager manager)
             {
                 data.enemyManagerData = (EnemyManagerSaveData)manager.CaptureState();
@@ -120,6 +126,11 @@ public static class GlobalSaveSystem
                 {
                     if (state.id == battery.SaveKey) { battery.RestoreState(state); break; }
                 }
+            }
+
+            if (s is ElevatorAttackCutscene elevatorAttack)
+            {
+                elevatorAttack.RestoreState(data.elevatorAttack);
             }
         }
     }

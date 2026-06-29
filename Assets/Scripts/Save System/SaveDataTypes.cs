@@ -44,6 +44,8 @@ public class GameSaveData
     public List<SpatialTriggerSaveData> spatialTriggerStates;
 
     public List<BatterySaveData> batteryStates;
+
+    public ElevatorAttackSaveData elevatorAttack;
 }
 
 [System.Serializable]
@@ -146,4 +148,10 @@ public class BatterySaveData
 {
     public string id;
     public bool isUsed;
+}
+
+[System.Serializable]
+public class ElevatorAttackSaveData
+{
+    public bool hasPlayed;
 }

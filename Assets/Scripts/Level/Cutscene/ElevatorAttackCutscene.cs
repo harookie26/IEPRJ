@@ -1,10 +1,11 @@
 using System.Collections;
+using Game.States;
 using Level.UI;
 using UnityEngine;
 using static EventNames;
 
 [DisallowMultipleComponent]
-public sealed class ElevatorAttackCutscene : MonoBehaviour
+public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
 {
     [Header("Lounge Elevator Attack")]
     [SerializeField] private bool enableLoungeElevatorAttack = true;
@@ -47,6 +48,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     [SerializeField] private AudioClip revealSfx;
 
     private bool _loungeAttackPlayed;
+    private bool _loungeAttackInProgress;
 
     private GameObject _player;
     private PlayerMovement _playerMovement;
@@ -56,12 +58,19 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     private Flashlight _flashlight;
 
     public bool HasPlayed => _loungeAttackPlayed;
+    public string SaveKey => "LoungeElevatorAttack";
 
     private ScreenFader ScreenFader => FindFirstObjectByType<ScreenFader>();
 
     private void Awake()
     {
+        GlobalSaveSystem.Register(this);
         ResolveDependencies();
+    }
+
+    private void OnDestroy()
+    {
+        GlobalSaveSystem.Unregister(this);
     }
 
     private void ResolveDependencies()
@@ -77,7 +86,10 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
 
     public bool CanPlay(StairsComponent door)
     {
-        if (!enableLoungeElevatorAttack || _loungeAttackPlayed || door == null)
+        if (!enableLoungeElevatorAttack
+            || _loungeAttackPlayed
+            || _loungeAttackInProgress
+            || door == null)
             return false;
 
         if (!Matches(door))
@@ -99,7 +111,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
 
     public IEnumerator Play(StairsComponent door)
     {
-        _loungeAttackPlayed = true;
+        _loungeAttackInProgress = true;
         _uiManager?.ClearForcedHUD();
 
         ResolveDependencies();
@@ -111,7 +123,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         if (_player == null || _playerMovement == null || gameplayCamera == null)
         {
             Debug.LogError("[ElevatorAttack] Missing player, PlayerMovement, or Main Camera. Falling back to the normal elevator transfer.");
-            _loungeAttackPlayed = false;
+            _loungeAttackInProgress = false;
             yield break;
         }
 
@@ -376,10 +388,11 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
             _playerMovement.SetViewRotation(
                 cameraStartRotation.eulerAngles.y,
                 Mathf.DeltaAngle(0f, savedCameraLocalRotation.eulerAngles.x));
-            _loungeAttackPlayed = false;
         }
         else
         {
+            _loungeAttackPlayed = true;
+
             if (revealHoldDuration > 0f)
                 yield return new WaitForSeconds(revealHoldDuration);
 
@@ -443,6 +456,21 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         if (retryEncounter && ScreenFader != null)
             yield return StartCoroutine(ScreenFader.FadeInSequence(recoveryFadeDuration));
 
+        _loungeAttackInProgress = false;
+    }
+
+    public object CaptureState()
+    {
+        return new ElevatorAttackSaveData
+        {
+            hasPlayed = _loungeAttackPlayed
+        };
+    }
+
+    public void RestoreState(object state)
+    {
+        _loungeAttackInProgress = false;
+        _loungeAttackPlayed = state is ElevatorAttackSaveData data && data.hasPlayed;
     }
 
     private IEnumerator ShowFlashlightTutorialAfterDelay(float delay)
