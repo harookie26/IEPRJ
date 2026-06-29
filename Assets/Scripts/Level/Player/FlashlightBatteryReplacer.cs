@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -14,13 +13,13 @@ public class FlashlightBatteryReplacer : MonoBehaviour
     [SerializeField] private Transform rayOrigin;
     [SerializeField] private Flashlight flashlight;
     [SerializeField] private PlayerCollectibleManager collectibles;
+    [SerializeField] private BatteryRechargeCutscene rechargeCutscene;
 
     [Header("Battery Targeting")]
     [SerializeField] private LayerMask batteryMask = ~0;
     [SerializeField, Min(0.1f)] private float maxDistance = 3f;
     [SerializeField, Min(0.01f)] private float aimSphereRadius = 0.12f;
 
-    private Coroutine replacementRoutine;
     private bool subscribed;
 
     private void Reset()
@@ -39,6 +38,9 @@ public class FlashlightBatteryReplacer : MonoBehaviour
 
         if (collectibles == null)
             collectibles = FindFirstObjectByType<PlayerCollectibleManager>();
+
+        if (rechargeCutscene == null)
+            rechargeCutscene = GetComponent<BatteryRechargeCutscene>();
     }
 
     private void OnEnable()
@@ -86,39 +88,12 @@ public class FlashlightBatteryReplacer : MonoBehaviour
         if (!TryFindBattery(out BatteryComponent battery))
             return;
 
-        replacementRoutine = StartCoroutine(ReplacementRoutine(battery));
+        rechargeCutscene?.TryBegin(battery);
     }
 
     private void HandleChannelStopped()
     {
-        StopReplacement();
-    }
-
-    private IEnumerator ReplacementRoutine(BatteryComponent battery)
-    {
-        float timer = 0f;
-        float duration = Mathf.Max(0.1f, battery.RequiredReplacementDuration);
-
-        while (timer < duration)
-        {
-            if (!CanReplaceBattery() || !battery.CanUse || !InputManager.Instance.IsChanneling())
-            {
-                ClearReplacementState();
-                yield break;
-            }
-
-            if (!TryFindBattery(out BatteryComponent aimedBattery) || aimedBattery != battery)
-            {
-                ClearReplacementState();
-                yield break;
-            }
-
-            timer += Time.deltaTime;
-            yield return null;
-        }
-
-        battery.TryUse(flashlight);
-        ClearReplacementState();
+        rechargeCutscene?.Cancel();
     }
 
     private bool CanReplaceBattery()
@@ -129,7 +104,7 @@ public class FlashlightBatteryReplacer : MonoBehaviour
         if (InputManager.Instance == null)
             return false;
 
-        if (GameState.IsCutsceneActive)
+        if (GameState.IsCutsceneActive || (rechargeCutscene != null && rechargeCutscene.IsPlaying))
             return false;
 
         if (EventSystem.current != null
@@ -147,17 +122,7 @@ public class FlashlightBatteryReplacer : MonoBehaviour
 
     private void StopReplacement()
     {
-        if (replacementRoutine != null)
-        {
-            StopCoroutine(replacementRoutine);
-        }
-
-        ClearReplacementState();
-    }
-
-    private void ClearReplacementState()
-    {
-        replacementRoutine = null;
+        rechargeCutscene?.Cancel();
     }
 
     private bool TryFindBattery(out BatteryComponent battery)

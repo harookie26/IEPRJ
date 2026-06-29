@@ -1887,6 +1887,7 @@ GameObject:
   - component: {fileID: 8188770426995911287}
   - component: {fileID: 7970573428189889834}
   - component: {fileID: 5213920505418412371}
+  - component: {fileID: 6129447702483106311}
   - component: {fileID: 4665934571458962360}
   m_Layer: 3
   m_Name: Flashlight Container
@@ -1986,11 +1987,38 @@ MonoBehaviour:
   rayOrigin: {fileID: 0}
   flashlight: {fileID: 7970573428189889834}
   collectibles: {fileID: 0}
+  rechargeCutscene: {fileID: 6129447702483106311}
   batteryMask:
     serializedVersion: 2
     m_Bits: 4294967295
   maxDistance: 3
   aimSphereRadius: 0.12
+--- !u!114 &6129447702483106311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7135487168383054254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74e0a4501dc6485d979f96bf582ce779, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::BatteryRechargeCutscene
+  flashlight: {fileID: 7970573428189889834}
+  playerMovement: {fileID: 0}
+  uiManager: {fileID: 0}
+  handlingPositionOffset: {x: 0, y: -0.24, z: 0.1}
+  handlingRotationOffset: {x: 72, y: -18, z: 24}
+  batteryPresentationOffset: {x: -0.16, y: -0.28, z: 0.55}
+  batteryInsertionOffset: {x: -0.2, y: -0.68, z: 0.38}
+  batteryPresentationRotation: {x: 78, y: 8, z: 18}
+  cameraDownAngle: 18
+  cancelReturnDuration: 0.45
+  completionReturnDuration: 0.8
+  compartmentReleaseClip: {fileID: 8300000, guid: 5fdbd7aa84471a842b59434ae5538acd, type: 3}
+  batteryHandlingClip: {fileID: 8300000, guid: 8f0240ecaa80c51419d551a06685b189, type: 3}
+  compartmentCloseClip: {fileID: 8300000, guid: 51c6d99ceec20cc4fbdd9b7a01473fd5, type: 3}
 --- !u!82 &4665934571458962360
 AudioSource:
   m_ObjectHideFlags: 0

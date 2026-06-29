@@ -9,7 +9,7 @@ public class BatteryComponent : MonoBehaviour, ISaveable
 {
     [Header("Battery")]
     [SerializeField] private string batteryId;
-    [SerializeField, Min(0.1f)] private float requiredReplacementDuration = 2f;
+    [SerializeField, Min(0.1f)] private float requiredReplacementDuration = 5.5f;
     [SerializeField, Range(0f, 100f)] private float refillPercent = 100f;
     [SerializeField] private bool consumeOnUse = true;
 
