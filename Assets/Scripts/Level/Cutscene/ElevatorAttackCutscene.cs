@@ -25,7 +25,10 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
     [SerializeField, Min(0.01f)] private float recoveryFadeDuration = 0.22f;
 
     [Header("Lounge Elevator Attack Motion")]
-    [SerializeField, Min(0.5f)] private float dragDistance = 3f;
+    [SerializeField, Tooltip("Fixed world-space landing point for the dragged player. Assign an empty scene object for precise authoring.")]
+    private Transform dragLandingAnchor;
+    [SerializeField, Tooltip("Used to create a runtime anchor when Drag Landing Anchor is unassigned.")]
+    private Vector3 fallbackDragAnchorWorldPosition = new Vector3(0f, 0f, -3f);
     [SerializeField, Min(0.05f)] private float floorCameraHeight = 0.22f;
     [SerializeField, Range(0f, 60f)] private float impactRoll = 32f;
     [SerializeField, Range(20f, 140f)] private float landingLookOffset = 72f;
@@ -56,6 +59,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
     private AudioList _audioList;
     private AudioSource _audioSource;
     private Flashlight _flashlight;
+    private Transform _runtimeDragLandingAnchor;
 
     public bool HasPlayed => _loungeAttackPlayed;
     public string SaveKey => "LoungeElevatorAttack";
@@ -71,6 +75,9 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
     private void OnDestroy()
     {
         GlobalSaveSystem.Unregister(this);
+
+        if (_runtimeDragLandingAnchor != null)
+            Destroy(_runtimeDragLandingAnchor.gameObject);
     }
 
     private void ResolveDependencies()
@@ -146,33 +153,41 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
         if (viewForward.sqrMagnitude < 0.001f)
             viewForward = Vector3.ProjectOnPlane(_player.transform.forward, Vector3.up).normalized;
 
+        Vector3 authoredPlayerEnd = ResolveDragLandingPosition(playerStartPosition.y);
         Vector3 elevatorDirection = Vector3.ProjectOnPlane(
-            door.transform.position - playerStartPosition,
+            door.transform.position - authoredPlayerEnd,
             Vector3.up).normalized;
         if (elevatorDirection.sqrMagnitude < 0.001f)
             elevatorDirection = viewForward;
 
-        Vector3 dragDirection = -elevatorDirection;
+        Vector3 dragOffset = Vector3.ProjectOnPlane(
+            authoredPlayerEnd - playerStartPosition,
+            Vector3.up);
+        Vector3 dragDirection = dragOffset.sqrMagnitude > 0.001f
+            ? dragOffset.normalized
+            : -elevatorDirection;
+        float authoredDragDistance = dragOffset.magnitude;
         float safeDragDistance = CalculateSafeDragDistance(
             playerStartPosition,
             cameraStartPosition,
             dragDirection,
-            dragDistance,
+            authoredDragDistance,
             _player.transform,
             door.transform);
         Vector3 safePlayerEnd = playerStartPosition + dragDirection * safeDragDistance;
 
-        if (safeDragDistance < dragDistance - 0.01f)
+        if (safeDragDistance < authoredDragDistance - 0.01f)
         {
             Debug.Log(
-                $"[ElevatorAttack] Drag distance clamped from {dragDistance:F2}m " +
+                $"[ElevatorAttack] Anchor path clamped from {authoredDragDistance:F2}m " +
                 $"to {safeDragDistance:F2}m to avoid crossing level geometry.");
         }
 
-        // The player begins directly in front of the elevator, so moving forward
-        // from that interaction pose stages the ghost against the open doors.
-        Vector3 ghostPosition = playerStartPosition
-            + elevatorDirection * ghostSpawnForwardDistance;
+        // Stage the reveal from the fixed anchor/elevator axis so lateral player
+        // placement cannot shift the ghost or rotate the authored composition.
+        Vector3 ghostPosition = door.transform.position
+            - elevatorDirection * ghostSpawnForwardDistance;
+        ghostPosition.y = playerStartPosition.y;
         Vector3 ghostLookDirection = Vector3.ProjectOnPlane(safePlayerEnd - ghostPosition, Vector3.up);
         Quaternion ghostRotation = ghostLookDirection.sqrMagnitude > 0.001f
             ? Quaternion.LookRotation(ghostLookDirection.normalized, Vector3.up)
@@ -479,6 +494,30 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
             yield return new WaitForSecondsRealtime(delay);
 
         TutorialManager.Instance?.TriggerTutorial(flashlightTutorialPanelIndex);
+    }
+
+    private Vector3 ResolveDragLandingPosition(float playerGroundHeight)
+    {
+        if (dragLandingAnchor == null)
+        {
+            GameObject existingAnchor = GameObject.Find("Elevator Attack Drag Anchor");
+            if (existingAnchor != null)
+            {
+                dragLandingAnchor = existingAnchor.transform;
+            }
+            else
+            {
+                GameObject anchorObject = new GameObject("Elevator Attack Drag Anchor");
+                anchorObject.transform.SetParent(transform, true);
+                anchorObject.transform.position = fallbackDragAnchorWorldPosition;
+                dragLandingAnchor = anchorObject.transform;
+                _runtimeDragLandingAnchor = dragLandingAnchor;
+            }
+        }
+
+        Vector3 landingPosition = dragLandingAnchor.position;
+        landingPosition.y = playerGroundHeight;
+        return landingPosition;
     }
 
     private enum CameraMotionPhase

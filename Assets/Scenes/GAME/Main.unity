@@ -11148,7 +11148,8 @@ MonoBehaviour:
   revealHoldDuration: 0.75
   standUpDuration: 1.1
   recoveryFadeDuration: 0.22
-  dragDistance: 3
+  dragLandingAnchor: {fileID: 1156832259}
+  fallbackDragAnchorWorldPosition: {x: 0, y: 0, z: -3}
   floorCameraHeight: 0.22
   impactRoll: 32
   landingLookOffset: 72
@@ -19248,6 +19249,37 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &1156832258
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1156832259}
+  m_Layer: 0
+  m_Name: FlashlightCutsceneDragAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1156832259
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1156832258}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 17.289, y: 7.88, z: 5.44}
+  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 1642392113}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1160570173
 GameObject:
   m_ObjectHideFlags: 0
@@ -21190,7 +21222,7 @@ Transform:
   m_GameObject: {fileID: 1255301930}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 18.403, y: 8.457, z: 6.19}
+  m_LocalPosition: {x: 18.403, y: 8.513, z: 6.19}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -21291,9 +21323,9 @@ MonoBehaviour:
   refillPercent: 100
   consumeOnUse: 1
   enableHighlight: 1
-  highlightFrequency: 1.5
-  minHighlightIntensity: 0.2
-  maxHighlightIntensity: 2
+  highlightFrequency: 0.3
+  minHighlightIntensity: 0
+  maxHighlightIntensity: 0.7
   highlightPropertyName: _EmissionColor
 --- !u!135 &1255301936
 SphereCollider:
@@ -29036,6 +29068,9 @@ PrefabInstance:
     - {fileID: 6265240067550972198, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
     - {fileID: 6459864161044614124, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
     m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 3999820729283983334, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1156832259}
     - targetCorrespondingSourceObject: {fileID: 3999820729283983334, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 621656319}
