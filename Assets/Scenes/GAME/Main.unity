@@ -4128,7 +4128,7 @@ PrefabInstance:
       objectReference: {fileID: 267306630}
     - target: {fileID: 7970573428189889834, guid: 3473dbb51032dd7468e751c066574e11, type: 3}
       propertyPath: initialPickupBatteryPercent
-      value: 5
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 8336601362723033825, guid: 3473dbb51032dd7468e751c066574e11, type: 3}
       propertyPath: m_IsActive
@@ -21206,6 +21206,7 @@ GameObject:
   - component: {fileID: 1255301932}
   - component: {fileID: 1255301935}
   - component: {fileID: 1255301936}
+  - component: {fileID: 1255301937}
   m_Layer: 0
   m_Name: Battery1
   m_TagString: Untagged
@@ -21322,11 +21323,51 @@ MonoBehaviour:
   requiredReplacementDuration: 2
   refillPercent: 100
   consumeOnUse: 1
+  waitForFlashlightDepletion: 1
   enableHighlight: 1
   highlightFrequency: 0.3
   minHighlightIntensity: 0
   maxHighlightIntensity: 0.7
   highlightPropertyName: _EmissionColor
+--- !u!114 &1255301937
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1255301930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67f759177ea24abf84597345779bd6ea, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FlashlightOnboardingDirector
+  onboardingBattery: {fileID: 1255301935}
+  flashlight: {fileID: 574427468}
+  playerMovement: {fileID: 0}
+  uiManager: {fileID: 0}
+  pickupLookDuration: 1.15
+  pickupInspectHoldDuration: 0.55
+  pickupMoveDuration: 1.8
+  pickupCameraFollowSpeed: 4
+  pickupSettleDuration: 0.9
+  tutorialRevealDelay: 0.55
+  flashlightTutorialPanelIndex: 1
+  roomSurveyAngles:
+  - {x: -42, y: -8}
+  - {x: -88, y: 10}
+  - {x: -142, y: -2}
+  - {x: 168, y: -10}
+  - {x: 112, y: 12}
+  - {x: 58, y: -14}
+  - {x: 8, y: 6}
+  activationBreathDuration: 0.65
+  surveyDegreesPerSecond: 28
+  minimumSurveyMoveDuration: 0.8
+  surveyPointHoldDuration: 0.45
+  batteryRevealDelay: 0.65
+  batteryGlowHoldDuration: 0.45
+  batteryLookDuration: 1.65
+  batteryFocusHoldDuration: 1.1
 --- !u!135 &1255301936
 SphereCollider:
   m_ObjectHideFlags: 0

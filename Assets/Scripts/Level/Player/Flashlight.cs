@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -39,8 +41,12 @@ public class Flashlight : MonoBehaviour
 
     private bool canToggle = true;
     private bool allowToggleDuringCutscene = false;
+    private bool allowBatteryDrainDuringCutscene = false;
 
     private bool isOn = false;
+    private bool presentationSuppressed;
+    private bool isBatteryDeathFlickering;
+    private Coroutine batteryDeathRoutine;
 
     private bool hasLoadedData = false;
     private bool hasInitializedPickupBattery = false;
@@ -49,16 +55,31 @@ public class Flashlight : MonoBehaviour
 
     private EnemyStateMachine activeFrozenGhost = null;
     public bool IsOn => isOn;
+    public float BatteryPercent => currentBattery;
+    public Transform HeldTransform => flashlightObject != null ? flashlightObject.transform : transform;
+
+    public event Action TurnedOn;
+    public event Action BatteryDeathStarted;
+    public event Action BatteryDepleted;
 
     public void SetIsOn(bool value)
     {
+        bool wasOn = isOn;
         isOn = value && currentBattery > 0f;
         UpdateBeamState();
+
+        if (!wasOn && isOn)
+            TurnedOn?.Invoke();
     }
 
     public void SetCutsceneToggleAllowed(bool value)
     {
         allowToggleDuringCutscene = value;
+    }
+
+    public void SetCutsceneBatteryDrainAllowed(bool value)
+    {
+        allowBatteryDrainDuringCutscene = value;
     }
 
     void Start()
@@ -100,23 +121,25 @@ public class Flashlight : MonoBehaviour
     {
         if (!canToggle) return;
 
-        // Keep the current beam state, but block toggling, battery drain, and
-        // ghost stunning until gameplay control resumes.
-        if (GameState.IsCutsceneActive && !allowToggleDuringCutscene)
+        if (isBatteryDeathFlickering)
         {
+            UpdateUI();
+            return;
+        }
+
+        if (GameState.IsCutsceneActive)
+        {
+            if (allowToggleDuringCutscene)
+                HandleInput();
+
+            if (allowBatteryDrainDuringCutscene && isOn && currentBattery > 0f)
+                DrainBattery();
+
             UpdateUI();
             return;
         }
 
         HandleInput();
-
-        // The elevator encounter permits the toggle itself, but deliberately
-        // pauses normal battery drain and gameplay ghost detection.
-        if (GameState.IsCutsceneActive)
-        {
-            UpdateUI();
-            return;
-        }
 
         if (isOn && currentBattery > 0)
         {
@@ -154,7 +177,7 @@ public class Flashlight : MonoBehaviour
             if (batteryText != null)
                 batteryText.gameObject.SetActive(true);
 
-            if (flashlightObject != null)
+            if (flashlightObject != null && !presentationSuppressed)
                 flashlightObject.SetActive(true);
         }
 
@@ -164,15 +187,42 @@ public class Flashlight : MonoBehaviour
             {
                 sfxAudioSource.PlayOneShot(flashlightAudioClip);
             }
-            isOn = !isOn;
-            UpdateBeamState();
+            SetIsOn(!isOn);
         }
     }
 
     private void DrainBattery()
     {
+        float previousBattery = currentBattery;
         currentBattery -= drainRate * Time.deltaTime;
         currentBattery = Mathf.Clamp(currentBattery, 0, maxBattery);
+
+        if (previousBattery > 0f && currentBattery <= 0f && batteryDeathRoutine == null)
+        {
+            BatteryDeathStarted?.Invoke();
+            batteryDeathRoutine = StartCoroutine(PlayBatteryDeathFlicker());
+        }
+    }
+
+    private IEnumerator PlayBatteryDeathFlicker()
+    {
+        isBatteryDeathFlickering = true;
+        ReleaseFrozenGhost();
+
+        float[] flickerDurations = { 0.14f, 0.08f, 0.2f, 0.07f, 0.31f, 0.09f, 0.42f, 0.07f, 0.18f };
+        for (int i = 0; i < flickerDurations.Length; i++)
+        {
+            isOn = i % 2 != 0;
+            UpdateBeamState();
+            yield return new WaitForSeconds(flickerDurations[i]);
+        }
+
+        isOn = false;
+        UpdateBeamState();
+        yield return new WaitForSeconds(0.35f);
+        isBatteryDeathFlickering = false;
+        batteryDeathRoutine = null;
+        BatteryDepleted?.Invoke();
     }
 
     public void RefillBattery(float percent = 100f)
@@ -335,6 +385,13 @@ public class Flashlight : MonoBehaviour
     {
         if (flashlightBeam != null)
             flashlightBeam.SetActive(isOn);
+    }
+
+    public void SetPresentationVisible(bool visible)
+    {
+        presentationSuppressed = !visible;
+        if (flashlightObject != null)
+            flashlightObject.SetActive(visible && hasCollectedFlashlight);
     }
 
     private void UpdateUI()

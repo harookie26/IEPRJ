@@ -148,6 +148,7 @@ public class BatterySaveData
 {
     public string id;
     public bool isUsed;
+    public bool onboardingRevealed;
 }
 
 [System.Serializable]

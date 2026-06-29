@@ -1,4 +1,5 @@
 using Game.States;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,6 +12,10 @@ public class BatteryComponent : MonoBehaviour, ISaveable
     [SerializeField, Min(0.1f)] private float requiredReplacementDuration = 2f;
     [SerializeField, Range(0f, 100f)] private float refillPercent = 100f;
     [SerializeField] private bool consumeOnUse = true;
+
+    [Header("Onboarding")]
+    [SerializeField, Tooltip("Keeps this battery non-interactable and dark until the flashlight onboarding reveals it.")]
+    private bool waitForFlashlightDepletion;
 
     [Header("Highlight / Glow Settings")]
     [SerializeField, Tooltip("Should this battery pulse its highlight/glow effect?")]
@@ -32,6 +37,8 @@ public class BatteryComponent : MonoBehaviour, ISaveable
     private string highlightPropertyName = "_EmissionColor";
 
     private bool isUsed;
+    private bool onboardingRevealed;
+    private bool onboardingInteractionEnabled;
     private float highlightTime;
     private readonly List<Material> runtimeMaterials = new();
     private readonly List<Color> originalEmissionColors = new();
@@ -39,7 +46,10 @@ public class BatteryComponent : MonoBehaviour, ISaveable
 
     public string SaveKey => string.IsNullOrWhiteSpace(batteryId) ? GetHierarchyPath() : batteryId;
     public float RequiredReplacementDuration => requiredReplacementDuration;
-    public bool CanUse => isActiveAndEnabled && !isUsed;
+    public bool CanUse => isActiveAndEnabled
+        && !isUsed
+        && (!waitForFlashlightDepletion || onboardingInteractionEnabled);
+    public event Action<BatteryComponent> Used;
 
     private void Awake()
     {
@@ -48,11 +58,12 @@ public class BatteryComponent : MonoBehaviour, ISaveable
 
         GlobalSaveSystem.Register(this);
         ApplyUsedState();
+        ApplyHighlightVisibility();
     }
 
     private void Update()
     {
-        if (!enableHighlight)
+        if (!enableHighlight || (waitForFlashlightDepletion && !onboardingRevealed))
             return;
 
         highlightTime += Time.deltaTime;
@@ -128,6 +139,34 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         }
     }
 
+    public void RevealForOnboarding()
+    {
+        onboardingRevealed = true;
+        highlightTime = 0f;
+        ApplyHighlightVisibility();
+    }
+
+    public void EnableInteractionForOnboarding()
+    {
+        onboardingRevealed = true;
+        onboardingInteractionEnabled = true;
+        ApplyHighlightVisibility();
+    }
+
+    private void ApplyHighlightVisibility()
+    {
+        if (!enableHighlight)
+            return;
+
+        bool visible = !waitForFlashlightDepletion || onboardingRevealed;
+        for (int i = 0; i < runtimeMaterials.Count; i++)
+        {
+            Material material = runtimeMaterials[i];
+            if (material != null)
+                material.SetColor(emissionPropertyNames[i], visible ? originalEmissionColors[i] * minHighlightIntensity : Color.black);
+        }
+    }
+
     public bool TryUse(Flashlight flashlight)
     {
         if (!CanUse || flashlight == null)
@@ -141,6 +180,8 @@ public class BatteryComponent : MonoBehaviour, ISaveable
             ApplyUsedState();
         }
 
+        Used?.Invoke(this);
+
         return true;
     }
 
@@ -149,7 +190,8 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         return new BatterySaveData
         {
             id = SaveKey,
-            isUsed = isUsed
+            isUsed = isUsed,
+            onboardingRevealed = onboardingRevealed
         };
     }
 
@@ -159,6 +201,9 @@ public class BatteryComponent : MonoBehaviour, ISaveable
             return;
 
         isUsed = data.isUsed;
+        onboardingRevealed = data.onboardingRevealed || isUsed;
+        onboardingInteractionEnabled = onboardingRevealed;
+        ApplyHighlightVisibility();
         ApplyUsedState();
     }
 
