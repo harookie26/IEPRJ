@@ -6,123 +6,109 @@ public class EffectsController : MonoBehaviour
 {
     [Header("Volume Configuration")]
     [SerializeField] private Volume postProcessVolume;
+    [SerializeField] private Camera targetCamera;
 
-    [Header("Settings")]
-    public float minVignetteIntensity = 0f;
-    public float maxVignetteIntensity = 0.6f;
-    public float maxDesaturationTarget = -50f;
-    public float maxChromaticIntensity = 1f;
-    public float zoomedFieldOfView = 50f;
+    [Header("Target Animation Values")]
+    [SerializeField] private float targetVignetteIntensity = 0.65f;
+    [SerializeField] private float targetChromaticIntensity = 0.8f;
+    [SerializeField] private float targetFieldOfView = 30f;
 
-    private Camera playerCamera;
-    private float defaultFieldOfView = 60f;
-    private bool isEffectActive = false;
+    [Header("Depth of Field Settings")]
+    [Tooltip("The focus distance target when you want a forced near/far blur effect.")]
+    [SerializeField] private float targetFocusDistance = 0.5f;
+
+    [Header("Transition Settings")]
+    [SerializeField] private float transitionSpeed = 5f;
 
     private Vignette vignetteComponent;
-    private ColorAdjustments colorAdjustments;
     private ChromaticAberration chromaticAberration;
+    private DepthOfField depthOfFieldComponent;
+
+    private float defaultVignette = 0.2f;
+    private float defaultChromatic = 0.0f;
+    private float defaultFOV = 60f;
+    private float defaultFocusDistance = 3f;
+
+    private bool isAnimatingSurge = false;
+    private bool isAnimatingFocusDistance = false;
 
     private void Start()
     {
-        playerCamera = Camera.main;
-        if (playerCamera != null)
+        if (targetCamera == null)
         {
-            defaultFieldOfView = playerCamera.fieldOfView;
-        }
-        else
-        {
-            Debug.LogWarning("[EffectsController] Player Camera is unassigned and Camera.main was not found!");
+            targetCamera = Camera.main;
         }
 
-        if (postProcessVolume == null)
+        if (targetCamera != null)
         {
-            postProcessVolume = FindFirstObjectByType<Volume>();
+            defaultFOV = targetCamera.fieldOfView;
         }
 
-        if (postProcessVolume != null && postProcessVolume.profile != null)
+        if (postProcessVolume != null)
         {
-            postProcessVolume.profile.TryGet(out vignetteComponent);
-            postProcessVolume.profile.TryGet(out colorAdjustments);
+            if (postProcessVolume.profile.TryGet(out vignetteComponent))
+            {
+                defaultVignette = vignetteComponent.intensity.value;
+            }
+
             postProcessVolume.profile.TryGet(out chromaticAberration);
+
+            if (postProcessVolume.profile.TryGet(out depthOfFieldComponent))
+            {
+                defaultFocusDistance = depthOfFieldComponent.focusDistance.value;
+            }
         }
         else
         {
-            Debug.LogWarning("[EffectsController] Volume component or Profile is missing from the scene!");
+            Debug.LogError($"[{gameObject.name}] PostProcess Volume is unassigned!");
         }
-
-        ResetEffects();
     }
 
     private void Update()
     {
-        if (isEffectActive)
-        {
-            ApplyProximityEffects();
-        }
-    }
-    public void TriggerEffectsOn()
-    {
-        isEffectActive = true;
-    }
-    public void TriggerEffectsOff()
-    {
-        isEffectActive = false;
-        ResetEffects();
-    }
+        float step = Time.deltaTime * transitionSpeed;
 
-    private void ApplyProximityEffects()
-    {
-        float proximityFactor = 0.5f; 
+        float vignetteDest = isAnimatingSurge ? targetVignetteIntensity : defaultVignette;
+        float chromaticDest = isAnimatingSurge ? targetChromaticIntensity : defaultChromatic;
+        float fovDest = isAnimatingSurge ? targetFieldOfView : defaultFOV;
 
         if (vignetteComponent != null)
-        {
-            vignetteComponent.intensity.overrideState = true;
-            vignetteComponent.intensity.value = Mathf.Lerp(minVignetteIntensity, maxVignetteIntensity, proximityFactor);
-        }
-
-        if (colorAdjustments != null)
-        {
-            colorAdjustments.saturation.overrideState = true;
-            colorAdjustments.saturation.value = Mathf.Lerp(0f, maxDesaturationTarget, proximityFactor);
-        }
+            vignetteComponent.intensity.value = Mathf.MoveTowards(vignetteComponent.intensity.value, vignetteDest, step);
 
         if (chromaticAberration != null)
-        {
-            chromaticAberration.intensity.overrideState = true;
-            float jitterAmount = Mathf.Sin(Time.time * 35f) * 0.15f * proximityFactor;
-            float targetChromatic = Mathf.Lerp(0f, maxChromaticIntensity, proximityFactor) + jitterAmount;
-            chromaticAberration.intensity.value = Mathf.Clamp01(targetChromatic);
-        }
+            chromaticAberration.intensity.value = Mathf.MoveTowards(chromaticAberration.intensity.value, chromaticDest, step * 2f);
 
-        if (playerCamera != null)
+        if (targetCamera != null)
+            targetCamera.fieldOfView = Mathf.Lerp(targetCamera.fieldOfView, fovDest, step);
+
+
+        // 2. Handle Focus Distance Lerping (controlled via separate animation states)
+        if (depthOfFieldComponent != null)
         {
-            playerCamera.fieldOfView = Mathf.Lerp(defaultFieldOfView, zoomedFieldOfView, proximityFactor);
+            float focusDest = isAnimatingFocusDistance ? targetFocusDistance : defaultFocusDistance;
+            depthOfFieldComponent.focusDistance.value = Mathf.Lerp(depthOfFieldComponent.focusDistance.value, focusDest, step);
         }
     }
 
-    public void ResetEffects()
+    // --- PUBLIC FUNCTIONS FOR ANIMATION EVENTS ---
+
+    public void TriggerPostProcessSurge()
     {
-        if (vignetteComponent != null)
-        {
-            vignetteComponent.intensity.overrideState = true;
-            vignetteComponent.intensity.value = minVignetteIntensity;
-        }
+        isAnimatingSurge = true;
+    }
 
-        if (colorAdjustments != null)
-        {
-            colorAdjustments.saturation.overrideState = true;
-            colorAdjustments.saturation.value = 0f;
-        }
+    public void ResetToDefaultPostProcess()
+    {
+        isAnimatingSurge = false;
+    }
 
-        if (chromaticAberration != null)
-        {
-            chromaticAberration.intensity.overrideState = true;
-            chromaticAberration.intensity.value = 0f;
-        }
+    public void TriggerFocusDistanceShift()
+    {
+        isAnimatingFocusDistance = true;
+    }
 
-        if (playerCamera != null)
-        {
-            playerCamera.fieldOfView = defaultFieldOfView;
-        }
+    public void ResetFocusDistanceToDefault()
+    {
+        isAnimatingFocusDistance = false;
     }
 }
