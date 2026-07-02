@@ -83,20 +83,26 @@ public class BatteryComponent : MonoBehaviour, ISaveable
 
     private void SetupHighlightRenderer()
     {
-        MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>();
+        // Imported models may use a different Renderer subtype and can contain
+        // disabled child renderers. Include both so swapping the visual model does
+        // not silently disconnect the highlight.
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
 
-        foreach (MeshRenderer meshRenderer in meshRenderers)
+        foreach (Renderer renderer in renderers)
         {
-            foreach (Material material in meshRenderer.materials)
+            foreach (Material material in renderer.materials)
             {
-                material.EnableKeyword("_EMISSION");
-
                 string propertyName = GetEmissionPropertyName(material);
                 if (string.IsNullOrEmpty(propertyName))
                     continue;
 
+                material.EnableKeyword("_EMISSION");
+
                 Color originalColor = material.GetColor(propertyName);
-                if (originalColor == Color.black)
+                // Imported FBX materials commonly store black emission with alpha
+                // zero. Color.black has alpha one, so an exact Color comparison
+                // leaves that material permanently black when pulsed.
+                if (Mathf.Max(originalColor.r, originalColor.g, originalColor.b) <= 0.001f)
                     originalColor = Color.white;
 
                 runtimeMaterials.Add(material);
@@ -112,10 +118,15 @@ public class BatteryComponent : MonoBehaviour, ISaveable
             return highlightPropertyName;
 
         string alternateName = highlightPropertyName.StartsWith("_")
-            ? highlightPropertyName.Replace("_", string.Empty)
+            ? highlightPropertyName.Substring(1)
             : "_" + highlightPropertyName;
 
-        return material.HasProperty(alternateName) ? alternateName : string.Empty;
+        if (material.HasProperty(alternateName))
+            return alternateName;
+
+        // HDRP and some imported shaders use "Emissive" rather than "Emission".
+        const string emissiveColor = "_EmissiveColor";
+        return material.HasProperty(emissiveColor) ? emissiveColor : string.Empty;
     }
 
     private void ApplyHighlightPulse()
