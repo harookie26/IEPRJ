@@ -50,6 +50,13 @@ public sealed class FlashlightOnboardingDirector : MonoBehaviour
     private bool batteryDepleted;
     private bool ownsCutsceneState;
 
+    public bool IsBatteryOnboardingComplete => onboardingBattery != null && onboardingBattery.IsUsed;
+
+    public bool Manages(BatteryComponent battery)
+    {
+        return battery != null && onboardingBattery == battery;
+    }
+
     private void Awake()
     {
         onboardingBattery ??= GetComponent<BatteryComponent>();

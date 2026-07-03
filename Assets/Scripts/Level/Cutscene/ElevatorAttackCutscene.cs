@@ -134,6 +134,9 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
             yield break;
         }
 
+        if (_flashlight != null && _flashlight.IsOn)
+            _flashlight.SetIsOn(false);
+
         bool beganGlobalCutscene = GameState.BeginCutscene();
         if (beganGlobalCutscene)
             EventBroadcaster.Instance?.PostEvent(CutsceneEvents.CUTSCENE_START);

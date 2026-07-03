@@ -39,6 +39,8 @@ public class BatteryComponent : MonoBehaviour, ISaveable
     private bool isUsed;
     private bool onboardingRevealed;
     private bool onboardingInteractionEnabled;
+    private bool highlightUnlocked;
+    private FlashlightOnboardingDirector onboardingDirector;
     private float highlightTime;
     private readonly List<Material> runtimeMaterials = new();
     private readonly List<Color> originalEmissionColors = new();
@@ -46,6 +48,7 @@ public class BatteryComponent : MonoBehaviour, ISaveable
 
     public string SaveKey => string.IsNullOrWhiteSpace(batteryId) ? GetHierarchyPath() : batteryId;
     public float RequiredReplacementDuration => requiredReplacementDuration;
+    public bool IsUsed => isUsed;
     public bool CanUse => isActiveAndEnabled
         && !isUsed
         && (!waitForFlashlightDepletion || onboardingInteractionEnabled);
@@ -61,9 +64,31 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         ApplyHighlightVisibility();
     }
 
+    private void Start()
+    {
+        onboardingDirector = FindBatteryOnboardingDirector();
+
+        // Duplicating the onboarding battery also duplicates its serialized wait
+        // flag. Only the battery owned by a director should remain gated; every
+        // other battery must behave like a normal recharge pickup.
+        if (waitForFlashlightDepletion && !HasOnboardingDirector())
+        {
+            waitForFlashlightDepletion = false;
+            onboardingRevealed = true;
+            onboardingInteractionEnabled = true;
+        }
+
+        RefreshHighlightAvailability();
+        ApplyHighlightVisibility();
+    }
+
     private void Update()
     {
-        if (!enableHighlight || (waitForFlashlightDepletion && !onboardingRevealed))
+        RefreshHighlightAvailability();
+
+        if (!enableHighlight
+            || (waitForFlashlightDepletion && !onboardingRevealed)
+            || (!waitForFlashlightDepletion && !highlightUnlocked))
             return;
 
         highlightTime += Time.deltaTime;
@@ -169,12 +194,59 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         if (!enableHighlight)
             return;
 
-        bool visible = !waitForFlashlightDepletion || onboardingRevealed;
+        bool visible = waitForFlashlightDepletion
+            ? onboardingRevealed
+            : highlightUnlocked;
         for (int i = 0; i < runtimeMaterials.Count; i++)
         {
             Material material = runtimeMaterials[i];
             if (material != null)
                 material.SetColor(emissionPropertyNames[i], visible ? originalEmissionColors[i] * minHighlightIntensity : Color.black);
+        }
+    }
+
+    private bool HasOnboardingDirector()
+    {
+        FlashlightOnboardingDirector[] directors = FindObjectsByType<FlashlightOnboardingDirector>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        foreach (FlashlightOnboardingDirector director in directors)
+        {
+            if (director != null && director.Manages(this))
+                return true;
+        }
+
+        return false;
+    }
+
+    private FlashlightOnboardingDirector FindBatteryOnboardingDirector()
+    {
+        FlashlightOnboardingDirector[] directors = FindObjectsByType<FlashlightOnboardingDirector>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        foreach (FlashlightOnboardingDirector director in directors)
+        {
+            if (director != null && director.Manages(this))
+                return director;
+        }
+
+        // Ordinary batteries are not directly managed, but still use the scene's
+        // battery onboarding director as their highlight unlock source.
+        return directors.Length > 0 ? directors[0] : null;
+    }
+
+    private void RefreshHighlightAvailability()
+    {
+        if (highlightUnlocked || waitForFlashlightDepletion)
+            return;
+
+        onboardingDirector ??= FindBatteryOnboardingDirector();
+        if (onboardingDirector != null && onboardingDirector.IsBatteryOnboardingComplete)
+        {
+            highlightUnlocked = true;
+            ApplyHighlightVisibility();
         }
     }
 
