@@ -95,6 +95,8 @@ public class CorruptedTutorialCutscene : MonoBehaviour
             EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_START);
         }
 
+        FindFirstObjectByType<UIManager>()?.HideAll();
+
         // 1. Setup Phase
         if (mainCamera != null) mainCamera.enabled = false; 
         cutsceneCamera.enabled = true;

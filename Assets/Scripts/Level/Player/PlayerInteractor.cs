@@ -192,6 +192,13 @@ public class PlayerInteractor : MonoBehaviour
         if (rayOrigin == null || uIManager == null)
             return;
 
+        if (GameState.IsCutsceneActive)
+        {
+            currentHudKey = null;
+            uIManager.HideAll();
+            return;
+        }
+
         string desiredKey = null;
         Collider hitCol = null;
         bool isInteract = false;
