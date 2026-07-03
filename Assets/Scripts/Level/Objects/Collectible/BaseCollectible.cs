@@ -238,7 +238,6 @@ public class BaseCollectible : MonoBehaviour, ICollectible
                 DialogueTriggerManager.Instance.TriggerPaintbucketDialogue();
             }
 
-            DialogueTriggerManager.Instance.TriggerFlashlightDialogue();
         }
 
         var manager = FindFirstObjectByType<PlayerCollectibleManager>();

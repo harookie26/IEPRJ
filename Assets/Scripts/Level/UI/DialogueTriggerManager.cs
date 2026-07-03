@@ -137,18 +137,18 @@ public class DialogueTriggerManager : MonoBehaviour
         DialogueManager.Instance.DisplaySequence(new[] { channelDialogue });
     }
 
-    public void TriggerFindCorruptedDialogue()
+    public DialoguePlaybackHandle TriggerFindCorruptedDialogue()
     {
-        if (SaveCourier.IsLoadingSave) return;
+        if (SaveCourier.IsLoadingSave) return null;
 
         if (triggeredDialogueIDs.Contains(6) || triggeredDialogueIDs.Contains(7))
         {
-            return;
+            return null;
         }
         triggeredDialogueIDs.Add(6);
         triggeredDialogueIDs.Add(7);
 
-        DialogueManager.Instance.DisplaySequence(findCorruptedDialogue);
+        return DialogueManager.Instance.DisplaySequence(findCorruptedDialogue);
     }
 
     public DialoguePlaybackHandle TriggerPaintingBGDialogue(string dialogueID)

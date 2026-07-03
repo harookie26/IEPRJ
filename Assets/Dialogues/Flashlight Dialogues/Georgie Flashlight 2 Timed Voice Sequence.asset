@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e64a84a6c1b496e9d878d241c45b38f, type: 3}
+  m_Name: Georgie Flashlight 2 Timed Voice Sequence
+  m_EditorClassIdentifier: Assembly-CSharp::Level.UI.VoicedDialogueSequence
+  voiceClip: {fileID: 8300000, guid: 37b0ab093ed4dda4f906adba14478b61, type: 3}
+  lines:
+  - characterName: Georgie
+    text: "Don\u2019t let the darkness hide her."
+    startTime: 0.85
+    endTime: 1.97
+    fadeIn: 0.15
+    fadeOut: 0.15
+  - characterName: Georgie
+    text: The light weakens what she's become.
+    startTime: 2.53
+    endTime: 4.61
+    fadeIn: 0.15
+    fadeOut: 0.2

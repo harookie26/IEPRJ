@@ -41,7 +41,10 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
     [SerializeField, Min(0.1f)] private float ghostRevealLightRange = 4f;
 
     [Header("Lounge Elevator Attack Flashlight Response")]
-    [SerializeField] private string georgieFlashlightPrompt = "Use the flashlight!";
+    [SerializeField, Tooltip("Voiced subtitle sequence played when the ghost begins approaching.")]
+    private VoicedDialogueSequence georgieFlashlightPromptSequence;
+    [SerializeField, Tooltip("Voiced sequence played after repelling the ghost or when it reaches the player.")]
+    private VoicedDialogueSequence georgieFlashlightOutcomeSequence;
     [SerializeField, Min(0f)] private float flashlightTutorialDelay = 0.8f;
     [SerializeField, Min(0)] private int flashlightTutorialPanelIndex = 1;
 
@@ -363,12 +366,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
             _flashlight?.SetIsOn(false);
             _flashlight?.SetCutsceneToggleAllowed(true);
 
-            DialogueManager.Instance?.DisplayLatest(
-                "Georgie",
-                georgieFlashlightPrompt,
-                0.08f,
-                2.2f,
-                0.18f);
+            DialogueManager.Instance?.DisplaySequence(georgieFlashlightPromptSequence);
 
             Coroutine tutorialPrompt = StartCoroutine(
                 ShowFlashlightTutorialAfterDelay(flashlightTutorialDelay));
@@ -395,6 +393,8 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
 
         if (retryEncounter)
         {
+            DialogueManager.Instance?.DisplaySequence(georgieFlashlightOutcomeSequence);
+
             if (ScreenFader != null)
                 yield return StartCoroutine(ScreenFader.FadeOutSequence(recoveryFadeDuration));
 
@@ -451,6 +451,8 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
 
             _playerMovement.TeleportToPose(safePlayerEnd, playerEndRotation);
             _playerMovement.SetViewRotation(playerEndRotation.eulerAngles.y, 0f);
+
+            DialogueManager.Instance?.DisplaySequence(georgieFlashlightOutcomeSequence);
         }
 
         gameplayCamera.transform.localPosition = savedCameraLocalPosition;

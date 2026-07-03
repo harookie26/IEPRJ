@@ -216,24 +216,26 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         yield return new WaitForSeconds(request.ViewDuration);
 
-        while (request.DialoguePlayback != null && !request.DialoguePlayback.IsComplete)
-            yield return null;
-
-        yield return Fade(0f, 1f, request.FadeDuration);
-
         if (request.ProgressCameraAnchor != null && request.ProgressViewDuration > 0f)
         {
-            // Teleport the camera to the progress anchor while the screen is black
-            cutsceneCamera.transform.position = request.ProgressCameraAnchor.position;
-            cutsceneCamera.transform.rotation = request.ProgressCameraAnchor.rotation;
-
-            // Fade in to reveal the progress
-            yield return Fade(1f, 0f, request.FadeDuration);
+            // The dialogue's fourth line begins after this authored move. Keep
+            // the audio running while the camera pans to the main painting.
+            yield return PanToAnchor(request.ProgressCameraAnchor, request.FadeDuration);
 
             // Wait and look at the progress
             yield return new WaitForSeconds(request.ProgressViewDuration);
 
+            while (request.DialoguePlayback != null && !request.DialoguePlayback.IsComplete)
+                yield return null;
+
             // Fade back to black
+            yield return Fade(0f, 1f, request.FadeDuration);
+        }
+        else
+        {
+            while (request.DialoguePlayback != null && !request.DialoguePlayback.IsComplete)
+                yield return null;
+
             yield return Fade(0f, 1f, request.FadeDuration);
         }
 
@@ -276,5 +278,24 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         color.a = endAlpha;
         fadeImage.color = color;
+    }
+
+    private IEnumerator PanToAnchor(Transform anchor, float duration)
+    {
+        Vector3 startPosition = cutsceneCamera.transform.position;
+        Quaternion startRotation = cutsceneCamera.transform.rotation;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+            cutsceneCamera.transform.SetPositionAndRotation(
+                Vector3.Lerp(startPosition, anchor.position, t),
+                Quaternion.Slerp(startRotation, anchor.rotation, t));
+            yield return null;
+        }
+
+        cutsceneCamera.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
     }
 }

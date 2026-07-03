@@ -264,7 +264,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         }
         else if (paintingId == "000")
         {
-            DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
+            dialoguePlayback = DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
 
             //StartCoroutine(WaitForInitialCutsceneToFinish());
