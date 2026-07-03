@@ -29,6 +29,7 @@ public class EffectsController : MonoBehaviour
     private float defaultFOV = 60f;
     private float defaultFocusDistance = 3f;
 
+    private bool isActivated = false;
     private bool isAnimatingSurge = false;
     private bool isAnimatingFocusDistance = false;
 
@@ -66,6 +67,9 @@ public class EffectsController : MonoBehaviour
 
     private void Update()
     {
+        if (isActivated)
+            return;
+
         float step = Time.deltaTime * transitionSpeed;
 
         float vignetteDest = isAnimatingSurge ? targetVignetteIntensity : defaultVignette;
@@ -110,5 +114,10 @@ public class EffectsController : MonoBehaviour
     public void ResetFocusDistanceToDefault()
     {
         isAnimatingFocusDistance = false;
+    }
+
+    public void TriggerActivated()
+    {
+        isActivated = true;
     }
 }

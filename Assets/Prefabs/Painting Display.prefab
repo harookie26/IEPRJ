@@ -135,8 +135,8 @@ Light:
   serializedVersion: 12
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.1
-  m_Range: 1.5
+  m_Intensity: 0.12
+  m_Range: 1.071282
   m_SpotAngle: 115.33217
   m_InnerSpotAngle: 97.1187
   m_CookieSize2D: {x: 0.5, y: 0.5}
@@ -174,7 +174,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingLayerMask: 1
-  m_Lightmapping: 1
+  m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 0.5363062, y: 0.9407175}
   m_BounceIntensity: 1
@@ -357,7 +357,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1926325681538965296, guid: 8a23d3ed997aab9498c2d61933d79ec9, type: 3}
       propertyPath: m_Lightmapping
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1926325681538965296, guid: 8a23d3ed997aab9498c2d61933d79ec9, type: 3}
       propertyPath: m_InnerSpotAngle
