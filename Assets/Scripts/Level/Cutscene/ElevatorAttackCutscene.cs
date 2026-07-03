@@ -361,6 +361,10 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
         bool retryEncounter = false;
         if (ghost != null)
         {
+            // At this point the reveal/look-back has completed and the ghost is
+            // visible to the player. Escalate to the second ambient track.
+            _audioList?.PlayPostEnemyIntroAmbient();
+
             // Require a fresh press during the threat instead of accepting a
             // flashlight that happened to be on before the elevator opened.
             _flashlight?.SetIsOn(false);
@@ -472,6 +476,9 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
 
         if (GameState.EndCutscene())
             EventBroadcaster.Instance?.PostEvent(CutsceneEvents.CUTSCENE_END);
+
+        // Both the successful repel and ghost-contact recovery converge here.
+        _audioList?.PlayPreEnemyIntroAmbient();
 
         if (retryEncounter && ScreenFader != null)
             yield return StartCoroutine(ScreenFader.FadeInSequence(recoveryFadeDuration));
