@@ -218,9 +218,17 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         if (request.ProgressCameraAnchor != null && request.ProgressViewDuration > 0f)
         {
-            // The dialogue's fourth line begins after this authored move. Keep
-            // the audio running while the camera pans to the main painting.
-            yield return PanToAnchor(request.ProgressCameraAnchor, request.FadeDuration);
+            // 1. Fade to black
+            yield return Fade(0f, 1f, request.FadeDuration);
+
+            // 2. Snap the camera instantly to the new anchor's position and rotation
+            cutsceneCamera.transform.SetPositionAndRotation(
+                request.ProgressCameraAnchor.position,
+                request.ProgressCameraAnchor.rotation
+            );
+
+            // 3. Fade back in
+            yield return Fade(1f, 0f, request.FadeDuration);
 
             // Wait and look at the progress
             yield return new WaitForSeconds(request.ProgressViewDuration);

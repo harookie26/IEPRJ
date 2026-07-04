@@ -33956,6 +33956,14 @@ PrefabInstance:
       value: 286
       objectReference: {fileID: 0}
     - target: {fileID: 4961117030918307817, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+      propertyPath: m_Intensity
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4961117030918307817, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
+      propertyPath: m_Lightmapping
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4961117030918307817, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_BoundingSphereOverride.w
       value: 3.1224935e-38
       objectReference: {fileID: 0}
@@ -34861,11 +34869,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8828311996467966724, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8828311996467966724, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -6
+      value: -10
       objectReference: {fileID: 0}
     - target: {fileID: 8828311996467966724, guid: df4af162af525aa4c9e54a6f1bbfc1f9, type: 3}
       propertyPath: m_LocalPosition.z
