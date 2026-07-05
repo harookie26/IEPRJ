@@ -397,7 +397,11 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
 
         if (retryEncounter)
         {
-            DialogueManager.Instance?.DisplaySequence(georgieFlashlightOutcomeSequence);
+            DialoguePlaybackHandle outcomeDialogue =
+                DialogueManager.Instance?.DisplaySequence(georgieFlashlightOutcomeSequence);
+
+            while (outcomeDialogue != null && !outcomeDialogue.IsComplete)
+                yield return null;
 
             if (ScreenFader != null)
                 yield return StartCoroutine(ScreenFader.FadeOutSequence(recoveryFadeDuration));
@@ -456,11 +460,24 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
             _playerMovement.TeleportToPose(safePlayerEnd, playerEndRotation);
             _playerMovement.SetViewRotation(playerEndRotation.eulerAngles.y, 0f);
 
-            DialogueManager.Instance?.DisplaySequence(georgieFlashlightOutcomeSequence);
+            // Teleporting rotates the camera's parent. Reapply the authored world
+            // pose so the camera and held flashlight keep facing the elevator.
+            gameplayCamera.transform.SetPositionAndRotation(
+                standingCameraPosition,
+                standingCameraRotation);
+
+            DialoguePlaybackHandle outcomeDialogue =
+                DialogueManager.Instance?.DisplaySequence(georgieFlashlightOutcomeSequence);
+
+            while (outcomeDialogue != null && !outcomeDialogue.IsComplete)
+                yield return null;
         }
 
         gameplayCamera.transform.localPosition = savedCameraLocalPosition;
-        gameplayCamera.transform.localRotation = savedCameraLocalRotation;
+        gameplayCamera.transform.localRotation = Quaternion.Euler(
+            _playerMovement.CameraPitch,
+            0f,
+            0f);
         gameplayCamera.fieldOfView = savedFieldOfView;
         if (cameraMotion != null)
             cameraMotion.enabled = savedCameraMotionEnabled;

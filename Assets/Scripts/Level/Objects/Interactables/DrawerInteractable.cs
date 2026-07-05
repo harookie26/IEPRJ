@@ -65,24 +65,9 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        // Don't let the player spam 'E' while it's already sliding
         if (drawerObject == null || hasOpened || isSliding) return;
 
-        hasOpened = true;
-
-        // Multiple interaction listeners can run during the same input event. Delay
-        // activation so a later listener cannot collect the key with this press.
-        StartCoroutine(EnableKeyNextFrame());
-
-        // Start the smooth slide animation via code
         StartCoroutine(SlideDrawerRoutine());
-    }
-
-    private IEnumerator EnableKeyNextFrame()
-    {
-        yield return null;
-
-        SetKeyColliderEnabled(true);
     }
 
     private void SetKeyColliderEnabled(bool enabled)
@@ -122,6 +107,7 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
     private IEnumerator SlideDrawerRoutine()
     {
         isSliding = true;
+        SetDrawerCollidersEnabled(false);
 
         // Loop until the drawer reaches the target position
         while (Vector3.Distance(drawerObject.transform.position, openPosition) > 0.001f)
@@ -137,13 +123,9 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
 
         // Snap exactly to the final position to be safe
         drawerObject.transform.position = openPosition;
+        hasOpened = true;
         isSliding = false;
-
-        // DESTROY ALL COLLIDERS ON THE DRAWER
-        foreach (Collider col in GetComponents<Collider>())
-        {
-            Destroy(col);
-        }
+        SetKeyColliderEnabled(true);
     }
 
     private void ApplyUnlockedState()
@@ -154,11 +136,13 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
         drawerObject.transform.position = openPosition;
         SetKeyColliderEnabled(true);
 
-        // DESTROY ALL COLLIDERS ON THE DRAWER
+        SetDrawerCollidersEnabled(false);
+    }
+
+    private void SetDrawerCollidersEnabled(bool enabled)
+    {
         foreach (Collider col in GetComponents<Collider>())
-        {
-            Destroy(col);
-        }
+            col.enabled = enabled;
     }
 
     public DrawerSaveData GetSaveData()
@@ -181,6 +165,7 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
         else
         {
             SetKeyColliderEnabled(false);
+            SetDrawerCollidersEnabled(true);
         }
     }
 }
