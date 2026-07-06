@@ -44,6 +44,7 @@ public readonly struct PaintingCutsceneRequest
 
     public Transform ProgressCameraAnchor { get; }
     public float ProgressViewDuration { get; }
+
 }
 
 [DisallowMultipleComponent]
@@ -53,6 +54,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     [SerializeField] private Camera cutsceneCamera;
     [SerializeField] private Image fadeImage;
+    [SerializeField] MainPainting mainPainting;
 
     private Coroutine activeCutscene;
     private Camera gameplayCamera;
@@ -72,6 +74,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
         Instance = this;
         ResolveDependencies();
     }
+
 
     private void OnDestroy()
     {
@@ -133,6 +136,18 @@ public class PaintingCutsceneDirector : MonoBehaviour
         ownsCutsceneState = false;
         if (GameState.EndCutscene())
             EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_END);
+
+
+        if (mainPainting != null)
+        {
+            Debug.Log("[PaintingCutsceneDirector] Checking if the main painting is fully revealed after cutscene.");
+            bool revealedByCovers = mainPainting.IsFullyRevealed();
+
+            if (revealedByCovers)
+            {
+                DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
+            }
+        }
     }
 
     private void ResolveDependencies()

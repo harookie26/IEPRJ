@@ -68,6 +68,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     private AudioSource restorationMusicAudioSource;
     private AudioList audioList;
 
+
     private CheckpointManager checkpointManager => FindFirstObjectByType<CheckpointManager>();
 
     private float channelTimer = 0f;
@@ -298,6 +299,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             dialoguePlayback,
             progressCameraAnchor,
             progressViewDuration));
+
+
 
     }
 

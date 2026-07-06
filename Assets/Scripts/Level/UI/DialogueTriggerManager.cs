@@ -217,7 +217,7 @@ public class DialogueTriggerManager : MonoBehaviour
 
         if (triggeredDialogueIDs.Contains(12)) return;
         triggeredDialogueIDs.Add(12);
-        DialogueManager.Instance.DisplaySequence(new[] { finalPaintingFixedDialogue });
+        DialogueManager.Instance.Display(finalPaintingFixedDialogue);
     }
 
 
