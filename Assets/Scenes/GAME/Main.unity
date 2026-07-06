@@ -17,7 +17,7 @@ RenderSettings:
   m_Fog: 1
   m_FogColor: {r: 0.12032752, g: 0.14955176, b: 0.1509434, a: 1}
   m_FogMode: 3
-  m_FogDensity: 0.15
+  m_FogDensity: 0.085
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
   m_AmbientSkyColor: {r: 0.6886792, g: 0.57498217, b: 0.57498217, a: 1}
@@ -192,6 +192,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1614538770}
     - target: {fileID: 5922703937117106051, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
+      propertyPath: reappearDelay
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5922703937117106051, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: 'teleportPoints.Array.data[0]'
       value: 
       objectReference: {fileID: 1539407455}
@@ -238,6 +242,10 @@ PrefabInstance:
     - target: {fileID: 7401007538532509647, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Center.y
       value: 0.5412471
+      objectReference: {fileID: 0}
+    - target: {fileID: 7401007538532509647, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
+      propertyPath: m_ExcludeLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 8648626882688561774, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Mesh
@@ -11604,6 +11612,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1614538770}
     - target: {fileID: 5922703937117106051, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
+      propertyPath: reappearDelay
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5922703937117106051, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: teleportPoints.Array.size
       value: 7
       objectReference: {fileID: 0}
@@ -11670,6 +11682,10 @@ PrefabInstance:
     - target: {fileID: 7401007538532509647, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Center.y
       value: 0.5412471
+      objectReference: {fileID: 0}
+    - target: {fileID: 7401007538532509647, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
+      propertyPath: m_ExcludeLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 8648626882688561774, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Mesh
@@ -23913,6 +23929,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1614538770}
     - target: {fileID: 5922703937117106051, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
+      propertyPath: reappearDelay
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5922703937117106051, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: teleportPoints.Array.size
       value: 3
       objectReference: {fileID: 0}
@@ -23959,6 +23979,10 @@ PrefabInstance:
     - target: {fileID: 7401007538532509647, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Center.y
       value: 0.5412471
+      objectReference: {fileID: 0}
+    - target: {fileID: 7401007538532509647, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
+      propertyPath: m_ExcludeLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 8648626882688561774, guid: c1e640716f38d8e47b86b6e3c1a5d984, type: 3}
       propertyPath: m_Mesh

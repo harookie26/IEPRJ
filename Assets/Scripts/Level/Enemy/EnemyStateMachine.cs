@@ -60,6 +60,9 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
     [SerializeField] private float[] stunDurationTiers = new float[] { 5f, 3.5f, 2.5f, 1.5f };
     private float currentStunDuration;
 
+    [SerializeField] private float reappearDelay = 2.0f;
+    private Coroutine reappearDelayCoroutine;
+
     [Header("Tension Management")]
     [SerializeField] private float maxSilentPassiveDuration = 45f;
     private float passiveTensionTimer = 0f;
@@ -228,6 +231,12 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
             {
                 StopCoroutine(stunGlitchCoroutine);
                 stunGlitchCoroutine = null;
+            }
+
+            if (reappearDelayCoroutine != null)
+            {
+                StopCoroutine(reappearDelayCoroutine);
+                reappearDelayCoroutine = null;
             }
 
             DisableAgentPhysics(); 
@@ -517,6 +526,12 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
     {
         if (!isEnemyActivated) return;
 
+        if (reappearDelayCoroutine != null)
+        {
+            StopCoroutine(reappearDelayCoroutine);
+            reappearDelayCoroutine = null;
+        }
+
         StopChaseAudio();
         StopGhostVoice();
         if (navMeshAgent != null && navMeshAgent.enabled)
@@ -529,25 +544,52 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         isFrozen = true;
         
         SetGhostVisuals(false);
-
     }
 
     public void Unfreeze()
     {
         if (!isEnemyActivated || !isFrozen) return;
 
+        //isFrozen = false;
+
+        if (reappearDelayCoroutine != null) StopCoroutine(reappearDelayCoroutine);
+        reappearDelayCoroutine = StartCoroutine(DelayedReappearRoutine());
+
+        //if (navMeshAgent != null && navMeshAgent.enabled)
+        //{
+        //    navMeshAgent.isStopped = false;
+        //}
+
+
+        //PlayGhostVoice();
+
+        //ChangeState(RoamState);
+    }
+
+    private IEnumerator DelayedReappearRoutine()
+    {
+        yield return new WaitForSeconds(reappearDelay);
+
+        while (IsInCutscene)
+        {
+            yield return null;
+        }
+
         isFrozen = false;
+
+        SetGhostVisuals(true);
+        SetGhostColliders(true);
 
         if (navMeshAgent != null && navMeshAgent.enabled)
         {
             navMeshAgent.isStopped = false;
         }
 
-        SetGhostVisuals(true);
-
         PlayGhostVoice();
-
         ChangeState(RoamState);
+        
+
+        reappearDelayCoroutine = null;
     }
 
     private void SetGhostColliders(bool enabled)
@@ -692,6 +734,12 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         {
             StopCoroutine(stunGlitchCoroutine);
             stunGlitchCoroutine = null;
+        }
+
+        if (reappearDelayCoroutine != null)
+        {
+            StopCoroutine(reappearDelayCoroutine);
+            reappearDelayCoroutine = null;
         }
 
         isFrozen = false;
