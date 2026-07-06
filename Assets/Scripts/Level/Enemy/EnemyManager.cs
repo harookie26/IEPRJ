@@ -51,6 +51,7 @@ public class EnemyManager : MonoBehaviour, ISaveable
     private int currentIntervalIndex = 0;
     private float checkTimer = 0f;
     private EnemyStateMachine activeGhost = null;
+    private string savedActiveGhostName = "";
     private bool isCutscenePlaying = false;
     private void Start()
     {
@@ -408,6 +409,7 @@ public class EnemyManager : MonoBehaviour, ISaveable
         this.currentIntervalIndex = data.currentIntervalIndex;
         this.checkTimer = data.checkTimer;
         this.currentTriggerCount = data.currentTriggerCount;
+        this.savedActiveGhostName = data.activeGhostName;
 
         StopAllCoroutines();
 
@@ -421,7 +423,9 @@ public class EnemyManager : MonoBehaviour, ISaveable
         yield return null;
         yield return null;
 
-        string targetGhostName = SaveCourier.LoadedActiveGhostName;
+        string targetGhostName = !string.IsNullOrEmpty(savedActiveGhostName)
+            ? savedActiveGhostName
+            : SaveCourier.LoadedActiveGhostName;
         Debug.Log($"[EnemyManager] Post-load evaluation running. Saved Activation State: {systemIsActivated}");
 
         EnemyStateMachine ghostToActivate = null;
@@ -477,6 +481,7 @@ public class EnemyManager : MonoBehaviour, ISaveable
         }
 
         // Clear the courier reference so it doesn't taint future manual room/floor triggers
+        savedActiveGhostName = "";
         SaveCourier.LoadedActiveGhostName = "";
     }
 }

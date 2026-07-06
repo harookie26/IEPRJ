@@ -23,6 +23,7 @@ public static class GlobalSaveSystem
 
         data.spatialSFXStates = new List<SpatialSFXSaveData>();
         data.spatialTriggerStates = new List<SpatialTriggerSaveData>();
+        data.interactionTriggerStates = new List<InteractionTriggerSaveData>();
         data.batteryStates = new List<BatterySaveData>();
         data.savedEnemies = new List<EnemySaveData>();
 
@@ -42,6 +43,13 @@ public static class GlobalSaveSystem
                 Debug.Log($"[Global Save System] Capturing state for SpatialTrigger: {stx.SaveKey}");
                 data.spatialTriggerStates.Add(
                     (SpatialTriggerSaveData)stx.CaptureState()
+                );
+            }
+
+            if (s is InteractionTrigger interactionTrigger)
+            {
+                data.interactionTriggerStates.Add(
+                    (InteractionTriggerSaveData)interactionTrigger.CaptureState()
                 );
             }
 
@@ -117,6 +125,18 @@ public static class GlobalSaveSystem
                 foreach (var state in data.spatialTriggerStates)
                 {
                     if (state.id == stx.SaveKey) { stx.RestoreState(state); break; }
+                }
+            }
+
+            if (s is InteractionTrigger interactionTrigger && data.interactionTriggerStates != null)
+            {
+                foreach (var state in data.interactionTriggerStates)
+                {
+                    if (state.id == interactionTrigger.SaveKey)
+                    {
+                        interactionTrigger.RestoreState(state);
+                        break;
+                    }
                 }
             }
 

@@ -38,6 +38,14 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
     [Header("Animation")]
     public Animator animator;
 
+    [Header("Player Capture Sequence")]
+    [SerializeField, Min(0.05f)] private float captureTurnDuration = 1.15f;
+    [SerializeField, Min(0.1f)] private float captureLiftDuration = 2.1f;
+    [SerializeField, Min(0f)] private float captureLiftHeight = 0.7f;
+    [SerializeField] private float captureLookHeight = 1.35f;
+    [SerializeField] private AudioClip neckSnapSFX;
+    [SerializeField] private AudioClip bodyFallSFX;
+
     [Header("Stun Glitch Effects")]
     [Tooltip("The minimum duration (seconds) a single blink state lasts.")]
     [SerializeField] private float minGlitchInterval = 0.35f;
@@ -68,6 +76,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
     private CheckpointManager checkpoint => FindFirstObjectByType<CheckpointManager>();
     private static bool captureInProgress;
     private bool isRespawning;
+    private PlayerCamera activeCaptureCamera;
 
     private bool configWarned = false;
     private int scriptedEncounters = 0;
@@ -740,9 +749,7 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
 
     private IEnumerator KillSequence()
     {
-        ///Insert Kill Animations and calls here
-
-        yield return new WaitForSeconds(1);
+        yield return PlayCaptureSequence();
         EventBroadcaster.Instance.PostEvent(GameStateEvents.ON_GAME_RESTART);
 
         CheckpointManager checkpointManager = checkpoint;
@@ -750,6 +757,12 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
         {
             checkpointManager.ReturnToCheckpoint();
             yield return new WaitUntil(() => !checkpointManager.IsRespawnInProgress);
+        }
+
+        if (activeCaptureCamera != null)
+        {
+            activeCaptureCamera.ClearCutsceneRoll();
+            activeCaptureCamera = null;
         }
 
         // Every enemy observes the catch event and is suspended above. Resume all
@@ -764,6 +777,161 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
 
         captureInProgress = false;
 
+    }
+
+    private IEnumerator PlayCaptureSequence()
+    {
+        GameObject player = targetPlayer != null ? targetPlayer : GameObject.FindWithTag("Player");
+        PlayerMovement movement = player != null ? player.GetComponent<PlayerMovement>() : null;
+        EnemyStateMachine captureGhost = FindClosestActiveGhost(player != null ? player.transform.position : Vector3.zero);
+
+        if (player == null || movement == null || captureGhost == null || captureGhost.Enemy == null)
+        {
+            yield return new WaitForSeconds(0.25f);
+            yield break;
+        }
+
+        GameState.BeginCutscene();
+        movement.SetCanMove(false);
+        movement.ResetVelocity();
+        activeCaptureCamera = player.GetComponentInChildren<PlayerCamera>();
+
+        Vector3 startPosition = player.transform.position;
+        float startYaw = player.transform.eulerAngles.y;
+        float startPitch = movement.CameraPitch;
+        Vector3 lookTarget = captureGhost.Enemy.transform.position + Vector3.up * captureLookHeight;
+        Vector3 lookDirection = lookTarget - (startPosition + Vector3.up * 1.6f);
+        Vector3 flatLookDirection = Vector3.ProjectOnPlane(lookDirection, Vector3.up);
+        float targetYaw = flatLookDirection.sqrMagnitude > 0.001f
+            ? Quaternion.LookRotation(flatLookDirection).eulerAngles.y
+            : startYaw;
+        // Runtime floors prevent older scene instances with zero/short serialized
+        // values from collapsing the sequence into a near-instant teleport.
+        float turnDuration = Mathf.Clamp(captureTurnDuration, 0.65f, 0.8f);
+        float liftDuration = Mathf.Clamp(captureLiftDuration, 1f, 1.25f);
+        float liftHeight = Mathf.Max(0.55f, captureLiftHeight);
+        float upwardPitch = -30f;
+
+        for (float elapsed = 0f; elapsed < turnDuration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / turnDuration);
+            float eased = Mathf.SmoothStep(0f, 1f, t);
+            float yaw = Mathf.LerpAngle(startYaw, targetYaw, eased);
+            float pitch = Mathf.Lerp(startPitch, upwardPitch, eased);
+            movement.SetViewRotation(yaw, pitch);
+            yield return null;
+        }
+
+        movement.SetViewRotation(targetYaw, upwardPitch);
+
+        // A short recognition beat makes the grab legible before the body moves.
+        float gripPause = 0.3f;
+        for (float elapsed = 0f; elapsed < gripPause; elapsed += Time.deltaTime)
+        {
+            movement.TeleportToPose(startPosition, Quaternion.Euler(0f, targetYaw, 0f));
+            movement.SetViewRotation(targetYaw, upwardPitch);
+            yield return null;
+        }
+
+        for (float elapsed = 0f; elapsed < liftDuration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / liftDuration);
+            float lift = Mathf.SmoothStep(0f, 1f, t);
+            Vector3 position = startPosition + Vector3.up * (liftHeight * lift);
+
+            movement.TeleportToPose(position, Quaternion.Euler(0f, targetYaw, 0f));
+            movement.SetViewRotation(targetYaw, upwardPitch);
+            yield return null;
+        }
+
+        Vector3 liftedPosition = startPosition + Vector3.up * liftHeight;
+        movement.TeleportToPose(liftedPosition, Quaternion.Euler(0f, targetYaw, 0f));
+        movement.SetViewRotation(targetYaw, upwardPitch);
+
+        // Resist the turn first. The actual break remains fast so it reads as impact.
+        const float neckResistanceDuration = 1f;
+        const float neckSnapDuration = 0.18f;
+        const float brokenNeckRoll = 68f;
+        const float brokenNeckYawOffset = 24f;
+        for (float elapsed = 0f; elapsed < neckResistanceDuration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / neckResistanceDuration);
+            float strain = Mathf.SmoothStep(0f, 1f, t);
+            float yaw = Mathf.LerpAngle(targetYaw, targetYaw + 5f, strain);
+            movement.TeleportToPose(liftedPosition, Quaternion.Euler(0f, yaw, 0f));
+            movement.SetViewRotation(yaw, Mathf.Lerp(upwardPitch, -20f, strain));
+            activeCaptureCamera?.SetCutsceneRoll(Mathf.Lerp(0f, 14f, strain));
+            yield return null;
+        }
+
+        AudioList.Current?.PlaySFX(neckSnapSFX);
+        for (float elapsed = 0f; elapsed < neckSnapDuration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / neckSnapDuration);
+            float snap = 1f - Mathf.Pow(1f - t, 4f);
+            float yaw = Mathf.LerpAngle(targetYaw + 5f, targetYaw + brokenNeckYawOffset, snap);
+            movement.TeleportToPose(liftedPosition, Quaternion.Euler(0f, yaw, 0f));
+            movement.SetViewRotation(yaw, Mathf.Lerp(-20f, 12f, snap));
+            activeCaptureCamera?.SetCutsceneRoll(Mathf.Lerp(14f, brokenNeckRoll, snap));
+            yield return null;
+        }
+
+        float brokenYaw = targetYaw + brokenNeckYawOffset;
+        const float brokenSuspensionDuration = 0.9f;
+        for (float elapsed = 0f; elapsed < brokenSuspensionDuration; elapsed += Time.deltaTime)
+        {
+            movement.TeleportToPose(liftedPosition, Quaternion.Euler(0f, brokenYaw, 0f));
+            movement.SetViewRotation(brokenYaw, 12f);
+            activeCaptureCamera?.SetCutsceneRoll(brokenNeckRoll);
+            yield return null;
+        }
+
+        Vector3 floorPosition = startPosition - Vector3.up * 1.15f;
+        const float dropDuration = 1.1f;
+        for (float elapsed = 0f; elapsed < dropDuration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / dropDuration);
+            float fall = t * t;
+            Vector3 position = Vector3.LerpUnclamped(liftedPosition, floorPosition, fall);
+            movement.TeleportToPose(position, Quaternion.Euler(0f, brokenYaw, 0f));
+            movement.SetViewRotation(brokenYaw, Mathf.Lerp(12f, 28f, fall));
+            activeCaptureCamera?.SetCutsceneRoll(brokenNeckRoll);
+            yield return null;
+        }
+
+        AudioList.Current?.PlaySFX(bodyFallSFX);
+
+        // Hold the canted, floor-level view long enough for the impact to register.
+        const float floorHoldDuration = 1.5f;
+        for (float elapsed = 0f; elapsed < floorHoldDuration; elapsed += Time.deltaTime)
+        {
+            movement.TeleportToPose(floorPosition, Quaternion.Euler(0f, brokenYaw, 0f));
+            movement.SetViewRotation(brokenYaw, 28f);
+            activeCaptureCamera?.SetCutsceneRoll(brokenNeckRoll);
+            yield return null;
+        }
+
+        GameState.EndCutscene();
+    }
+
+    private static EnemyStateMachine FindClosestActiveGhost(Vector3 playerPosition)
+    {
+        EnemyStateMachine closest = null;
+        float closestSqrDistance = float.MaxValue;
+
+        foreach (EnemyStateMachine candidate in AllInstances)
+        {
+            if (candidate == null || !candidate.isEnemyActivated || candidate.Enemy == null) continue;
+
+            float sqrDistance = (candidate.Enemy.transform.position - playerPosition).sqrMagnitude;
+            if (sqrDistance < closestSqrDistance)
+            {
+                closest = candidate;
+                closestSqrDistance = sqrDistance;
+            }
+        }
+
+        return closest;
     }
 
     public void ReactToSprinting(Vector3 playerPos)

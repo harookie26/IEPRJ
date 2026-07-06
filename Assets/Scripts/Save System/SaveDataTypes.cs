@@ -43,6 +43,8 @@ public class GameSaveData
 
     public List<SpatialTriggerSaveData> spatialTriggerStates;
 
+    public List<InteractionTriggerSaveData> interactionTriggerStates;
+
     public List<BatterySaveData> batteryStates;
 
     public ElevatorAttackSaveData elevatorAttack;
@@ -76,6 +78,13 @@ public class DialogueSaveData
 [System.Serializable]
 public class EnemyIntroSaveData
 {
+    public bool hasTriggered;
+}
+
+[System.Serializable]
+public class InteractionTriggerSaveData
+{
+    public string id;
     public bool hasTriggered;
 }
 

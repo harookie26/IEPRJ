@@ -18,6 +18,7 @@ public class CheckpointManager : MonoBehaviour
     private GameObject _player => GameObject.FindWithTag("Player");
     private Vector3 _playerSavedPosition;
     private Vector3 _playerSavedRotation;
+    private float _playerSavedCameraPitch;
     private Vector3 _initialPlayerPosition;
     private Vector3 _initialPlayerRotation;
     private PlayerMovement _playerMovement => FindFirstObjectByType<PlayerMovement>();
@@ -67,6 +68,7 @@ public class CheckpointManager : MonoBehaviour
 
         _playerSavedPosition = player.transform.position;
         _playerSavedRotation = player.transform.eulerAngles;
+        _playerSavedCameraPitch = _playerMovement != null ? _playerMovement.CameraPitch : 0f;
 
         if (_enemy == null)
             _enemy = GameObject.FindWithTag("Enemy");
@@ -168,9 +170,11 @@ public class CheckpointManager : MonoBehaviour
             playerRb.isKinematic = true;
         }
 
-        // 4. Instantly teleport the player to the spawn point
-        player.transform.position = playerSpawnPoint.position;
-        player.transform.eulerAngles = _initialPlayerRotation;
+        // 4. Instantly teleport the player using the spawn point's saved pose
+        ApplyPlayerSpawnPose(
+            playerSpawnPoint.position,
+            playerSpawnPoint.rotation.eulerAngles.y,
+            Mathf.DeltaAngle(0f, playerSpawnPoint.rotation.eulerAngles.x));
 
         // 5. Reset enemy position and NavMesh pathing
         if (_enemy != null)
@@ -243,8 +247,7 @@ public class CheckpointManager : MonoBehaviour
 
         Debug.Log($"[CheckpointManager] Respawning at checkpoint position: {respawnPosition}, rotation: {respawnRotation}");
 
-        _player.transform.position = respawnPosition;
-        _player.transform.eulerAngles = respawnRotation;
+        ApplyPlayerSpawnPose(respawnPosition, respawnRotation.y, _playerSavedCameraPitch);
 
         Debug.Log($"[CheckpointManager] Player position after respawn: {_player.transform.position}");
 
@@ -327,6 +330,20 @@ public class CheckpointManager : MonoBehaviour
         _respawnInProgress = false;
 
         Debug.Log($"[CheckpointManager] Returned to checkpoint at index {_currentCheckpointIndex}. PlayerPos: {_playerSavedPosition}, EnemyPos: {_enemySavedPosition}, EnemyState: {_enemySavedStateName}");
+    }
+
+    private void ApplyPlayerSpawnPose(Vector3 position, float yaw, float pitch)
+    {
+        Quaternion bodyRotation = Quaternion.Euler(0f, yaw, 0f);
+
+        if (_playerMovement != null)
+        {
+            _playerMovement.TeleportToPose(position, bodyRotation);
+            _playerMovement.SetViewRotation(yaw, pitch);
+            return;
+        }
+
+        _player.transform.SetPositionAndRotation(position, bodyRotation);
     }
 
     public void SetForceRespawnAtStartSpawn(bool force)

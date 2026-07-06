@@ -147,6 +147,8 @@ MonoBehaviour:
   teleportCooldown: 1
   stunDuration: 2
   animator: {fileID: 2990751854535295366}
+  neckSnapSFX: {fileID: 8300000, guid: 9277c35843d03414599c485215cce24c, type: 3}
+  bodyFallSFX: {fileID: 8300000, guid: b9aa50304ad20b2428f26fdb7305fa0e, type: 3}
   minGlitchInterval: 0.05
   maxGlitchInterval: 0.45
   stunDurationTiers:

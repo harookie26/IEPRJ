@@ -67,6 +67,7 @@ public class PlayerCamera : MonoBehaviour
     private Camera mainCamera;
     private float targetFOV;
     private float currentFOV;
+    private float cutsceneRollOffset;
 
     private float idleTimeElapsed = 0f;
     private float idleMotionPhaseX = 0f;
@@ -374,6 +375,7 @@ public class PlayerCamera : MonoBehaviour
         float pitch = playerMovement != null ? playerMovement.CameraPitch : 0f;
         float safeRoll = Mathf.Clamp(currentRollSway, -90f, 90f);
         if (float.IsNaN(safeRoll)) safeRoll = 0f;
+        safeRoll += cutsceneRollOffset;
 
         Quaternion targetRotation;
 
@@ -421,7 +423,7 @@ public class PlayerCamera : MonoBehaviour
         transform.localPosition = Vector3.Lerp(transform.localPosition, originalPosition, motionLerpSpeed * 2f);
 
         float pitch = playerMovement != null ? playerMovement.CameraPitch : 0f;
-        Quaternion targetRotation = Quaternion.Euler(pitch, 0f, 0f);
+        Quaternion targetRotation = Quaternion.Euler(pitch, 0f, cutsceneRollOffset);
         transform.localRotation = Quaternion.Lerp(transform.localRotation, targetRotation, motionLerpSpeed * 2f);
 
         currentBobOffset = Vector3.zero;
@@ -434,6 +436,16 @@ public class PlayerCamera : MonoBehaviour
         isTransitioningFromIdle = false;
         transitionIdleOffset = Vector3.zero;
         headBobTransitionBlend = 1f;
+    }
+
+    public void SetCutsceneRoll(float roll)
+    {
+        cutsceneRollOffset = roll;
+    }
+
+    public void ClearCutsceneRoll()
+    {
+        cutsceneRollOffset = 0f;
     }
 
     private void UpdateFOV()
