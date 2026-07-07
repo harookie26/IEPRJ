@@ -158,6 +158,7 @@ public class BatterySaveData
     public string id;
     public bool isUsed;
     public bool onboardingRevealed;
+    public float respawnSecondsRemaining;
 }
 
 [System.Serializable]

@@ -60,6 +60,9 @@ public class PaintingCutsceneDirector : MonoBehaviour
     private Camera gameplayCamera;
     private EnemyManager pausedEnemyManager;
     private bool ownsCutsceneState;
+    private Flashlight flashlight;
+    private bool flashlightWasOn;
+    private bool ownsFlashlightState;
 
     public bool IsPlaying => activeCutscene != null;
 
@@ -116,6 +119,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
         }
 
         BeginCutsceneState();
+        TurnOffFlashlight();
         activeCutscene = StartCoroutine(PlayCutscene(request));
         return true;
     }
@@ -137,6 +141,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
         if (GameState.EndCutscene())
             EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_END);
 
+        RestoreFlashlight();
 
         if (mainPainting != null)
         {
@@ -148,6 +153,27 @@ public class PaintingCutsceneDirector : MonoBehaviour
                 DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
             }
         }
+    }
+
+    private void TurnOffFlashlight()
+    {
+        flashlight ??= FindFirstObjectByType<Flashlight>(FindObjectsInactive.Include);
+        if (flashlight == null)
+            return;
+
+        flashlightWasOn = flashlight.IsOn;
+        ownsFlashlightState = true;
+        flashlight.SetIsOn(false);
+    }
+
+    private void RestoreFlashlight()
+    {
+        if (!ownsFlashlightState)
+            return;
+
+        ownsFlashlightState = false;
+        if (flashlight != null)
+            flashlight.SetIsOn(flashlightWasOn);
     }
 
     private void ResolveDependencies()

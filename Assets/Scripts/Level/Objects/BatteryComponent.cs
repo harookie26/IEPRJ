@@ -1,5 +1,6 @@
 using Game.States;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,6 +13,9 @@ public class BatteryComponent : MonoBehaviour, ISaveable
     [SerializeField, Min(0.1f)] private float requiredReplacementDuration = 5.5f;
     [SerializeField, Range(0f, 100f)] private float refillPercent = 100f;
     [SerializeField] private bool consumeOnUse = true;
+
+    [SerializeField, Min(0f), Tooltip("Seconds before a regular consumed battery becomes usable again.")]
+    private float respawnDelay = 90f;
 
     [Header("Onboarding")]
     [SerializeField, Tooltip("Keeps this battery non-interactable and dark until the flashlight onboarding reveals it.")]
@@ -45,6 +49,12 @@ public class BatteryComponent : MonoBehaviour, ISaveable
     private readonly List<Material> runtimeMaterials = new();
     private readonly List<Color> originalEmissionColors = new();
     private readonly List<string> emissionPropertyNames = new();
+    private Renderer[] cachedRenderers = Array.Empty<Renderer>();
+    private bool[] rendererEnabledStates = Array.Empty<bool>();
+    private Collider[] cachedColliders = Array.Empty<Collider>();
+    private bool[] colliderEnabledStates = Array.Empty<bool>();
+    private Coroutine respawnRoutine;
+    private float respawnAtUnscaledTime;
 
     public string SaveKey => string.IsNullOrWhiteSpace(batteryId) ? GetHierarchyPath() : batteryId;
     public float RequiredReplacementDuration => requiredReplacementDuration;
@@ -56,6 +66,8 @@ public class BatteryComponent : MonoBehaviour, ISaveable
 
     private void Awake()
     {
+        CacheAvailabilityComponents();
+
         if (enableHighlight)
             SetupHighlightRenderer();
 
@@ -104,6 +116,19 @@ public class BatteryComponent : MonoBehaviour, ISaveable
             if (material != null)
                 Destroy(material);
         }
+    }
+
+    private void CacheAvailabilityComponents()
+    {
+        cachedRenderers = GetComponentsInChildren<Renderer>(true);
+        rendererEnabledStates = new bool[cachedRenderers.Length];
+        for (int i = 0; i < cachedRenderers.Length; i++)
+            rendererEnabledStates[i] = cachedRenderers[i].enabled;
+
+        cachedColliders = GetComponentsInChildren<Collider>(true);
+        colliderEnabledStates = new bool[cachedColliders.Length];
+        for (int i = 0; i < cachedColliders.Length; i++)
+            colliderEnabledStates[i] = cachedColliders[i].enabled;
     }
 
     private void SetupHighlightRenderer()
@@ -274,7 +299,10 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         {
             id = SaveKey,
             isUsed = isUsed,
-            onboardingRevealed = onboardingRevealed
+            onboardingRevealed = onboardingRevealed,
+            respawnSecondsRemaining = IsRespawning
+                ? Mathf.Max(0f, respawnAtUnscaledTime - Time.unscaledTime)
+                : 0f
         };
     }
 
@@ -287,13 +315,64 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         onboardingRevealed = data.onboardingRevealed || isUsed;
         onboardingInteractionEnabled = onboardingRevealed;
         ApplyHighlightVisibility();
-        ApplyUsedState();
+        ApplyUsedState(data.respawnSecondsRemaining);
     }
 
-    private void ApplyUsedState()
+    private bool IsOnboardingBattery => waitForFlashlightDepletion && HasOnboardingDirector();
+    private bool IsRespawning => respawnRoutine != null;
+
+    private void ApplyUsedState(float remainingRespawnSeconds = -1f)
     {
-        if (consumeOnUse && isUsed && gameObject.activeSelf)
-            gameObject.SetActive(false);
+        if (!consumeOnUse || !isUsed)
+        {
+            SetRegularBatteryAvailable(true);
+            return;
+        }
+
+        // Preserve the onboarding battery's one-use behavior.
+        if (IsOnboardingBattery)
+        {
+            if (gameObject.activeSelf)
+                gameObject.SetActive(false);
+            return;
+        }
+
+        SetRegularBatteryAvailable(false);
+
+        if (respawnRoutine != null)
+            StopCoroutine(respawnRoutine);
+
+        float delay = remainingRespawnSeconds >= 0f ? remainingRespawnSeconds : respawnDelay;
+        respawnRoutine = StartCoroutine(RespawnAfterDelay(delay));
+    }
+
+    private IEnumerator RespawnAfterDelay(float delay)
+    {
+        respawnAtUnscaledTime = Time.unscaledTime + Mathf.Max(0f, delay);
+        if (delay > 0f)
+            yield return new WaitForSecondsRealtime(delay);
+
+        isUsed = false;
+        respawnRoutine = null;
+        respawnAtUnscaledTime = 0f;
+        highlightTime = 0f;
+        SetRegularBatteryAvailable(true);
+        ApplyHighlightVisibility();
+    }
+
+    private void SetRegularBatteryAvailable(bool available)
+    {
+        for (int i = 0; i < cachedRenderers.Length; i++)
+        {
+            if (cachedRenderers[i] != null)
+                cachedRenderers[i].enabled = available && rendererEnabledStates[i];
+        }
+
+        for (int i = 0; i < cachedColliders.Length; i++)
+        {
+            if (cachedColliders[i] != null)
+                cachedColliders[i].enabled = available && colliderEnabledStates[i];
+        }
     }
 
     private string GetHierarchyPath()

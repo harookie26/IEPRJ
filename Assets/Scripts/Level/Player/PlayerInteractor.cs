@@ -230,7 +230,8 @@ public class PlayerInteractor : MonoBehaviour
         {
             if (isInteract)
             {
-                if (FindInteractableOnCollider(hitCol) != null)
+                var interactable = FindInteractableOnCollider(hitCol);
+                if (interactable != null && ShouldShowInteractPrompt(interactable))
                     desiredKey = UIManager.Keys.Interact;
             }
             else
@@ -643,6 +644,15 @@ public class PlayerInteractor : MonoBehaviour
         var comp = col.GetComponentInParent<IChannelable>();
         if (comp != null) return comp;
         return col.GetComponentInChildren<IChannelable>();
+    }
+
+    private static bool ShouldShowInteractPrompt(IInteractable interactable)
+    {
+        if (interactable is not PaintingInteractable painting)
+            return true;
+
+        return painting.GetComponent<MainPainting>() == null
+            && painting.GetComponentInParent<MainPainting>() == null;
     }
 
     private bool CanShowChannelPrompt(IChannelable channelable)
