@@ -66,9 +66,10 @@ public class PaintbrushChanneller : MonoBehaviour
     {
         // The channel button is shared with battery replacement. Paintbrush
         // feedback must follow an actual painting channel, not raw held input.
-        bool isPaintingChannelActive = currentChannelTarget is PaintingChannelable
-            && stateMachine != null
-            && stateMachine.IsChanneling;
+        // currentChannelTarget is assigned only after a valid painting channel
+        // begins, and cleared on interruption/completion. It is the authoritative
+        // lifecycle signal; the optional presentation state machine must not gate VFX.
+        bool isPaintingChannelActive = currentChannelTarget != null;
         float targetIntensity = isPaintingChannelActive ? 3f : 0f;
 
         currentEmissionIntensity = Mathf.MoveTowards(
