@@ -839,7 +839,8 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
             yield break;
         }
 
-        GameState.BeginCutscene();
+        if (GameState.BeginCutscene())
+            EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_START);
         movement.SetCanMove(false);
         movement.ResetVelocity();
         activeCaptureCamera = player.GetComponentInChildren<PlayerCamera>();
@@ -959,7 +960,8 @@ public class EnemyStateMachine : MonoBehaviour, ISaveable
             yield return null;
         }
 
-        GameState.EndCutscene();
+        if (GameState.EndCutscene())
+            EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_END);
     }
 
     private static EnemyStateMachine FindClosestActiveGhost(Vector3 playerPosition)

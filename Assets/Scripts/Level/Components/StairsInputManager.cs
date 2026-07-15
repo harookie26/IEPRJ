@@ -6,7 +6,6 @@ public class StairsInputManager : MonoBehaviour
 {
     public static bool IsTransferInProgress { get; private set; }
 
-    private bool _isCutsceneActive = false;
     private GameObject _player;
     private PlayerMovement _playerMovement;
     private UIManager _uiManager;
@@ -28,9 +27,6 @@ public class StairsInputManager : MonoBehaviour
 
     private void Awake()
     {
-        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
-        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
-
         ResolvePlayerReferences();
         _uiManager = FindFirstObjectByType<UIManager>();
         _audioList = FindAnyObjectByType<AudioList>();
@@ -49,8 +45,6 @@ public class StairsInputManager : MonoBehaviour
     {
         UnsubscribeInput();
         IsTransferInProgress = false;
-        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
-        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
     }
 
     private void Update()
@@ -66,7 +60,7 @@ public class StairsInputManager : MonoBehaviour
 
     private void HandleInteract()
     {
-        if (_isCutsceneActive)
+        if (GameState.IsCutsceneActive)
             return;
 
         ResolvePlayerReferences();
