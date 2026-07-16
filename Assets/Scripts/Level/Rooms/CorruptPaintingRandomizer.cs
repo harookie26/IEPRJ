@@ -181,6 +181,10 @@ public class CorruptPaintingRandomizer : MonoBehaviour
             PaintingChannelable pc = painting.GetComponent<PaintingChannelable>();
             if (pc == null) pc = painting.AddComponent<PaintingChannelable>();
 
+            BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
+            FieldInfo idField = typeof(PaintingChannelable).GetField("paintingId", flags);
+            if (idField != null) idField.SetValue(pc, assignedID);
+
             // Check if player already fixed this in a previous save!
             if (channeller != null && channeller.HasCompletedPainting(assignedID))
             {
@@ -211,7 +215,6 @@ public class CorruptPaintingRandomizer : MonoBehaviour
                 continue;
             }
 
-            BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
             if (assignedCover != null)
             {
                 FieldInfo coverField = typeof(PaintingChannelable).GetField("coverObject", flags);
@@ -236,9 +239,6 @@ public class CorruptPaintingRandomizer : MonoBehaviour
 
             FieldInfo pauseField = typeof(PaintingChannelable).GetField("pauseOnConsecutiveCompletions", flags);
             if (pauseField != null) pauseField.SetValue(pc, false);
-
-            FieldInfo idField = typeof(PaintingChannelable).GetField("paintingId", flags);
-            if (idField != null) idField.SetValue(pc, assignedID);
 
             painting.tag = "ChannelablePainting";
 

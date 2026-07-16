@@ -195,7 +195,6 @@ public class HintManager : MonoBehaviour
             triggeredHintIDs.Add(6);
         }
 
-        DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
         hintText.text = "Go back to the main gallery";
     }
 

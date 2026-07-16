@@ -343,6 +343,11 @@ public class UIManager : MonoBehaviour
     public void ShowCollectibleHUD(string collectibleId, float displaySeconds = 3f)
     {
         if (string.IsNullOrEmpty(collectibleId)) return;
+        if (GameState.IsCutsceneActive)
+        {
+            HideAll();
+            return;
+        }
 
         // Stop any previous collectible HUD hide coroutine so repeated collects reset timer
         if (collectibleHudCoroutine != null)

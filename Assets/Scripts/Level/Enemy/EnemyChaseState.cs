@@ -6,14 +6,11 @@ public class EnemyChaseState : EnemyState
 {
     private float chaseTimer = 0f;
     private const float maxChaseDuration = 30f;
-    private const float catchConfirmDuration = 0.25f;
-    private float catchDistance = 1.2f;
-    private float catchConfirmTimer = 0f;
+    private const float CatchDistance = 0.75f;
 
     public override void EnterState(EnemyStateMachine state)
     {
         chaseTimer = 0f;
-        catchConfirmTimer = 0f;
 
         state.NavAgent.isStopped = false;
         Debug.Log("CHASING PLAYER - 30s limit started.");
@@ -46,19 +43,16 @@ public class EnemyChaseState : EnemyState
         Vector3 playerPosition = state.TargetPlayer.transform.position;
         float distanceToPlayer = Vector3.Distance(enemyPosition, playerPosition);
 
-        if (distanceToPlayer > catchDistance || !CanSeePlayer(state))
+        if (distanceToPlayer > CatchDistance || !CanSeePlayer(state))
         {
-            catchConfirmTimer = 0f;
             return;
         }
 
-        catchConfirmTimer += Time.deltaTime;
-
-        if (catchConfirmTimer >= catchConfirmDuration)
-        {
-            EventBroadcaster.Instance.PostEvent(EventNames.EnemyEvents.ENEMY_CATCHED);
-            Debug.Log("Ghost caught the player!");
-        }
+        // Do not delay a confirmed close-range catch. At sprint speed the player
+        // can enter and leave this small radius before a timer completes, while
+        // the ray-based FOV may also miss the player for an individual frame.
+        EventBroadcaster.Instance.PostEvent(EventNames.EnemyEvents.ENEMY_CATCHED);
+        Debug.Log("Ghost caught the player!");
     }
 
     private Vector3 GetEnemyPosition(EnemyStateMachine state)

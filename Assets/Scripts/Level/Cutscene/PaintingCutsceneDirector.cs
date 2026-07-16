@@ -44,6 +44,7 @@ public readonly struct PaintingCutsceneRequest
 
     public Transform ProgressCameraAnchor { get; }
     public float ProgressViewDuration { get; }
+
 }
 
 [DisallowMultipleComponent]
@@ -53,11 +54,15 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
     [SerializeField] private Camera cutsceneCamera;
     [SerializeField] private Image fadeImage;
+    [SerializeField] MainPainting mainPainting;
 
     private Coroutine activeCutscene;
     private Camera gameplayCamera;
     private EnemyManager pausedEnemyManager;
     private bool ownsCutsceneState;
+    private Flashlight flashlight;
+    private bool flashlightWasOn;
+    private bool ownsFlashlightState;
 
     public bool IsPlaying => activeCutscene != null;
 
@@ -72,6 +77,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
         Instance = this;
         ResolveDependencies();
     }
+
 
     private void OnDestroy()
     {
@@ -113,6 +119,7 @@ public class PaintingCutsceneDirector : MonoBehaviour
         }
 
         BeginCutsceneState();
+        TurnOffFlashlight();
         activeCutscene = StartCoroutine(PlayCutscene(request));
         return true;
     }
@@ -133,6 +140,40 @@ public class PaintingCutsceneDirector : MonoBehaviour
         ownsCutsceneState = false;
         if (GameState.EndCutscene())
             EventBroadcaster.Instance?.PostEvent(EventNames.CutsceneEvents.CUTSCENE_END);
+
+        RestoreFlashlight();
+
+        if (mainPainting != null)
+        {
+            Debug.Log("[PaintingCutsceneDirector] Checking if the main painting is fully revealed after cutscene.");
+            bool revealedByCovers = mainPainting.IsFullyRevealed();
+
+            if (revealedByCovers)
+            {
+                DialogueTriggerManager.Instance.TriggerFinalPaintingFixedDialogue();
+            }
+        }
+    }
+
+    private void TurnOffFlashlight()
+    {
+        flashlight ??= FindFirstObjectByType<Flashlight>(FindObjectsInactive.Include);
+        if (flashlight == null)
+            return;
+
+        flashlightWasOn = flashlight.IsOn;
+        ownsFlashlightState = true;
+        flashlight.SetIsOn(false);
+    }
+
+    private void RestoreFlashlight()
+    {
+        if (!ownsFlashlightState)
+            return;
+
+        ownsFlashlightState = false;
+        if (flashlight != null)
+            flashlight.SetIsOn(flashlightWasOn);
     }
 
     private void ResolveDependencies()
@@ -216,24 +257,34 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         yield return new WaitForSeconds(request.ViewDuration);
 
-        while (request.DialoguePlayback != null && !request.DialoguePlayback.IsComplete)
-            yield return null;
-
-        yield return Fade(0f, 1f, request.FadeDuration);
-
         if (request.ProgressCameraAnchor != null && request.ProgressViewDuration > 0f)
         {
-            // Teleport the camera to the progress anchor while the screen is black
-            cutsceneCamera.transform.position = request.ProgressCameraAnchor.position;
-            cutsceneCamera.transform.rotation = request.ProgressCameraAnchor.rotation;
+            // 1. Fade to black
+            yield return Fade(0f, 1f, request.FadeDuration);
 
-            // Fade in to reveal the progress
+            // 2. Snap the camera instantly to the new anchor's position and rotation
+            cutsceneCamera.transform.SetPositionAndRotation(
+                request.ProgressCameraAnchor.position,
+                request.ProgressCameraAnchor.rotation
+            );
+
+            // 3. Fade back in
             yield return Fade(1f, 0f, request.FadeDuration);
 
             // Wait and look at the progress
             yield return new WaitForSeconds(request.ProgressViewDuration);
 
+            while (request.DialoguePlayback != null && !request.DialoguePlayback.IsComplete)
+                yield return null;
+
             // Fade back to black
+            yield return Fade(0f, 1f, request.FadeDuration);
+        }
+        else
+        {
+            while (request.DialoguePlayback != null && !request.DialoguePlayback.IsComplete)
+                yield return null;
+
             yield return Fade(0f, 1f, request.FadeDuration);
         }
 
@@ -276,5 +327,24 @@ public class PaintingCutsceneDirector : MonoBehaviour
 
         color.a = endAlpha;
         fadeImage.color = color;
+    }
+
+    private IEnumerator PanToAnchor(Transform anchor, float duration)
+    {
+        Vector3 startPosition = cutsceneCamera.transform.position;
+        Quaternion startRotation = cutsceneCamera.transform.rotation;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+            cutsceneCamera.transform.SetPositionAndRotation(
+                Vector3.Lerp(startPosition, anchor.position, t),
+                Quaternion.Slerp(startRotation, anchor.rotation, t));
+            yield return null;
+        }
+
+        cutsceneCamera.transform.SetPositionAndRotation(anchor.position, anchor.rotation);
     }
 }

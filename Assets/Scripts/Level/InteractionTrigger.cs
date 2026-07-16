@@ -59,6 +59,11 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
 
     private void OnTriggerEnter(Collider other)
     {
+        if (SaveCourier.IsLoadingSave || !string.IsNullOrEmpty(SaveCourier.SaveSlotToLoad))
+        {
+            return;
+        }
+
         if (!hasTriggered && other.CompareTag("Player"))
         {
             hasTriggered = true;
@@ -162,8 +167,9 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
 
     public object CaptureState()
     {
-        return new EnemyIntroSaveData
+        return new InteractionTriggerSaveData
         {
+            id = uniqueID,
             hasTriggered = this.hasTriggered
         };
     }
@@ -172,7 +178,7 @@ public class InteractionTrigger : MonoBehaviour, ISaveable
     {
         if (state == null) return;
 
-        var data = (EnemyIntroSaveData)state;
+        if (state is not InteractionTriggerSaveData data) return;
         this.hasTriggered = data.hasTriggered;
 
         SyncEnemyIntroAmbient();

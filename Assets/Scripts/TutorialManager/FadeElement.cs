@@ -41,6 +41,17 @@ public class FadeElement : MonoBehaviour
         _displayCoroutine = StartCoroutine(TutorialSequenceRoutine());
     }
 
+    public void ShowPersistent()
+    {
+        gameObject.SetActive(true);
+        EnsureCanvasGroup();
+
+        if (_displayCoroutine != null)
+            StopCoroutine(_displayCoroutine);
+
+        _displayCoroutine = StartCoroutine(FadeRoutine(true, _fadeInDuration));
+    }
+
     public void ForceHide()
     {
         EnsureCanvasGroup();

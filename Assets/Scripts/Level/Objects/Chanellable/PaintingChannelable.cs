@@ -68,6 +68,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
     private AudioSource restorationMusicAudioSource;
     private AudioList audioList;
 
+
     private CheckpointManager checkpointManager => FindFirstObjectByType<CheckpointManager>();
 
     private float channelTimer = 0f;
@@ -264,7 +265,7 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
         }
         else if (paintingId == "000")
         {
-            DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
+            dialoguePlayback = DialogueTriggerManager.Instance.TriggerFindCorruptedDialogue();
             EventBroadcaster.Instance.PostEvent(EventNames.HintEvents.HINT4_START);
 
             //StartCoroutine(WaitForInitialCutsceneToFinish());
@@ -298,6 +299,8 @@ public class PaintingChannelable : MonoBehaviour, IChannelable, INotifiesChannel
             dialoguePlayback,
             progressCameraAnchor,
             progressViewDuration));
+
+
 
     }
 

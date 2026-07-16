@@ -115,7 +115,7 @@ NavMeshAgent:
   m_Acceleration: 5
   avoidancePriority: 50
   m_AngularSpeed: 180
-  m_StoppingDistance: 1
+  m_StoppingDistance: 0.55
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
@@ -147,6 +147,8 @@ MonoBehaviour:
   teleportCooldown: 1
   stunDuration: 2
   animator: {fileID: 2990751854535295366}
+  neckSnapSFX: {fileID: 8300000, guid: 9277c35843d03414599c485215cce24c, type: 3}
+  bodyFallSFX: {fileID: 8300000, guid: b9aa50304ad20b2428f26fdb7305fa0e, type: 3}
   minGlitchInterval: 0.05
   maxGlitchInterval: 0.45
   stunDurationTiers:

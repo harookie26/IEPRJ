@@ -1,10 +1,11 @@
 using System.Collections;
+using Game.States;
 using Level.UI;
 using UnityEngine;
 using static EventNames;
 
 [DisallowMultipleComponent]
-public sealed class ElevatorAttackCutscene : MonoBehaviour
+public sealed class ElevatorAttackCutscene : MonoBehaviour, ISaveable
 {
     [Header("Lounge Elevator Attack")]
     [SerializeField] private bool enableLoungeElevatorAttack = true;
@@ -24,7 +25,10 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     [SerializeField, Min(0.01f)] private float recoveryFadeDuration = 0.22f;
 
     [Header("Lounge Elevator Attack Motion")]
-    [SerializeField, Min(0.5f)] private float dragDistance = 3f;
+    [SerializeField, Tooltip("Fixed world-space landing point for the dragged player. Assign an empty scene object for precise authoring.")]
+    private Transform dragLandingAnchor;
+    [SerializeField, Tooltip("Used to create a runtime anchor when Drag Landing Anchor is unassigned.")]
+    private Vector3 fallbackDragAnchorWorldPosition = new Vector3(0f, 0f, -3f);
     [SerializeField, Min(0.05f)] private float floorCameraHeight = 0.22f;
     [SerializeField, Range(0f, 60f)] private float impactRoll = 32f;
     [SerializeField, Range(20f, 140f)] private float landingLookOffset = 72f;
@@ -37,7 +41,10 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     [SerializeField, Min(0.1f)] private float ghostRevealLightRange = 4f;
 
     [Header("Lounge Elevator Attack Flashlight Response")]
-    [SerializeField] private string georgieFlashlightPrompt = "Use the flashlight!";
+    [SerializeField, Tooltip("Voiced subtitle sequence played when the ghost begins approaching.")]
+    private VoicedDialogueSequence georgieFlashlightPromptSequence;
+    [SerializeField, Tooltip("Voiced sequence played after repelling the ghost or when it reaches the player.")]
+    private VoicedDialogueSequence georgieFlashlightOutcomeSequence;
     [SerializeField, Min(0f)] private float flashlightTutorialDelay = 0.8f;
     [SerializeField, Min(0)] private int flashlightTutorialPanelIndex = 1;
 
@@ -47,6 +54,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     [SerializeField] private AudioClip revealSfx;
 
     private bool _loungeAttackPlayed;
+    private bool _loungeAttackInProgress;
 
     private GameObject _player;
     private PlayerMovement _playerMovement;
@@ -54,14 +62,25 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
     private AudioList _audioList;
     private AudioSource _audioSource;
     private Flashlight _flashlight;
+    private Transform _runtimeDragLandingAnchor;
 
     public bool HasPlayed => _loungeAttackPlayed;
+    public string SaveKey => "LoungeElevatorAttack";
 
     private ScreenFader ScreenFader => FindFirstObjectByType<ScreenFader>();
 
     private void Awake()
     {
+        GlobalSaveSystem.Register(this);
         ResolveDependencies();
+    }
+
+    private void OnDestroy()
+    {
+        GlobalSaveSystem.Unregister(this);
+
+        if (_runtimeDragLandingAnchor != null)
+            Destroy(_runtimeDragLandingAnchor.gameObject);
     }
 
     private void ResolveDependencies()
@@ -77,7 +96,10 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
 
     public bool CanPlay(StairsComponent door)
     {
-        if (!enableLoungeElevatorAttack || _loungeAttackPlayed || door == null)
+        if (!enableLoungeElevatorAttack
+            || _loungeAttackPlayed
+            || _loungeAttackInProgress
+            || door == null)
             return false;
 
         if (!Matches(door))
@@ -99,7 +121,7 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
 
     public IEnumerator Play(StairsComponent door)
     {
-        _loungeAttackPlayed = true;
+        _loungeAttackInProgress = true;
         _uiManager?.ClearForcedHUD();
 
         ResolveDependencies();
@@ -111,9 +133,12 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         if (_player == null || _playerMovement == null || gameplayCamera == null)
         {
             Debug.LogError("[ElevatorAttack] Missing player, PlayerMovement, or Main Camera. Falling back to the normal elevator transfer.");
-            _loungeAttackPlayed = false;
+            _loungeAttackInProgress = false;
             yield break;
         }
+
+        if (_flashlight != null && _flashlight.IsOn)
+            _flashlight.SetIsOn(false);
 
         bool beganGlobalCutscene = GameState.BeginCutscene();
         if (beganGlobalCutscene)
@@ -134,33 +159,41 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         if (viewForward.sqrMagnitude < 0.001f)
             viewForward = Vector3.ProjectOnPlane(_player.transform.forward, Vector3.up).normalized;
 
+        Vector3 authoredPlayerEnd = ResolveDragLandingPosition(playerStartPosition.y);
         Vector3 elevatorDirection = Vector3.ProjectOnPlane(
-            door.transform.position - playerStartPosition,
+            door.transform.position - authoredPlayerEnd,
             Vector3.up).normalized;
         if (elevatorDirection.sqrMagnitude < 0.001f)
             elevatorDirection = viewForward;
 
-        Vector3 dragDirection = -elevatorDirection;
+        Vector3 dragOffset = Vector3.ProjectOnPlane(
+            authoredPlayerEnd - playerStartPosition,
+            Vector3.up);
+        Vector3 dragDirection = dragOffset.sqrMagnitude > 0.001f
+            ? dragOffset.normalized
+            : -elevatorDirection;
+        float authoredDragDistance = dragOffset.magnitude;
         float safeDragDistance = CalculateSafeDragDistance(
             playerStartPosition,
             cameraStartPosition,
             dragDirection,
-            dragDistance,
+            authoredDragDistance,
             _player.transform,
             door.transform);
         Vector3 safePlayerEnd = playerStartPosition + dragDirection * safeDragDistance;
 
-        if (safeDragDistance < dragDistance - 0.01f)
+        if (safeDragDistance < authoredDragDistance - 0.01f)
         {
             Debug.Log(
-                $"[ElevatorAttack] Drag distance clamped from {dragDistance:F2}m " +
+                $"[ElevatorAttack] Anchor path clamped from {authoredDragDistance:F2}m " +
                 $"to {safeDragDistance:F2}m to avoid crossing level geometry.");
         }
 
-        // The player begins directly in front of the elevator, so moving forward
-        // from that interaction pose stages the ghost against the open doors.
-        Vector3 ghostPosition = playerStartPosition
-            + elevatorDirection * ghostSpawnForwardDistance;
+        // Stage the reveal from the fixed anchor/elevator axis so lateral player
+        // placement cannot shift the ghost or rotate the authored composition.
+        Vector3 ghostPosition = door.transform.position
+            - elevatorDirection * ghostSpawnForwardDistance;
+        ghostPosition.y = playerStartPosition.y;
         Vector3 ghostLookDirection = Vector3.ProjectOnPlane(safePlayerEnd - ghostPosition, Vector3.up);
         Quaternion ghostRotation = ghostLookDirection.sqrMagnitude > 0.001f
             ? Quaternion.LookRotation(ghostLookDirection.normalized, Vector3.up)
@@ -328,17 +361,16 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         bool retryEncounter = false;
         if (ghost != null)
         {
+            // At this point the reveal/look-back has completed and the ghost is
+            // visible to the player. Escalate to the second ambient track.
+            _audioList?.PlayPostEnemyIntroAmbient();
+
             // Require a fresh press during the threat instead of accepting a
             // flashlight that happened to be on before the elevator opened.
             _flashlight?.SetIsOn(false);
             _flashlight?.SetCutsceneToggleAllowed(true);
 
-            DialogueManager.Instance?.DisplayLatest(
-                "Georgie",
-                georgieFlashlightPrompt,
-                0.08f,
-                2.2f,
-                0.18f);
+            DialogueManager.Instance?.DisplaySequence(georgieFlashlightPromptSequence);
 
             Coroutine tutorialPrompt = StartCoroutine(
                 ShowFlashlightTutorialAfterDelay(flashlightTutorialDelay));
@@ -365,6 +397,12 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
 
         if (retryEncounter)
         {
+            DialoguePlaybackHandle outcomeDialogue =
+                DialogueManager.Instance?.DisplaySequence(georgieFlashlightOutcomeSequence);
+
+            while (outcomeDialogue != null && !outcomeDialogue.IsComplete)
+                yield return null;
+
             if (ScreenFader != null)
                 yield return StartCoroutine(ScreenFader.FadeOutSequence(recoveryFadeDuration));
 
@@ -376,10 +414,11 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
             _playerMovement.SetViewRotation(
                 cameraStartRotation.eulerAngles.y,
                 Mathf.DeltaAngle(0f, savedCameraLocalRotation.eulerAngles.x));
-            _loungeAttackPlayed = false;
         }
         else
         {
+            _loungeAttackPlayed = true;
+
             if (revealHoldDuration > 0f)
                 yield return new WaitForSeconds(revealHoldDuration);
 
@@ -420,10 +459,25 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
 
             _playerMovement.TeleportToPose(safePlayerEnd, playerEndRotation);
             _playerMovement.SetViewRotation(playerEndRotation.eulerAngles.y, 0f);
+
+            // Teleporting rotates the camera's parent. Reapply the authored world
+            // pose so the camera and held flashlight keep facing the elevator.
+            gameplayCamera.transform.SetPositionAndRotation(
+                standingCameraPosition,
+                standingCameraRotation);
+
+            DialoguePlaybackHandle outcomeDialogue =
+                DialogueManager.Instance?.DisplaySequence(georgieFlashlightOutcomeSequence);
+
+            while (outcomeDialogue != null && !outcomeDialogue.IsComplete)
+                yield return null;
         }
 
         gameplayCamera.transform.localPosition = savedCameraLocalPosition;
-        gameplayCamera.transform.localRotation = savedCameraLocalRotation;
+        gameplayCamera.transform.localRotation = Quaternion.Euler(
+            _playerMovement.CameraPitch,
+            0f,
+            0f);
         gameplayCamera.fieldOfView = savedFieldOfView;
         if (cameraMotion != null)
             cameraMotion.enabled = savedCameraMotionEnabled;
@@ -440,9 +494,27 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
         if (GameState.EndCutscene())
             EventBroadcaster.Instance?.PostEvent(CutsceneEvents.CUTSCENE_END);
 
+        // Both the successful repel and ghost-contact recovery converge here.
+        _audioList?.PlayPreEnemyIntroAmbient();
+
         if (retryEncounter && ScreenFader != null)
             yield return StartCoroutine(ScreenFader.FadeInSequence(recoveryFadeDuration));
 
+        _loungeAttackInProgress = false;
+    }
+
+    public object CaptureState()
+    {
+        return new ElevatorAttackSaveData
+        {
+            hasPlayed = _loungeAttackPlayed
+        };
+    }
+
+    public void RestoreState(object state)
+    {
+        _loungeAttackInProgress = false;
+        _loungeAttackPlayed = state is ElevatorAttackSaveData data && data.hasPlayed;
     }
 
     private IEnumerator ShowFlashlightTutorialAfterDelay(float delay)
@@ -451,6 +523,30 @@ public sealed class ElevatorAttackCutscene : MonoBehaviour
             yield return new WaitForSecondsRealtime(delay);
 
         TutorialManager.Instance?.TriggerTutorial(flashlightTutorialPanelIndex);
+    }
+
+    private Vector3 ResolveDragLandingPosition(float playerGroundHeight)
+    {
+        if (dragLandingAnchor == null)
+        {
+            GameObject existingAnchor = GameObject.Find("Elevator Attack Drag Anchor");
+            if (existingAnchor != null)
+            {
+                dragLandingAnchor = existingAnchor.transform;
+            }
+            else
+            {
+                GameObject anchorObject = new GameObject("Elevator Attack Drag Anchor");
+                anchorObject.transform.SetParent(transform, true);
+                anchorObject.transform.position = fallbackDragAnchorWorldPosition;
+                dragLandingAnchor = anchorObject.transform;
+                _runtimeDragLandingAnchor = dragLandingAnchor;
+            }
+        }
+
+        Vector3 landingPosition = dragLandingAnchor.position;
+        landingPosition.y = playerGroundHeight;
+        return landingPosition;
     }
 
     private enum CameraMotionPhase

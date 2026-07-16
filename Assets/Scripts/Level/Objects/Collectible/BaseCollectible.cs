@@ -238,8 +238,6 @@ public class BaseCollectible : MonoBehaviour, ICollectible
                 DialogueTriggerManager.Instance.TriggerPaintbucketDialogue();
             }
 
-            DialogueTriggerManager.Instance.TriggerFlashlightDialogue();
-            TutorialManager.Instance.TriggerFlashlightTutorial();
         }
 
         var manager = FindFirstObjectByType<PlayerCollectibleManager>();
@@ -253,6 +251,15 @@ public class BaseCollectible : MonoBehaviour, ICollectible
         }
 
         OnCollect();
+
+        if (GetID == "Flashlight")
+        {
+            FlashlightOnboardingDirector onboarding = FindFirstObjectByType<FlashlightOnboardingDirector>(FindObjectsInactive.Include);
+            if (onboarding != null && onboarding.TryBeginPickup(this))
+                return;
+
+            TutorialManager.Instance?.TriggerFlashlightTutorial();
+        }
 
         gameObject.SetActive(false);
     }

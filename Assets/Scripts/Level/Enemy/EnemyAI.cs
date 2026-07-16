@@ -11,7 +11,7 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private float chaseSpeed = 3f;
     [SerializeField] private float moveDelay = 2f;
     [SerializeField] private float captureCooldown = 1.5f;
-    [SerializeField] private float catchDistance = 1.2f;
+    [SerializeField] private float catchDistance = 0.75f;
     [SerializeField] private bool logDebug = false;
 
     private PlayerLocationUpdater playerLocationUpdater;

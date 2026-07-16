@@ -64,8 +64,13 @@ public class PaintbrushChanneller : MonoBehaviour
 
     private void Update()
     {
-        bool isInputActive = InputManager.Instance != null && InputManager.Instance.IsChanneling();
-        float targetIntensity = isInputActive ? 3f : 0f;
+        // The channel button is shared with battery replacement. Paintbrush
+        // feedback must follow an actual painting channel, not raw held input.
+        // currentChannelTarget is assigned only after a valid painting channel
+        // begins, and cleared on interruption/completion. It is the authoritative
+        // lifecycle signal; the optional presentation state machine must not gate VFX.
+        bool isPaintingChannelActive = currentChannelTarget != null;
+        float targetIntensity = isPaintingChannelActive ? 3f : 0f;
 
         currentEmissionIntensity = Mathf.MoveTowards(
             currentEmissionIntensity,
@@ -75,19 +80,20 @@ public class PaintbrushChanneller : MonoBehaviour
 
         if (paintbrushLight != null) paintbrushLight.intensity = currentEmissionIntensity;
 
+        if (paintbrushVFX != null && paintbrushVFX.activeSelf != isPaintingChannelActive)
+            paintbrushVFX.SetActive(isPaintingChannelActive);
+
         if (collectibles != null && collectibles.HasCollected("Paintbucket"))
         {
             if (currentEmissionIntensity > 0.001f)
             {
                 paintbrushMaterial.EnableKeyword("_EMISSION");
                 paintbrushMaterial.SetColor(emissionPropertyName, glowColor * currentEmissionIntensity);
-                if (paintbrushVFX != null && !paintbrushVFX.activeSelf) paintbrushVFX.SetActive(true);
             }
             else
             {
                 paintbrushMaterial.SetColor(emissionPropertyName, Color.black);
                 paintbrushMaterial.DisableKeyword("_EMISSION");
-                if (paintbrushVFX != null && paintbrushVFX.activeSelf) paintbrushVFX.SetActive(false);
             }
         }
 

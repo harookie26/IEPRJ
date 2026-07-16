@@ -6,7 +6,6 @@ public class StairsInputManager : MonoBehaviour
 {
     public static bool IsTransferInProgress { get; private set; }
 
-    private bool _isCutsceneActive = false;
     private GameObject _player;
     private PlayerMovement _playerMovement;
     private UIManager _uiManager;
@@ -21,14 +20,13 @@ public class StairsInputManager : MonoBehaviour
     private bool _isTransferring = false;
     public float LastDoorUseTime => _lastDoorUseTime;
 
+    private InputManager _subscribedInputManager;
+
     private ScreenFader screenFader => FindFirstObjectByType<ScreenFader>();
     private EnemyStateMachine enemy => FindFirstObjectByType<EnemyStateMachine>();
 
     private void Awake()
     {
-        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
-        EventBroadcaster.Instance.AddObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
-
         ResolvePlayerReferences();
         _uiManager = FindFirstObjectByType<UIManager>();
         _audioList = FindAnyObjectByType<AudioList>();
@@ -38,16 +36,31 @@ public class StairsInputManager : MonoBehaviour
             ?? gameObject.AddComponent<ElevatorAttackCutscene>();
     }
 
+    private void OnEnable()
+    {
+        TrySubscribeInput();
+    }
+
     private void OnDisable()
     {
+        UnsubscribeInput();
         IsTransferInProgress = false;
-        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_START, () => _isCutsceneActive = true);
-        EventBroadcaster.Instance.RemoveActionAtObserver(CutsceneEvents.CUTSCENE_END, () => _isCutsceneActive = false);
     }
 
     private void Update()
     {
-        if (_isCutsceneActive)
+        // InputManager can be initialized or replaced after this component.
+        if (_subscribedInputManager != InputManager.Instance)
+        {
+            TrySubscribeInput();
+        }
+
+        ResolvePlayerReferences();
+    }
+
+    private void HandleInteract()
+    {
+        if (GameState.IsCutsceneActive)
             return;
 
         ResolvePlayerReferences();
@@ -58,10 +71,6 @@ public class StairsInputManager : MonoBehaviour
             return;
 
         if (Time.unscaledTime < _lastDoorUseTime + doorUseCooldown)
-            return;
-
-        bool interactThisFrame = InputManager.Instance.WasInteractPressed();
-        if (!interactThisFrame)
             return;
 
         StairsComponent doorToUse = StairsComponent.CurrentDoor;
@@ -92,6 +101,28 @@ public class StairsInputManager : MonoBehaviour
         {
             Debug.Log($"[StairsInputManager] ❌ Door {doorToUse.name} not ready for use (player not grounded or invalid state).");
         }
+    }
+
+    private void TrySubscribeInput()
+    {
+        UnsubscribeInput();
+
+        if (InputManager.Instance == null)
+            return;
+
+        _subscribedInputManager = InputManager.Instance;
+        _subscribedInputManager.OnInteractPressed -= HandleInteract;
+        _subscribedInputManager.OnInteractPressed += HandleInteract;
+    }
+
+    private void UnsubscribeInput()
+    {
+        if (_subscribedInputManager != null)
+        {
+            _subscribedInputManager.OnInteractPressed -= HandleInteract;
+        }
+
+        _subscribedInputManager = null;
     }
 
     private IEnumerator TransferPlayer(StairsComponent doorToUse, float postFadeDelaySeconds)

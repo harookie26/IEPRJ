@@ -72,6 +72,20 @@ public class TutorialManager : MonoBehaviour
         }
     }
 
+    public void ShowPersistentTutorial(int index)
+    {
+        if (index >= 0 && index < _tutorialPanels.Length && _tutorialPanels[index] != null)
+            _tutorialPanels[index].ShowPersistent();
+        else
+            Debug.LogWarning($"Tutorial index {index} is out of bounds!");
+    }
+
+    public void HideTutorial(int index)
+    {
+        if (index >= 0 && index < _tutorialPanels.Length && _tutorialPanels[index] != null)
+            _tutorialPanels[index].ForceHide();
+    }
+
     public void TriggerMovementTutorial()
     {
         if (triggeredTutorialIDs.Contains(0)) return;

@@ -36,6 +36,7 @@ public class InputManager : MonoBehaviour
     private bool ePressPending = false;
     private float eHoldTimer = 0f;
     private bool channeling = false;
+    private bool allowChannelInputDuringCutscene = false;
     private bool interactActionStarted = false;
     private bool interactActionCanceled = false;
     private bool applicationHasFocus = true;
@@ -132,7 +133,30 @@ public class InputManager : MonoBehaviour
             interactPressed = false;
             corruptedRoomPressed = false;
             debugModePressed = false;
-            ResetInteractionInput();
+
+            if (allowChannelInputDuringCutscene && channeling)
+            {
+                bool eIsPressed = inputActions.Player.Interact.IsPressed();
+                bool eWasReleased = inputActions.Player.Interact.WasReleasedThisFrame();
+
+                if (Keyboard.current != null)
+                {
+                    eIsPressed |= Keyboard.current.eKey.isPressed;
+                    eWasReleased |= Keyboard.current.eKey.wasReleasedThisFrame;
+                }
+
+                if (!eIsPressed || eWasReleased)
+                {
+                    channeling = false;
+                    ePressPending = false;
+                    eHoldTimer = 0f;
+                    OnChannelStopped?.Invoke();
+                }
+            }
+            else
+            {
+                ResetInteractionInput();
+            }
             return;
         }
 
@@ -244,7 +268,15 @@ public class InputManager : MonoBehaviour
     public Vector2 GetMoveInput() => (GameState.IsCutsceneActive || onlyAllowLMBOrEnter || blockInputUntilRelease) ? Vector2.zero : moveInput;
     public bool IsSprinting() => !GameState.IsCutsceneActive && !onlyAllowLMBOrEnter && !blockInputUntilRelease && sprintHeld;
     public bool WasInteractPressed() => !GameState.IsCutsceneActive && !blockInputUntilRelease && interactPressed;
-    public bool IsChanneling() => !GameState.IsCutsceneActive && !blockInputUntilRelease && !onlyAllowLMBOrEnter && channeling;
+    public bool IsChanneling() => (!GameState.IsCutsceneActive || allowChannelInputDuringCutscene)
+        && !blockInputUntilRelease
+        && !onlyAllowLMBOrEnter
+        && channeling;
+
+    public void SetCutsceneChannelInputAllowed(bool allowed)
+    {
+        allowChannelInputDuringCutscene = allowed;
+    }
     public bool WasDebugModePressed() => !blockInputUntilRelease && debugModePressed;
 
     public bool WasAnyKeyExceptChannelPressed()

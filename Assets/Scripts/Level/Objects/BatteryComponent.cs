@@ -1,4 +1,6 @@
 using Game.States;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,9 +10,16 @@ public class BatteryComponent : MonoBehaviour, ISaveable
 {
     [Header("Battery")]
     [SerializeField] private string batteryId;
-    [SerializeField, Min(0.1f)] private float requiredReplacementDuration = 2f;
+    [SerializeField, Min(0.1f)] private float requiredReplacementDuration = 5.5f;
     [SerializeField, Range(0f, 100f)] private float refillPercent = 100f;
     [SerializeField] private bool consumeOnUse = true;
+
+    [SerializeField, Min(0f), Tooltip("Seconds before a regular consumed battery becomes usable again.")]
+    private float respawnDelay = 90f;
+
+    [Header("Onboarding")]
+    [SerializeField, Tooltip("Keeps this battery non-interactable and dark until the flashlight onboarding reveals it.")]
+    private bool waitForFlashlightDepletion;
 
     [Header("Highlight / Glow Settings")]
     [SerializeField, Tooltip("Should this battery pulse its highlight/glow effect?")]
@@ -32,27 +41,66 @@ public class BatteryComponent : MonoBehaviour, ISaveable
     private string highlightPropertyName = "_EmissionColor";
 
     private bool isUsed;
+    private bool onboardingRevealed;
+    private bool onboardingInteractionEnabled;
+    private bool highlightUnlocked;
+    private FlashlightOnboardingDirector onboardingDirector;
     private float highlightTime;
     private readonly List<Material> runtimeMaterials = new();
     private readonly List<Color> originalEmissionColors = new();
     private readonly List<string> emissionPropertyNames = new();
+    private Renderer[] cachedRenderers = Array.Empty<Renderer>();
+    private bool[] rendererEnabledStates = Array.Empty<bool>();
+    private Collider[] cachedColliders = Array.Empty<Collider>();
+    private bool[] colliderEnabledStates = Array.Empty<bool>();
+    private Coroutine respawnRoutine;
+    private float respawnAtUnscaledTime;
 
     public string SaveKey => string.IsNullOrWhiteSpace(batteryId) ? GetHierarchyPath() : batteryId;
     public float RequiredReplacementDuration => requiredReplacementDuration;
-    public bool CanUse => isActiveAndEnabled && !isUsed;
+    public bool IsUsed => isUsed;
+    public bool CanUse => isActiveAndEnabled
+        && !isUsed
+        && (!waitForFlashlightDepletion || onboardingInteractionEnabled);
+    public event Action<BatteryComponent> Used;
 
     private void Awake()
     {
+        CacheAvailabilityComponents();
+
         if (enableHighlight)
             SetupHighlightRenderer();
 
         GlobalSaveSystem.Register(this);
         ApplyUsedState();
+        ApplyHighlightVisibility();
+    }
+
+    private void Start()
+    {
+        onboardingDirector = FindBatteryOnboardingDirector();
+
+        // Duplicating the onboarding battery also duplicates its serialized wait
+        // flag. Only the battery owned by a director should remain gated; every
+        // other battery must behave like a normal recharge pickup.
+        if (waitForFlashlightDepletion && !HasOnboardingDirector())
+        {
+            waitForFlashlightDepletion = false;
+            onboardingRevealed = true;
+            onboardingInteractionEnabled = true;
+        }
+
+        RefreshHighlightAvailability();
+        ApplyHighlightVisibility();
     }
 
     private void Update()
     {
-        if (!enableHighlight)
+        RefreshHighlightAvailability();
+
+        if (!enableHighlight
+            || (waitForFlashlightDepletion && !onboardingRevealed)
+            || (!waitForFlashlightDepletion && !highlightUnlocked))
             return;
 
         highlightTime += Time.deltaTime;
@@ -70,22 +118,41 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         }
     }
 
+    private void CacheAvailabilityComponents()
+    {
+        cachedRenderers = GetComponentsInChildren<Renderer>(true);
+        rendererEnabledStates = new bool[cachedRenderers.Length];
+        for (int i = 0; i < cachedRenderers.Length; i++)
+            rendererEnabledStates[i] = cachedRenderers[i].enabled;
+
+        cachedColliders = GetComponentsInChildren<Collider>(true);
+        colliderEnabledStates = new bool[cachedColliders.Length];
+        for (int i = 0; i < cachedColliders.Length; i++)
+            colliderEnabledStates[i] = cachedColliders[i].enabled;
+    }
+
     private void SetupHighlightRenderer()
     {
-        MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>();
+        // Imported models may use a different Renderer subtype and can contain
+        // disabled child renderers. Include both so swapping the visual model does
+        // not silently disconnect the highlight.
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
 
-        foreach (MeshRenderer meshRenderer in meshRenderers)
+        foreach (Renderer renderer in renderers)
         {
-            foreach (Material material in meshRenderer.materials)
+            foreach (Material material in renderer.materials)
             {
-                material.EnableKeyword("_EMISSION");
-
                 string propertyName = GetEmissionPropertyName(material);
                 if (string.IsNullOrEmpty(propertyName))
                     continue;
 
+                material.EnableKeyword("_EMISSION");
+
                 Color originalColor = material.GetColor(propertyName);
-                if (originalColor == Color.black)
+                // Imported FBX materials commonly store black emission with alpha
+                // zero. Color.black has alpha one, so an exact Color comparison
+                // leaves that material permanently black when pulsed.
+                if (Mathf.Max(originalColor.r, originalColor.g, originalColor.b) <= 0.001f)
                     originalColor = Color.white;
 
                 runtimeMaterials.Add(material);
@@ -101,10 +168,15 @@ public class BatteryComponent : MonoBehaviour, ISaveable
             return highlightPropertyName;
 
         string alternateName = highlightPropertyName.StartsWith("_")
-            ? highlightPropertyName.Replace("_", string.Empty)
+            ? highlightPropertyName.Substring(1)
             : "_" + highlightPropertyName;
 
-        return material.HasProperty(alternateName) ? alternateName : string.Empty;
+        if (material.HasProperty(alternateName))
+            return alternateName;
+
+        // HDRP and some imported shaders use "Emissive" rather than "Emission".
+        const string emissiveColor = "_EmissiveColor";
+        return material.HasProperty(emissiveColor) ? emissiveColor : string.Empty;
     }
 
     private void ApplyHighlightPulse()
@@ -128,6 +200,81 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         }
     }
 
+    public void RevealForOnboarding()
+    {
+        onboardingRevealed = true;
+        highlightTime = 0f;
+        ApplyHighlightVisibility();
+    }
+
+    public void EnableInteractionForOnboarding()
+    {
+        onboardingRevealed = true;
+        onboardingInteractionEnabled = true;
+        ApplyHighlightVisibility();
+    }
+
+    private void ApplyHighlightVisibility()
+    {
+        if (!enableHighlight)
+            return;
+
+        bool visible = waitForFlashlightDepletion
+            ? onboardingRevealed
+            : highlightUnlocked;
+        for (int i = 0; i < runtimeMaterials.Count; i++)
+        {
+            Material material = runtimeMaterials[i];
+            if (material != null)
+                material.SetColor(emissionPropertyNames[i], visible ? originalEmissionColors[i] * minHighlightIntensity : Color.black);
+        }
+    }
+
+    private bool HasOnboardingDirector()
+    {
+        FlashlightOnboardingDirector[] directors = FindObjectsByType<FlashlightOnboardingDirector>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        foreach (FlashlightOnboardingDirector director in directors)
+        {
+            if (director != null && director.Manages(this))
+                return true;
+        }
+
+        return false;
+    }
+
+    private FlashlightOnboardingDirector FindBatteryOnboardingDirector()
+    {
+        FlashlightOnboardingDirector[] directors = FindObjectsByType<FlashlightOnboardingDirector>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        foreach (FlashlightOnboardingDirector director in directors)
+        {
+            if (director != null && director.Manages(this))
+                return director;
+        }
+
+        // Ordinary batteries are not directly managed, but still use the scene's
+        // battery onboarding director as their highlight unlock source.
+        return directors.Length > 0 ? directors[0] : null;
+    }
+
+    private void RefreshHighlightAvailability()
+    {
+        if (highlightUnlocked || waitForFlashlightDepletion)
+            return;
+
+        onboardingDirector ??= FindBatteryOnboardingDirector();
+        if (onboardingDirector != null && onboardingDirector.IsBatteryOnboardingComplete)
+        {
+            highlightUnlocked = true;
+            ApplyHighlightVisibility();
+        }
+    }
+
     public bool TryUse(Flashlight flashlight)
     {
         if (!CanUse || flashlight == null)
@@ -141,6 +288,8 @@ public class BatteryComponent : MonoBehaviour, ISaveable
             ApplyUsedState();
         }
 
+        Used?.Invoke(this);
+
         return true;
     }
 
@@ -149,7 +298,11 @@ public class BatteryComponent : MonoBehaviour, ISaveable
         return new BatterySaveData
         {
             id = SaveKey,
-            isUsed = isUsed
+            isUsed = isUsed,
+            onboardingRevealed = onboardingRevealed,
+            respawnSecondsRemaining = IsRespawning
+                ? Mathf.Max(0f, respawnAtUnscaledTime - Time.unscaledTime)
+                : 0f
         };
     }
 
@@ -159,13 +312,67 @@ public class BatteryComponent : MonoBehaviour, ISaveable
             return;
 
         isUsed = data.isUsed;
-        ApplyUsedState();
+        onboardingRevealed = data.onboardingRevealed || isUsed;
+        onboardingInteractionEnabled = onboardingRevealed;
+        ApplyHighlightVisibility();
+        ApplyUsedState(data.respawnSecondsRemaining);
     }
 
-    private void ApplyUsedState()
+    private bool IsOnboardingBattery => waitForFlashlightDepletion && HasOnboardingDirector();
+    private bool IsRespawning => respawnRoutine != null;
+
+    private void ApplyUsedState(float remainingRespawnSeconds = -1f)
     {
-        if (consumeOnUse && isUsed && gameObject.activeSelf)
-            gameObject.SetActive(false);
+        if (!consumeOnUse || !isUsed)
+        {
+            SetRegularBatteryAvailable(true);
+            return;
+        }
+
+        // Preserve the onboarding battery's one-use behavior.
+        if (IsOnboardingBattery)
+        {
+            if (gameObject.activeSelf)
+                gameObject.SetActive(false);
+            return;
+        }
+
+        SetRegularBatteryAvailable(false);
+
+        if (respawnRoutine != null)
+            StopCoroutine(respawnRoutine);
+
+        float delay = remainingRespawnSeconds >= 0f ? remainingRespawnSeconds : respawnDelay;
+        respawnRoutine = StartCoroutine(RespawnAfterDelay(delay));
+    }
+
+    private IEnumerator RespawnAfterDelay(float delay)
+    {
+        respawnAtUnscaledTime = Time.unscaledTime + Mathf.Max(0f, delay);
+        if (delay > 0f)
+            yield return new WaitForSecondsRealtime(delay);
+
+        isUsed = false;
+        respawnRoutine = null;
+        respawnAtUnscaledTime = 0f;
+        highlightTime = 0f;
+        SetRegularBatteryAvailable(true);
+        ApplyHighlightVisibility();
+    }
+
+    private void SetRegularBatteryAvailable(bool available)
+    {
+        for (int i = 0; i < cachedRenderers.Length; i++)
+        {
+            if (cachedRenderers[i] != null)
+                cachedRenderers[i].enabled = available && rendererEnabledStates[i];
+        }
+
+        for (int i = 0; i < cachedColliders.Length; i++)
+        {
+            if (cachedColliders[i] != null)
+                cachedColliders[i].enabled = available && colliderEnabledStates[i];
+        }
     }
 
     private string GetHierarchyPath()

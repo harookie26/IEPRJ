@@ -151,7 +151,7 @@ public class MainMenu : MonoBehaviour
             _gameState.PauseGame();
         }
 
-        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
+        //EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
 
         UpdateCursorVisibility();
     }
@@ -168,7 +168,7 @@ public class MainMenu : MonoBehaviour
             _gameState.PauseGame();
         }
 
-        EventBroadcaster.Instance.PostEvent(ON_GAME_PAUSE);
+        //EventBroadcaster.Instance.PostEvent(ON_GAME_RESUME);
 
         UpdateCursorVisibility();
     }

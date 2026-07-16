@@ -23,6 +23,7 @@ public static class GlobalSaveSystem
 
         data.spatialSFXStates = new List<SpatialSFXSaveData>();
         data.spatialTriggerStates = new List<SpatialTriggerSaveData>();
+        data.interactionTriggerStates = new List<InteractionTriggerSaveData>();
         data.batteryStates = new List<BatterySaveData>();
         data.savedEnemies = new List<EnemySaveData>();
 
@@ -45,11 +46,24 @@ public static class GlobalSaveSystem
                 );
             }
 
+            if (s is InteractionTrigger interactionTrigger)
+            {
+                data.interactionTriggerStates.Add(
+                    (InteractionTriggerSaveData)interactionTrigger.CaptureState()
+                );
+            }
+
             if (s is BatteryComponent battery)
             {
                 data.batteryStates.Add(
                     (BatterySaveData)battery.CaptureState()
                 );
+            }
+
+            if (s is ElevatorAttackCutscene elevatorAttack)
+            {
+                data.elevatorAttack =
+                    (ElevatorAttackSaveData)elevatorAttack.CaptureState();
             }
 
             if (s is EnemyManager manager)
@@ -114,12 +128,29 @@ public static class GlobalSaveSystem
                 }
             }
 
+            if (s is InteractionTrigger interactionTrigger && data.interactionTriggerStates != null)
+            {
+                foreach (var state in data.interactionTriggerStates)
+                {
+                    if (state.id == interactionTrigger.SaveKey)
+                    {
+                        interactionTrigger.RestoreState(state);
+                        break;
+                    }
+                }
+            }
+
             if (s is BatteryComponent battery && data.batteryStates != null)
             {
                 foreach (var state in data.batteryStates)
                 {
                     if (state.id == battery.SaveKey) { battery.RestoreState(state); break; }
                 }
+            }
+
+            if (s is ElevatorAttackCutscene elevatorAttack)
+            {
+                elevatorAttack.RestoreState(data.elevatorAttack);
             }
         }
     }

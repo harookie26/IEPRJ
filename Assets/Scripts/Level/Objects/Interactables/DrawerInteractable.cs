@@ -1,5 +1,5 @@
-using System.Collections;
 using Game.ObjectTypes;
+using System.Collections;
 using UnityEngine;
 
 public class DrawerInteractable : MonoBehaviour, IInteractable
@@ -14,6 +14,12 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
 
     [SerializeField] private GameObject keyCollectible;
 
+    [Header("Key Reveal")]
+    [Tooltip("Fallback reveal distance when drawer mesh bounds cannot be determined.")]
+    [SerializeField, Min(0f)] private float keyRevealDistance = 1.0f;
+    [Tooltip("Vertical clearance above the opened drawer mesh.")]
+    [SerializeField, Min(0f)] private float keyFrontInset = 0.04f;
+
     [Header("Interaction Gate")]
     [SerializeField] private Transform interactionAnchor;
     [SerializeField, Min(0.1f)] private float maxInteractDistance = 2f;
@@ -27,6 +33,7 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
 
     private Vector3 closedPosition;
     private Vector3 openPosition;
+    private Vector3 keyClosedLocalPosition;
 
     private void Awake()
     {
@@ -50,6 +57,9 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
             openPosition = closedPosition + openOffset;
         }
 
+        if (keyCollectible != null)
+            keyClosedLocalPosition = keyCollectible.transform.localPosition;
+
         SetKeyColliderEnabled(hasOpened);
     }
 
@@ -65,34 +75,20 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        // Don't let the player spam 'E' while it's already sliding
         if (drawerObject == null || hasOpened || isSliding) return;
 
-        hasOpened = true;
-
-        // Multiple interaction listeners can run during the same input event. Delay
-        // activation so a later listener cannot collect the key with this press.
-        StartCoroutine(EnableKeyNextFrame());
-
-        // Start the smooth slide animation via code
         StartCoroutine(SlideDrawerRoutine());
-    }
-
-    private IEnumerator EnableKeyNextFrame()
-    {
-        yield return null;
-
-        SetKeyColliderEnabled(true);
     }
 
     private void SetKeyColliderEnabled(bool enabled)
     {
         if (keyCollectible == null) return;
 
-        Collider keyCollider = keyCollectible.GetComponentInChildren<Collider>(true);
-        if (keyCollider != null)
+        Collider[] keyColliders = keyCollectible.GetComponentsInChildren<Collider>(true);
+        if (keyColliders.Length > 0)
         {
-            keyCollider.enabled = enabled;
+            foreach (Collider keyCollider in keyColliders)
+                keyCollider.enabled = enabled;
         }
         else
         {
@@ -122,6 +118,7 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
     private IEnumerator SlideDrawerRoutine()
     {
         isSliding = true;
+        SetDrawerCollidersEnabled(false);
 
         // Loop until the drawer reaches the target position
         while (Vector3.Distance(drawerObject.transform.position, openPosition) > 0.001f)
@@ -132,18 +129,21 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
                 slideSpeed * Time.deltaTime
             );
 
+            float openProgress = Mathf.InverseLerp(
+                0f,
+                Vector3.Distance(closedPosition, openPosition),
+                Vector3.Distance(closedPosition, drawerObject.transform.position));
+            ApplyKeyReveal(openProgress);
+
             yield return null; // Wait for the next frame
         }
 
         // Snap exactly to the final position to be safe
         drawerObject.transform.position = openPosition;
+        ApplyKeyReveal(1f);
+        hasOpened = true;
         isSliding = false;
-
-        // DESTROY ALL COLLIDERS ON THE DRAWER
-        foreach (Collider col in GetComponents<Collider>())
-        {
-            Destroy(col);
-        }
+        SetKeyColliderEnabled(true);
     }
 
     private void ApplyUnlockedState()
@@ -152,13 +152,74 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
 
         // Since this is loading a save file, skip the smooth slide and instantly snap it open
         drawerObject.transform.position = openPosition;
+        ApplyKeyReveal(1f);
         SetKeyColliderEnabled(true);
 
-        // DESTROY ALL COLLIDERS ON THE DRAWER
-        foreach (Collider col in GetComponents<Collider>())
+        SetDrawerCollidersEnabled(false);
+    }
+
+    private void ApplyKeyReveal(float progress)
+    {
+        if (keyCollectible == null || drawerObject == null)
+            return;
+
+        Vector3 outward = openOffset.sqrMagnitude > 0.0001f
+            ? openOffset.normalized
+            : -drawerObject.transform.forward;
+        Vector3 basePosition = drawerObject.transform.TransformPoint(keyClosedLocalPosition);
+        float revealDistance = keyRevealDistance;
+
+        if (TryGetDrawerBounds(out Bounds drawerBounds))
         {
-            Destroy(col);
+            Vector3 extents = drawerBounds.extents;
+            float projectedExtent =
+                Mathf.Abs(outward.x) * extents.x
+                + Mathf.Abs(outward.y) * extents.y
+                + Mathf.Abs(outward.z) * extents.z;
+            Vector3 visiblePosition = drawerBounds.center + outward * (projectedExtent * 0.9f);
+            visiblePosition.y = drawerBounds.max.y + keyFrontInset;
+
+            keyCollectible.transform.position = Vector3.Lerp(
+                basePosition,
+                visiblePosition,
+                Mathf.Clamp01(progress));
+            return;
         }
+
+        keyCollectible.transform.position = Vector3.Lerp(
+            basePosition,
+            basePosition + outward * revealDistance,
+            Mathf.Clamp01(progress));
+    }
+
+    private bool TryGetDrawerBounds(out Bounds bounds)
+    {
+        bounds = default;
+        bool foundRenderer = false;
+
+        foreach (Renderer renderer in drawerObject.GetComponentsInChildren<Renderer>(true))
+        {
+            if (renderer == null || renderer.transform.IsChildOf(keyCollectible.transform))
+                continue;
+
+            if (!foundRenderer)
+            {
+                bounds = renderer.bounds;
+                foundRenderer = true;
+            }
+            else
+            {
+                bounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        return foundRenderer;
+    }
+
+    private void SetDrawerCollidersEnabled(bool enabled)
+    {
+        foreach (Collider col in GetComponents<Collider>())
+            col.enabled = enabled;
     }
 
     public DrawerSaveData GetSaveData()
@@ -180,7 +241,10 @@ public class DrawerInteractable : MonoBehaviour, IInteractable
         }
         else
         {
+            if (keyCollectible != null)
+                keyCollectible.transform.localPosition = keyClosedLocalPosition;
             SetKeyColliderEnabled(false);
+            SetDrawerCollidersEnabled(true);
         }
     }
 }
