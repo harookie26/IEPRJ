@@ -28,7 +28,7 @@ public class MinimapManager : MonoBehaviour
         {
             // Subscribe to the event
             locationUpdater.OnLocationChanged += UpdateMinimapLayer;
-            // Initialize once at the start
+            // Initialize once at the start 
             UpdateMinimapLayer(locationUpdater.getplayerLocationName());
         }
     }
